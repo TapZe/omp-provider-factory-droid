@@ -71,10 +71,18 @@ bun install
 omp plugin link "$PWD"
 ```
 
-Verify the plugin is installed:
+### Verify Installation
+Check that the plugin is active:
 
 ```zsh
 omp plugin list
+```
+
+### Uninstall / Remove
+To cleanly remove or unlink the plugin from Oh My Pi:
+
+```zsh
+omp plugin uninstall omp-provider-factory-droid
 ```
 
 ---
