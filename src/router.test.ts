@@ -203,7 +203,7 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("0.213.0");
+    expect(FACTORY_CLIENT_VERSION).toBe("0.215.1");
   });
 
   it("includes required Anthropic betas for tool streaming and thinking", () => {
@@ -320,6 +320,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(upstreamProviderFor("grok-4.6")).toBe("xai");
     expect(familyOf("glm-5.3-flash")).toBe("openai-completions");
     expect(upstreamProviderFor("glm-5.3-flash")).toBe("fireworks");
+    expect(familyOf("gemini-3.8-flash")).toBe("google");
+    expect(upstreamProviderFor("gemini-3.8-flash")).toBe("google");
   });
   it("preserves Factory Core reasoning and tool-call history", async () => {
     const expectedReasoningContent = new Map([
@@ -404,17 +406,193 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("x-api-provider")).toBe("xai");
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
+    expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
+    expect(capturedHeaders?.get("x-client-version")).toBe("0.215.1");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/0.215.1");
+  });
+
+  it("routes Gemini through Factory's Google gateway with google provider and custom fetch", async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedUrl = "";
+    let capturedHeaders: Headers | undefined;
+    let capturedBody: any;
+
+    globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+      const [input, init] = args;
+      const request = input instanceof Request ? input : new Request(typeof input === "string" ? input : input.toString(), init);
+      capturedUrl = request.url;
+      capturedHeaders = request.headers;
+      capturedBody = await request.json();
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          const chunk =
+            "data: " +
+            JSON.stringify({
+              candidates: [
+                {
+                  content: {
+                    parts: [{ text: "Hello from Factory Gemini!" }],
+                  },
+                  finishReason: "STOP",
+                },
+              ],
+              usageMetadata: {
+                promptTokenCount: 20,
+                candidatesTokenCount: 10,
+                totalTokenCount: 30,
+              },
+            }) +
+            "\n\n";
+          controller.enqueue(encoder.encode(chunk));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, { headers: { "content-type": "text/event-stream" } });
+    }) as typeof fetch;
+
+    try {
+      const stream = factoryStreamSimple(
+        testFactoryModel("gemini-3.8-flash"),
+        {
+          systemPrompt: ["Project context instructions"],
+          messages: [{ role: "user", content: [{ type: "text", text: "hello" }], timestamp: Date.now() }],
+        },
+        {
+          apiKey: JSON.stringify({
+            token: "test-factory-oauth-token",
+            orgId: "test-org",
+            apiEndpoint: "https://api.test.factory.ai",
+          }),
+          sessionId: "test-session-gemini",
+          reasoning: Effort.High,
+        },
+      );
+
+      const result = await stream.result();
+      expect(result.stopReason).toBe("stop");
+      expect(result.content).toEqual([{ type: "text", text: "Hello from Factory Gemini!" }]);
+      expect(result.usage.totalTokens).toBe(30);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(capturedUrl).toBe("https://api.test.factory.ai/api/llm/g/v1/generate");
+    expect(capturedHeaders?.get("x-api-provider")).toBe("google");
+    expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
+    expect(capturedHeaders?.get("x-client-version")).toBe(FACTORY_CLIENT_VERSION);
+    expect(capturedHeaders?.get("x-factory-client")).toBe("cli");
+    expect(capturedHeaders?.get("user-agent")).toBe(`factory-cli/${FACTORY_CLIENT_VERSION}`);
+    expect(capturedHeaders?.get("authorization")).toBe("Bearer test-factory-oauth-token");
+    expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
+    expect(capturedHeaders?.get("x-session-id")).toBe("test-session-gemini");
+    expect(capturedHeaders?.has("x-assistant-message-id")).toBe(true);
+    expect(capturedHeaders?.has("x-goog-api-key")).toBe(false);
+
+    // Body validation
+    expect(capturedBody.model).toBe("gemini-3.8-flash");
+    expect(capturedBody.contents).toBeDefined();
+    expect(Array.isArray(capturedBody.contents)).toBe(true);
+    expect(capturedBody.systemInstruction).toBeDefined();
+    expect(capturedBody.systemInstruction.parts[0].text).toContain("You are Droid, an AI software engineering agent built by Factory");
+    expect(capturedBody.generationConfig?.thinkingConfig?.thinkingLevel).toBe("HIGH");
+  });
+
+  it("handles tool calling with Gemini stream", async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedBody: any;
+
+    globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+      const [input, init] = args;
+      const request = input instanceof Request ? input : new Request(typeof input === "string" ? input : input.toString(), init);
+      capturedBody = await request.json();
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          const chunk =
+            "data: " +
+            JSON.stringify({
+              candidates: [
+                {
+                  content: {
+                    parts: [
+                      {
+                        functionCall: {
+                          name: "read",
+                          args: { path: "src/router.ts" },
+                        },
+                      },
+                    ],
+                  },
+                  finishReason: "STOP",
+                },
+              ],
+              usageMetadata: { promptTokenCount: 15, candidatesTokenCount: 8, totalTokenCount: 23 },
+            }) +
+            "\n\n";
+          controller.enqueue(encoder.encode(chunk));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, { headers: { "content-type": "text/event-stream" } });
+    }) as typeof fetch;
+
+    try {
+      const stream = factoryStreamSimple(
+        testFactoryModel("gemini-3.8-flash"),
+        {
+          systemPrompt: [],
+          messages: [{ role: "user", content: [{ type: "text", text: "read router" }], timestamp: Date.now() }],
+          tools: [READ_TOOL],
+        },
+        {
+          apiKey: JSON.stringify({
+            token: "test-factory-oauth-token",
+            orgId: "test-org",
+            apiEndpoint: "https://api.test.factory.ai",
+          }),
+        },
+      );
+
+      const result = await stream.result();
+      expect(result.stopReason).toBe("toolUse");
+      const toolCall = result.content.find((c): c is ToolCall => c.type === "toolCall");
+      expect(toolCall).toBeDefined();
+      expect(toolCall?.name).toBe("read");
+      expect(toolCall?.arguments).toEqual({ path: "src/router.ts" });
+      expect(capturedBody.tools).toBeDefined();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it("supports max thinking effort and attaches identity for all model families", async () => {
-    const { identityFor, FACTORY_EFFORTS } = require("./catalog");
+    const { identityFor, FACTORY_EFFORTS, factoryThinkingFor, defaultCostFor, FACTORY_MODELS } = require("./catalog");
 
     expect(identityFor("grok-4.5")).toEqual({ class: "xai", family: "grok" });
     expect(identityFor("glm-5.3-flash")).toEqual({ class: "glm", family: "glm" });
     expect(identityFor("gpt-5.6-sol")).toEqual({ class: "openai", family: "gpt" });
     expect(identityFor("gpt-6-astra")).toEqual({ class: "openai", family: "gpt" });
     expect(identityFor("claude-opus-5")).toEqual({ class: "anthropic", family: "opus" });
+    expect(identityFor("gemini-3.8-flash")).toEqual({ class: "google", family: "gemini" });
     expect(FACTORY_EFFORTS).toContain("max");
+
+    const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
+    expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
+    expect(gpt6Thinking?.effortMap?.[Effort.XHigh]).toBeUndefined();
+
+    const flashCost = defaultCostFor("glm-5.3-flash");
+    expect(flashCost).toEqual({ input: 0.15, output: 0.5, cacheRead: 0.03, cacheWrite: 0 });
+    const geminiFlashCost = defaultCostFor("gemini-3.8-flash");
+    expect(geminiFlashCost).toEqual({ input: 0.3, output: 1.5, cacheRead: 0.075, cacheWrite: 0 });
+    const geminiProCost = defaultCostFor("gemini-3.1-pro-preview");
+    expect(geminiProCost).toEqual({ input: 2.0, output: 8.0, cacheRead: 0.5, cacheWrite: 0 });
+    const flashModel = FACTORY_MODELS.find((m: any) => m.id === "glm-5.3-flash");
+    expect(flashModel?.premiumMultiplier).toBe(0.06);
 
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async () => {

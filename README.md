@@ -1,8 +1,8 @@
 # Pi Provider Factory
 
-**Pi Provider Factory is an Oh My Pi (`omp`) provider extension for accessing Factory.ai Droid models, including Claude Opus, Claude Sonnet, GPT, Codex, Grok, GLM, Kimi, DeepSeek, MiniMax, and Nemotron through Factory's authenticated LLM gateway.**
+**Pi Provider Factory is an Oh My Pi (`omp`) provider extension for accessing Factory.ai Droid models, including Claude Opus, Claude Sonnet, GPT, Codex, Grok, Gemini, GLM, Kimi, DeepSeek, MiniMax, and Nemotron through Factory's authenticated LLM gateway.**
 
-Last updated: 2026-09-02
+Last updated: 2026-09-09
 
 ## What this package does
 
@@ -10,12 +10,12 @@ This package registers a custom `factory` provider for [Oh My Pi](https://www.np
 
 Key features:
 
-- **Full Model Portfolio**: Access Claude Opus 5, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4 Pro, and MiniMax M3 inside `omp`.
+- **Full Model Portfolio**: Access Claude Opus 5, Gemini 3.8 / 3.7 / 3.6 Flash, Gemini 3.1 Pro, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4 Pro, and MiniMax M3 inside `omp`.
 - **Droid-Compatible Multi-Account OAuth**: Device login at `https://auth.factory.ai/device`, explicit organization selection, WorkOS token refresh, session-sticky OMP account routing, and automatic sibling failover after account quota/auth failures.
 - **Account-Isolated Routing**: Keeps each selected account's bearer, `X-Factory-Org-Id`, and validated regional endpoint together; credential endpoints must be HTTPS Factory API origins.
-- **Tri-Gateway Wire Routing**: Accurately routes to Factory's Anthropic (`/api/llm/a`), OpenAI Responses (`/api/llm/o/v1/responses`), and Fireworks (`/api/llm/o/v1/chat/completions`) endpoints.
+- **Quad-Gateway Wire Routing**: Accurately routes to Factory's Anthropic (`/api/llm/a`), OpenAI Responses (`/api/llm/o/v1/responses`), Google Gemini (`/api/llm/g/v1/generate`), and Fireworks (`/api/llm/o/v1/chat/completions`) endpoints.
 - **Native Tool Normalization & Wire Healing**: Converts tool calls and message history into Droid PascalCase primitives (`Read`, `Execute`, `Grep`, `Glob`, `LS`), and uses real-time stream markup healing to parse in-band reasoning and XML tool calls cleanly.
-- **Reasoning & Adaptive Thinking**: Supports Anthropic adaptive thinking for Claude Opus/Fable 5, effort ladders (`minimal` to `max`/`xhigh`), and preserves reasoning history across multi-turn tool loops for Fireworks-hosted models (`interleaved` for DeepSeek, `preserved` for GLM/Kimi).
+- **Reasoning & Adaptive Thinking**: Supports Anthropic adaptive thinking for Claude Opus/Fable 5, Google `thinkingLevel` for Gemini 3, effort ladders (`minimal` to `max`/`xhigh`), and preserves reasoning history across multi-turn tool loops for Fireworks-hosted models (`interleaved` for DeepSeek, `preserved` for GLM/Kimi).
 - **Real-Time Quota Tracking**: Query live Standard/Core billing limits and credit balances with `/usage`, with optional exhausted-account preflight failover.
 
 ---
@@ -29,6 +29,11 @@ The extension ships a curated static catalog synchronized with the authoritative
 
 - **Claude**: `claude-fable-5`, `claude-opus-5`, `claude-opus-5-fast`, `claude-opus-4-8`, `claude-opus-4-8-fast`, `claude-opus-4-7`, `claude-opus-4-7-fast`, `claude-opus-4-6`, `claude-opus-4-6-fast`, `claude-opus-4-5-20251101`, `claude-sonnet-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`, `atlas-07-21`, `aster-07-15` (`x-api-provider: anthropic`)
 - **MiniMax**: `minimax-m3`, `minimax-m2.7`, `minimax-m2.5` (`x-api-provider: fireworks`)
+
+### Google Gemini models
+*Routed through Factory's Google gateway (`/api/llm/g/v1/generate`):*
+
+- **Gemini**: `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview`, `gemini-3.1-pro-preview`, `gemini-3-pro-preview` (`x-api-provider: google`)
 
 ### GPT, Codex, and Grok models
 *Routed through Factory's OpenAI Responses gateway (`/api/llm/o/v1/responses`):*
@@ -93,8 +98,10 @@ Factory model requests are directed to Factory's LLM gateway (`https://api.facto
 | --- | --- | --- | --- |
 | **Claude** | `POST /api/llm/a/v1/messages` | `x-api-provider: anthropic` | `anthropic-version: 2023-06-01`<br>`anthropic-beta: interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14`<br>Adaptive thinking (`type: "adaptive"`) |
 | **MiniMax** | `POST /api/llm/a/v1/messages` | `x-api-provider: fireworks` | Served over Anthropic Messages protocol |
+| **Gemini** | `POST /api/llm/g/v1/generate` | `x-api-provider: google` | `x-provider-routing-source: registry_default`<br>Google GenerateContent format with top-level `model` injection<br>ThinkingLevel (`HIGH`/`MEDIUM`/`LOW`) |
 | **GPT / Codex / Grok** | `POST /api/llm/o/v1/responses` | `x-api-provider: openai` (`xai` for Grok) | `OpenAI-Platform: org-bHuLtG1fGmYk5YaOihAAXFBw`<br>PascalCase tools (`Read`, `Execute`, `Grep`, `Glob`, `LS`) |
 | **Kimi / GLM / DeepSeek** | `POST /api/llm/o/v1/chat/completions` | `x-api-provider: fireworks` | `reasoning_history: "preserved"` (`"interleaved"` for DeepSeek)<br>Stream markup healing (`thinking` / `kimi` / `dsml`)<br>Assistant reasoning signature replay |
+
 
 ```text
 /login factory

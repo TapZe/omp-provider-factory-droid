@@ -23,6 +23,7 @@ export const FACTORY_API_KEY = factoryApiKeyPresent ? FACTORY_API_KEY_ENV : unde
 export const FACTORY_ORG_ID = factoryOrgId && factoryOrgId.length > 0 ? factoryOrgId : null;
 export const ANTHROPIC_BASE = `${FACTORY_API}/api/llm/a`;
 export const OPENAI_BASE = `${FACTORY_API}/api/llm/o/v1`;
+export const GOOGLE_BASE = `${FACTORY_API}/api/llm/g/v1`;
 
 const HOSTED_FACTORY_HOSTNAME = /^api(\.[a-z0-9-]+)?\.factory\.ai$/i;
 const SAFE_REGION_LABEL = /^[a-z0-9-]+$/i;
@@ -97,7 +98,7 @@ export function factoryApiForRegion(region: string | undefined): string {
 
   return `https://api.${lower}.factory.ai`;
 }
-export const FACTORY_CLIENT_VERSION = "0.213.0";
+export const FACTORY_CLIENT_VERSION = "0.215.1";
 export const FACTORY_HEADERS = {
   "X-Factory-Client": factoryUpstreamClientType,
   "X-Client-Version": FACTORY_CLIENT_VERSION,

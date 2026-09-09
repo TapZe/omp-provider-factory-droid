@@ -28,6 +28,12 @@ const FIXTURE = `
 | --- | --- | --- | --- |
 | Kimi K2.6 | \`kimi-k2.6\` | 0.4× | Standard |
 | Claude Opus 4.8 | \`claude-opus-4-8\` | 2× | Standard |
+
+## <span style="color:#000">Unsupported</span>
+
+| Model | Model ID | Multiplier | Reasoning |
+| --- | --- | --- | --- |
+| Other Model | \`cohere-command-r\` | 1× | Standard |
 `;
 
 const EXPECTED_LIMIT_GROUPS = [
@@ -85,6 +91,19 @@ const EXPECTED_LIMIT_GROUPS = [
   [512_000, 64_000, ["minimax-m3"]],
   [204_800, 64_000, ["minimax-m2.7", "minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
+  [
+    1_000_000,
+    65_536,
+    [
+      "gemini-3.8-flash",
+      "gemini-3.7-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-3-flash-preview",
+      "gemini-3.1-pro-preview",
+      "gemini-3-pro-preview",
+    ],
+  ],
 ] as const;
 
 describe("Factory model token limits", () => {
@@ -120,8 +139,15 @@ describe("parseFactoryModelDocs", () => {
     expect(entries.some((entry) => entry.id === "claude-opus-4-8")).toBe(true);
   });
 
-  test("excludes unsupported families (gemini)", () => {
-    expect(entries.some((entry) => entry.id.startsWith("gemini-"))).toBe(false);
+  test("parses supported google gemini family", () => {
+    const gemini = entries.find((entry) => entry.id === "gemini-3.5-flash");
+    expect(gemini).toBeDefined();
+    expect(gemini?.displayName).toBe("Gemini 3.5 Flash");
+    expect(gemini?.multiplier).toBe(0.5);
+  });
+
+  test("excludes unsupported families", () => {
+    expect(entries.some((entry) => entry.id.startsWith("cohere-"))).toBe(false);
   });
 
   test("extracts numeric multiplier from the multiplier column", () => {

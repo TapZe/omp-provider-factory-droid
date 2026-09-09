@@ -3,12 +3,13 @@ import { buildModel } from "@oh-my-pi/pi-catalog/build";
 import { Effort } from "@oh-my-pi/pi-catalog/effort";
 import type { Api, Model, ModelSpec } from "@oh-my-pi/pi-catalog/types";
 import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
-import { streamSimple, type Context } from "@oh-my-pi/pi-ai";
+import { streamSimple, type Context, type FetchImpl } from "@oh-my-pi/pi-ai";
 
 import { factoryThinkingFor, familyOf, identityFor, upstreamProviderFor } from "./catalog";
 import {
   ANTHROPIC_BETAS,
   ANTHROPIC_VERSION,
+  FACTORY_CLIENT_VERSION,
   FACTORY_HEADERS,
   FACTORY_OPENAI_PLATFORM_ORG,
   FACTORY_ORG_ID,
@@ -27,7 +28,11 @@ import {
   factoryStreamMarkupHealingPattern,
   normalizeFactoryToolCallStream,
 } from "./tool-call-normalization";
-type FactoryTargetApi = "anthropic-messages" | "openai-responses" | "openai-completions";
+type FactoryTargetApi =
+  | "anthropic-messages"
+  | "openai-responses"
+  | "openai-completions"
+  | "google-generative-ai";
 
 
 function resolveTargetApi(modelId: string): FactoryTargetApi | null {
@@ -44,6 +49,8 @@ function resolveTargetApi(modelId: string): FactoryTargetApi | null {
       return "openai-responses";
     case "openai-completions":
       return "openai-completions";
+    case "google":
+      return "google-generative-ai";
     case "unsupported":
       return null;
   }
@@ -84,6 +91,7 @@ function buildTargetHeaders(modelId: string, targetApi: FactoryTargetApi, orgId:
   const headers: Record<string, string> = {
     ...FACTORY_HEADERS,
     "x-api-provider": upstreamProviderFor(modelId),
+    "x-provider-routing-source": "registry_default",
   };
 
   if (targetApi === "anthropic-messages") {
@@ -145,7 +153,11 @@ function buildFactoryTargetModel(
     name: model.name,
     api: targetApi,
     baseUrl:
-      targetApi === "anthropic-messages" ? `${apiEndpoint}/api/llm/a` : `${apiEndpoint}/api/llm/o/v1`,
+      targetApi === "anthropic-messages"
+        ? `${apiEndpoint}/api/llm/a`
+        : targetApi === "google-generative-ai"
+          ? `${apiEndpoint}/api/llm/g/v1`
+          : `${apiEndpoint}/api/llm/o/v1`,
     reasoning: model.reasoning,
     thinking: explicitThinking,
     supportsTools: true,
@@ -163,6 +175,75 @@ function buildFactoryTargetModel(
     target.thinking = explicitThinking;
   }
   return target;
+}
+
+export function createFactoryGoogleFetch(
+  baseFetch: FetchImpl,
+  gatewayEndpoint: string,
+  modelId: string,
+  credential: ParsedFactoryCredential,
+  effectiveOrgId: string | null,
+  sessionId?: string,
+): FetchImpl {
+  const targetUrl = `${gatewayEndpoint}/api/llm/g/v1/generate`;
+
+  return (async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    let bodyObj: Record<string, unknown> = {};
+
+    let rawBody = typeof init?.body === "string" ? init.body : undefined;
+    if (!rawBody && input instanceof Request) {
+      try {
+        rawBody = await input.clone().text();
+      } catch {
+        // ignore
+      }
+    }
+
+    if (rawBody) {
+      try {
+        bodyObj = JSON.parse(rawBody);
+      } catch {
+        bodyObj = {};
+      }
+    } else if (typeof init?.body === "object" && init?.body !== null) {
+      bodyObj = init.body as unknown as Record<string, unknown>;
+    }
+
+    if (!bodyObj.model) {
+      bodyObj.model = modelId;
+    }
+
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+    // Strip Google direct API key; Factory gateway uses Bearer token in Authorization
+    headers.delete("x-goog-api-key");
+    headers.set("Authorization", `Bearer ${credential.access}`);
+    headers.set("Content-Type", "application/json");
+    headers.set("Accept", "text/event-stream");
+    headers.set("X-Client-Version", FACTORY_CLIENT_VERSION);
+    headers.set("X-Factory-Client", FACTORY_HEADERS["X-Factory-Client"]);
+    headers.set("User-Agent", FACTORY_HEADERS["User-Agent"]);
+    headers.set("x-api-provider", "google");
+    headers.set("x-provider-routing-source", "registry_default");
+    if (!headers.has("x-session-id")) {
+      headers.set("x-session-id", sessionId ?? randomHeaderId("session"));
+    }
+    if (!headers.has("x-assistant-message-id")) {
+      headers.set("x-assistant-message-id", randomHeaderId("assistant"));
+    }
+    if (effectiveOrgId) {
+      headers.set("X-Factory-Org-Id", effectiveOrgId);
+    }
+
+    const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+
+    return baseFetch(targetUrl, {
+      ...init,
+      method: "POST",
+      headers,
+      body: JSON.stringify(bodyObj),
+      signal,
+    });
+  }) as FetchImpl;
 }
 
 function streamSimpleDirect(
@@ -198,8 +279,22 @@ function streamSimpleDirect(
   const resolvedToolChoice = options?.toolChoice ?? (hasTools ? "auto" : undefined);
   const resolvedReasoning = normalizeReasoningEffort(options?.reasoning);
 
+  const baseFetch = options?.fetch ?? (globalThis.fetch.bind(globalThis) as FetchImpl);
+  const effectiveFetch =
+    targetApi === "google-generative-ai"
+      ? createFactoryGoogleFetch(
+          baseFetch,
+          apiEndpoint,
+          model.id,
+          credential,
+          effectiveOrgId,
+          options?.sessionId,
+        )
+      : options?.fetch;
+
   const inner = streamSimple(target, routedContext, {
     ...options,
+    fetch: effectiveFetch,
     ...(useClaudeThinkingInference
       ? {
           thinkingBudgets: {
@@ -293,7 +388,7 @@ export function routeFactoryStream(
   const targetApi = resolveTargetApi(model.id);
 
   if (!targetApi) {
-    return createFactoryErrorStream(model, `factory: model ${model.id} is not supported in v1 (Gemini/other)`);
+    return createFactoryErrorStream(model, `factory: model ${model.id} is not supported (unsupported family)`);
   }
 
   try {
