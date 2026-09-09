@@ -62,7 +62,7 @@ The extension ships a curated static catalog synchronized with the authoritative
 To install the extension into `omp`:
 
 ```zsh
-omp install https://github.com/TapZe/pi-provider-factory.git
+omp install https://github.com/TapZe/omp-provider-factory-droid.git
 ```
 
 ### Uninstall
@@ -249,7 +249,7 @@ If you see a generic WorkOS authorize URL, reinstall or relink the plugin and lo
 
 ```zsh
 omp plugin uninstall omp-provider-factory-droid
-omp install https://github.com/TapZe/pi-provider-factory.git
+omp install https://github.com/TapZe/omp-provider-factory-droid.git
 omp
 /logout factory
 /login factory

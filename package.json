@@ -13,12 +13,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TapZe/pi-provider-factory.git"
+    "url": "git+https://github.com/TapZe/omp-provider-factory-droid.git"
   },
   "bugs": {
-    "url": "https://github.com/TapZe/pi-provider-factory/issues"
+    "url": "https://github.com/TapZe/omp-provider-factory-droid/issues"
   },
-  "homepage": "https://github.com/TapZe/pi-provider-factory#readme",
+  "homepage": "https://github.com/TapZe/omp-provider-factory-droid#readme",
   "keywords": [
     "oh-my-pi",
     "oh-my-pi-provider",
