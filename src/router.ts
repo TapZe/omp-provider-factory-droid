@@ -189,18 +189,31 @@ export function createFactoryGoogleFetch(
 
   return (async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     let bodyObj: Record<string, unknown> = {};
-    if (typeof init?.body === "string") {
+
+    let rawBody = typeof init?.body === "string" ? init.body : undefined;
+    if (!rawBody && input instanceof Request) {
       try {
-        bodyObj = JSON.parse(init.body);
+        rawBody = await input.clone().text();
+      } catch {
+        // ignore
+      }
+    }
+
+    if (rawBody) {
+      try {
+        bodyObj = JSON.parse(rawBody);
       } catch {
         bodyObj = {};
       }
+    } else if (typeof init?.body === "object" && init?.body !== null) {
+      bodyObj = init.body as unknown as Record<string, unknown>;
     }
+
     if (!bodyObj.model) {
       bodyObj.model = modelId;
     }
 
-    const headers = new Headers(init?.headers);
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
     // Strip Google direct API key; Factory gateway uses Bearer token in Authorization
     headers.delete("x-goog-api-key");
     headers.set("Authorization", `Bearer ${credential.access}`);
@@ -221,10 +234,14 @@ export function createFactoryGoogleFetch(
       headers.set("X-Factory-Org-Id", effectiveOrgId);
     }
 
+    const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+
     return baseFetch(targetUrl, {
       ...init,
+      method: "POST",
       headers,
       body: JSON.stringify(bodyObj),
+      signal,
     });
   }) as FetchImpl;
 }
