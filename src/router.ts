@@ -84,6 +84,7 @@ function buildTargetHeaders(modelId: string, targetApi: FactoryTargetApi, orgId:
   const headers: Record<string, string> = {
     ...FACTORY_HEADERS,
     "x-api-provider": upstreamProviderFor(modelId),
+    "x-provider-routing-source": "registry_default",
   };
 
   if (targetApi === "anthropic-messages") {

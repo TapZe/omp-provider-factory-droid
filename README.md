@@ -2,7 +2,7 @@
 
 **Pi Provider Factory is an Oh My Pi (`omp`) provider extension for accessing Factory.ai Droid models, including Claude Opus, Claude Sonnet, GPT, Codex, Grok, GLM, Kimi, DeepSeek, MiniMax, and Nemotron through Factory's authenticated LLM gateway.**
 
-Last updated: 2026-09-02
+Last updated: 2026-09-09
 
 ## What this package does
 

@@ -203,7 +203,7 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("0.213.0");
+    expect(FACTORY_CLIENT_VERSION).toBe("0.215.1");
   });
 
   it("includes required Anthropic betas for tool streaming and thinking", () => {
@@ -404,10 +404,13 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("x-api-provider")).toBe("xai");
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
+    expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
+    expect(capturedHeaders?.get("x-client-version")).toBe("0.215.1");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/0.215.1");
   });
 
   it("supports max thinking effort and attaches identity for all model families", async () => {
-    const { identityFor, FACTORY_EFFORTS } = require("./catalog");
+    const { identityFor, FACTORY_EFFORTS, factoryThinkingFor, defaultCostFor, FACTORY_MODELS } = require("./catalog");
 
     expect(identityFor("grok-4.5")).toEqual({ class: "xai", family: "grok" });
     expect(identityFor("glm-5.3-flash")).toEqual({ class: "glm", family: "glm" });
@@ -415,6 +418,15 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(identityFor("gpt-6-astra")).toEqual({ class: "openai", family: "gpt" });
     expect(identityFor("claude-opus-5")).toEqual({ class: "anthropic", family: "opus" });
     expect(FACTORY_EFFORTS).toContain("max");
+
+    const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
+    expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
+    expect(gpt6Thinking?.effortMap?.[Effort.XHigh]).toBeUndefined();
+
+    const flashCost = defaultCostFor("glm-5.3-flash");
+    expect(flashCost).toEqual({ input: 0.15, output: 0.5, cacheRead: 0.03, cacheWrite: 0 });
+    const flashModel = FACTORY_MODELS.find((m: any) => m.id === "glm-5.3-flash");
+    expect(flashModel?.premiumMultiplier).toBe(0.06);
 
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async () => {

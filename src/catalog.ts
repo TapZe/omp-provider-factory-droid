@@ -129,6 +129,9 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id.startsWith("glm-5.2-fast")) {
     return { input: 1.8, output: 6.0, cacheRead: 0.3, cacheWrite: 0 };
   }
+  if (id === "glm-5.3-flash" || id.startsWith("glm-5.3-flash")) {
+    return { input: 0.15, output: 0.5, cacheRead: 0.03, cacheWrite: 0 };
+  }
   if (id.startsWith("glm-5.3") || id.startsWith("glm-5.1")) {
     return { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 };
   }
@@ -173,6 +176,7 @@ export function factoryThinkingFor(
 
   const supportsExtraHighEffort =
     modelId === "grok-4.6" ||
+    modelId.startsWith("gpt-6") ||
     modelId.startsWith("gpt-5.6") ||
     modelId.startsWith("glm-5.3") ||
     modelId.startsWith("claude-opus-5") ||
@@ -530,7 +534,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text"],
     contextWindow: 1_048_576,
     maxTokens: 131_072,
-    premiumMultiplier: 0.38,
+    premiumMultiplier: 0.06,
   }),
   factoryModel({
     id: "glm-5.2",
