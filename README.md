@@ -50,7 +50,45 @@ Curated static catalog synchronized with Droid CLI v0.215.1, augmented by dynami
 - **DeepSeek**: `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
 - **Nemotron / Inkling**: `nemotron-3-ultra`, `inkling` (`x-api-provider: fireworks`)
 
+### 5. Dynamic Discovery & Live Pricing
+Beyond the curated static catalog, the plugin automatically checks Factory's live model documentation (`https://docs.factory.ai/models.md`) and queries OpenRouter for live per-million token pricing at session start (throttled to every 15 minutes). Newly launched models become immediately discoverable without waiting for OMP's 24-hour cache TTL.
+
 ---
+
+## Model Selection & Reasoning Controls
+
+### Selecting Models
+In Oh My Pi, select any Factory model via the `/model` picker or type the full model identifier directly:
+
+```text
+/model factory/claude-opus-5
+/model factory/gemini-3.8-flash
+/model factory/gpt-6-astra
+/model factory/glm-5.3-flash
+```
+
+To set a Factory model as your default in `~/.omp/config.json`:
+
+```json
+{
+  "defaultModel": "factory/claude-opus-5"
+}
+```
+
+### Thinking & Reasoning Efforts
+The plugin supports Oh My Pi's thinking effort levels (`minimal`, `low`, `medium`, `high`, `xhigh`, `max`):
+
+- **Extra-High (`xhigh` / `max`)**: Supported on flagship reasoning models:
+  - `gpt-6-astra`
+  - `gpt-5.6-sol` / `gpt-5.6-terra` / `gpt-5.6-luna`
+  - `claude-opus-5` / `claude-fable-5`
+  - `glm-5.3` / `glm-5.3-flash`
+  - `grok-4.6`
+  *(For models without extra-high effort support, `max` and `xhigh` automatically clamp to `high` upstream to prevent gateway rejection).*
+- **Google Gemini Thinking**: Mapped to native level-based thinking (`low`, `medium`, `high`; `minimal` supported on Flash Preview / 3.5).
+- **Claude Adaptive Thinking**: Claude models automatically infer Anthropic's adaptive thinking protocol (`type: "adaptive"`) with an allocated high-effort thinking budget of 24,576 tokens.
+- **Fireworks History Preservation**: Preserves multi-turn reasoning content across tool calls (`reasoning_history: "interleaved"` for DeepSeek, `"preserved"` for GLM/Kimi).
+
 
 ## Installation
 
@@ -160,9 +198,12 @@ To automatically skip exhausted accounts and rotate to a healthy sibling account
 export FACTORY_QUOTA_PREFLIGHT=1
 ```
 
-- Pre-checks cached billing limits with zero perceptible overhead.
-- Maintains strict isolation: Core quota exhaustion will never block Standard models, and vice versa.
-- Fails open on timeouts or network issues so requests are never blocked unnecessarily.
+- **In-Memory Cache & Shared In-Flight**: Quotas are cached for 30 seconds per endpoint/org; concurrent requests coalesce into a single in-flight billing check.
+- **Strict Tier Isolation**: Core quota exhaustion will never block Standard models, and Standard exhaustion will never block Core models.
+- **Extra Usage Exemption**: Accounts with Factory Extra Usage (pay-as-you-go overages) enabled are never blocked.
+- **Automatic Sibling Rotation**: If an account's quota tier is exhausted, the gate emits a synthetic `usage_limit_reached` event with a reset countdown. Oh My Pi catches this and automatically retries with your next authenticated Factory sibling account without interrupting your workflow.
+- **Fail-Open Resilience**: Billing limit timeouts, network hiccups, and API-key sessions fail open so model calls are never blocked unnecessarily.
+
 
 ---
 
