@@ -7,6 +7,7 @@ export type FactoryModelFamily =
   | "anthropic"
   | "openai-responses"
   | "openai-completions"
+  | "google"
   | "unsupported";
 
 const FACTORY_MAX_EFFORT = "max" as Effort;
@@ -157,6 +158,22 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
     return { input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 };
   }
 
+  // Google Gemini family
+  if (id.startsWith("gemini-3.1-pro") || id.startsWith("gemini-3-pro")) {
+    return { input: 2.0, output: 8.0, cacheRead: 0.5, cacheWrite: 0 };
+  }
+  if (
+    id.startsWith("gemini-3.8-flash") ||
+    id.startsWith("gemini-3.7-flash") ||
+    id.startsWith("gemini-3.6-flash") ||
+    id.startsWith("gemini-3.5-flash")
+  ) {
+    return { input: 0.3, output: 1.5, cacheRead: 0.075, cacheWrite: 0 };
+  }
+  if (id.startsWith("gemini-3-flash") || id.startsWith("gemini-")) {
+    return { input: 0.15, output: 0.6, cacheRead: 0.0375, cacheWrite: 0 };
+  }
+
   // Default fallback
   return { input: 1.0, output: 3.0, cacheRead: 0.1, cacheWrite: 0 };
 }
@@ -172,6 +189,17 @@ export function factoryThinkingFor(
 
   if (!reasoning) {
     return undefined;
+  }
+
+  if (familyOf(modelId) === "google") {
+    const supportsMinimal = modelId === "gemini-3-flash-preview" || modelId === "gemini-3.5-flash";
+    return {
+      mode: "google-level",
+      efforts: supportsMinimal
+        ? [Effort.Minimal, Effort.Low, Effort.Medium, Effort.High]
+        : [Effort.Low, Effort.Medium, Effort.High],
+      defaultLevel: Effort.High,
+    };
   }
 
   const supportsExtraHighEffort =
@@ -680,11 +708,80 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     maxTokens: 65_536,
     premiumMultiplier: 0.24,
   }),
+
+  // Google Gemini family
+  factoryModel({
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.6,
+  }),
+  factoryModel({
+    id: "gemini-3.7-flash",
+    name: "Gemini 3.7 Flash (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.6,
+  }),
+  factoryModel({
+    id: "gemini-3.6-flash",
+    name: "Gemini 3.6 Flash (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.6,
+  }),
+  factoryModel({
+    id: "gemini-3.5-flash",
+    name: "Gemini 3.5 Flash (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.6,
+  }),
+  factoryModel({
+    id: "gemini-3-flash-preview",
+    name: "Gemini 3 Flash Preview (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.2,
+  }),
+  factoryModel({
+    id: "gemini-3.1-pro-preview",
+    name: "Gemini 3.1 Pro Preview (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.8,
+  }),
+  factoryModel({
+    id: "gemini-3-pro-preview",
+    name: "Gemini 3 Pro Preview (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.8,
+  }),
 ];
 
 export function familyOf(id: string): FactoryModelFamily {
   if (id.startsWith("claude-") || id.startsWith("minimax-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";
+  }
+
+  if (id.startsWith("gemini-")) {
+    return "google";
   }
 
   if (id.startsWith("gpt-") || id.startsWith("gpt6") || id.endsWith("-codex") || id.startsWith("grok-")) {
@@ -705,7 +802,7 @@ export function familyOf(id: string): FactoryModelFamily {
   return "unsupported";
 }
 
-export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "xai";
+export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "xai" | "google";
 
 // Factory's `x-api-provider` request header names the UPSTREAM the gateway routes
 // to, independent of the wire API shape. Droid Core open models (GLM, Kimi,
@@ -714,6 +811,10 @@ export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "xa
 export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";
+  }
+
+  if (id.startsWith("gemini-")) {
+    return "google";
   }
 
   if (id.startsWith("gpt-") || id.startsWith("gpt6") || id.endsWith("-codex")) {
@@ -731,6 +832,9 @@ export function identityFor(id: string): ModelIdentity {
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     const parts = id.split("-");
     return { class: "anthropic", family: parts[1] ?? "claude" };
+  }
+  if (id.startsWith("gemini-")) {
+    return { class: "google", family: "gemini" };
   }
   if (id.startsWith("minimax-")) {
     return { class: "minimax", family: "minimax" };
@@ -769,7 +873,8 @@ export function factoryQuotaTierFor(id: string): FactoryQuotaTier {
     id.startsWith("gpt-") ||
     id.startsWith("gpt6") ||
     id.endsWith("-codex") ||
-    id.startsWith("grok-")
+    id.startsWith("grok-") ||
+    id.startsWith("gemini-")
   ) {
     return "standard";
   }

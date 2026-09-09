@@ -13,11 +13,13 @@ const DISCOVERED_MODEL_LIMITS = {
   anthropic: { contextWindow: 200_000, maxTokens: 64_000 },
   "openai-responses": { contextWindow: 400_000, maxTokens: 128_000 },
   "openai-completions": { contextWindow: 200_000, maxTokens: 32_000 },
+  google: { contextWindow: 1_000_000, maxTokens: 65_536 },
 } as const;
 
 const PROVIDER_PREFIXES = [
   "anthropic/",
   "openai/",
+  "google/",
   "moonshotai/",
   "deepseek/",
   "z-ai/",
@@ -189,6 +191,16 @@ function docsEntryToModel(entry: FactoryModelDocsEntry, liveCost?: LiveTokenCost
         cost,
         premiumMultiplier: entry.multiplier,
         ...DISCOVERED_MODEL_LIMITS["openai-completions"],
+      });
+    case "google":
+      return factoryModel({
+        id: entry.id,
+        name: `${entry.displayName} (Factory)`,
+        reasoning: true,
+        input: ["text", "image"],
+        cost,
+        premiumMultiplier: entry.multiplier,
+        ...DISCOVERED_MODEL_LIMITS.google,
       });
     case "unsupported":
       return null;

@@ -7,7 +7,11 @@ import { FACTORY_API_BASE_OVERRIDDEN, FACTORY_ORG_ID } from "./constants";
 import type { ParsedFactoryCredential } from "./credential";
 import { isRecord } from "./object-fields";
 
-export type FactoryDiagnosticTargetApi = "anthropic-messages" | "openai-responses" | "openai-completions";
+export type FactoryDiagnosticTargetApi =
+  | "anthropic-messages"
+  | "openai-responses"
+  | "openai-completions"
+  | "google-generative-ai";
 
 interface FactoryDiagnosticArgs {
   model: Model<Api>;
