@@ -2,6 +2,9 @@
 
 **Pi Provider Factory is an Oh My Pi (`omp`) provider extension for accessing Factory.ai Droid models, including Claude Opus, Claude Sonnet, GPT, Codex, Grok, Gemini, GLM, Kimi, DeepSeek, MiniMax, and Nemotron through Factory's authenticated LLM gateway.**
 
+> [!NOTE]
+> **Actively Maintained Fork (v1.0.0)**: This project is the maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe), featuring Droid v0.215.1 contract parity, native Google Gemini Quad-Gateway routing, multi-account quota preflight failover, and production diagnostics.
+
 Last updated: 2026-09-09
 
 ## What this package does
@@ -325,3 +328,12 @@ Expected output:
 ```text
 ok
 ```
+
+---
+
+## Credits & Attribution
+
+This project originated from the initial [`pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) extension created by [Travis Boudreaux](https://github.com/tjboudreaux).
+
+Due to upstream inactivity, this fork is independently maintained by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe) with ongoing feature synchronization, Google Gemini quad-gateway routing, quota-aware failover, dynamic discovery, and production hardening.
+

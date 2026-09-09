@@ -1,20 +1,24 @@
 {
   "name": "pi-provider-factory",
-  "version": "0.1.0",
-  "description": "Factory.ai provider extension for Oh My Pi (omp) with Droid OAuth and Factory LLM gateway routing.",
+  "version": "1.0.0",
+  "description": "Factory.ai provider extension for Oh My Pi (omp) with Droid OAuth, Quad-Gateway routing, and quota-aware failover.",
   "type": "module",
+  "author": "Muhammad Nabil Muyassar Rahman <https://github.com/TapZe>",
+  "contributors": [
+    "Travis Boudreaux <https://github.com/tjboudreaux>"
+  ],
   "extensions": [
     "./src/index.ts"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tjboudreaux/pi-provider-factory.git"
+    "url": "git+https://github.com/TapZe/pi-provider-factory.git"
   },
   "bugs": {
-    "url": "https://github.com/tjboudreaux/pi-provider-factory/issues"
+    "url": "https://github.com/TapZe/pi-provider-factory/issues"
   },
-  "homepage": "https://github.com/tjboudreaux/pi-provider-factory#readme",
+  "homepage": "https://github.com/TapZe/pi-provider-factory#readme",
   "keywords": [
     "oh-my-pi",
     "oh-my-pi-provider",
