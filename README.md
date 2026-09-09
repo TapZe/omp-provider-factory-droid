@@ -1,6 +1,6 @@
-# Pi Provider Factory
+# OMP Provider Factory Droid
 
-**Pi Provider Factory is an Oh My Pi (`omp`) provider extension for accessing Factory.ai Droid models, including Claude Opus, Claude Sonnet, GPT, Codex, Grok, Gemini, GLM, Kimi, DeepSeek, MiniMax, and Nemotron through Factory's authenticated LLM gateway.**
+**`omp-provider-factory-droid` is an Oh My Pi (`omp`) provider extension for accessing Factory.ai Droid models, including Claude Opus, Claude Sonnet, GPT, Codex, Grok, Gemini, GLM, Kimi, DeepSeek, MiniMax, and Nemotron through Factory's authenticated LLM gateway.**
 
 > [!NOTE]
 > **Actively Maintained Fork (v1.0.0)**: This project is the maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe), featuring Droid v0.215.1 contract parity, native Google Gemini Quad-Gateway routing, multi-account quota preflight failover, and production diagnostics.
@@ -70,7 +70,7 @@ omp install https://github.com/TapZe/pi-provider-factory.git
 To uninstall or remove the plugin from `omp`:
 
 ```zsh
-omp plugin uninstall pi-provider-factory
+omp plugin uninstall omp-provider-factory-droid
 ```
 
 ### Local Development / Linking
@@ -248,7 +248,7 @@ https://auth.factory.ai/device
 If you see a generic WorkOS authorize URL, reinstall or relink the plugin and log in again:
 
 ```zsh
-omp plugin uninstall pi-provider-factory
+omp plugin uninstall omp-provider-factory-droid
 omp install https://github.com/TapZe/pi-provider-factory.git
 omp
 /logout factory

@@ -1,5 +1,5 @@
 {
-  "name": "pi-provider-factory",
+  "name": "omp-provider-factory-droid",
   "version": "1.0.0",
   "description": "Factory.ai provider extension for Oh My Pi (omp) with Droid OAuth, Quad-Gateway routing, and quota-aware failover.",
   "type": "module",
