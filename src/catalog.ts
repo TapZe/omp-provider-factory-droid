@@ -157,6 +157,9 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id.startsWith("nemotron-")) {
     return { input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 };
   }
+  if (id === "qwen3.8-max" || id.startsWith("qwen")) {
+    return { input: 0.8, output: 3.0, cacheRead: 0.08, cacheWrite: 0 };
+  }
 
   // Google Gemini family
   if (id.startsWith("gemini-3.1-pro") || id.startsWith("gemini-3-pro")) {
@@ -208,7 +211,8 @@ export function factoryThinkingFor(
     modelId.startsWith("gpt-5.6") ||
     modelId.startsWith("glm-5.3") ||
     modelId.startsWith("claude-opus-5") ||
-    modelId.startsWith("claude-fable-5");
+    modelId.startsWith("claude-fable-5") ||
+    modelId.startsWith("qwen");
 
   return {
     mode: "effort",
@@ -396,7 +400,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 0.8,
+    premiumMultiplier: 2,
   }),
   factoryModel({
     id: "gpt-5.6-sol-fast",
@@ -405,7 +409,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 1.6,
+    premiumMultiplier: 4,
   }),
   factoryModel({
     id: "gpt-5.6-terra",
@@ -414,7 +418,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 0.32,
+    premiumMultiplier: 0.8,
   }),
   factoryModel({
     id: "gpt-5.6-luna",
@@ -423,7 +427,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 0.032,
+    premiumMultiplier: 0.08,
   }),
   factoryModel({
     id: "gpt-5.5",
@@ -432,7 +436,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 0.8,
+    premiumMultiplier: 2,
   }),
   factoryModel({
     id: "gpt-5.5-fast",
@@ -441,7 +445,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 2,
+    premiumMultiplier: 5,
   }),
   factoryModel({
     id: "gpt-5.5-pro",
@@ -450,7 +454,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 4.8,
+    premiumMultiplier: 12,
   }),
   factoryModel({
     id: "gpt-5.4",
@@ -459,7 +463,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 0.4,
+    premiumMultiplier: 1,
   }),
   factoryModel({
     id: "gpt-5.4-fast",
@@ -468,7 +472,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
-    premiumMultiplier: 0.8,
+    premiumMultiplier: 2,
   }),
   factoryModel({
     id: "gpt-5.4-mini",
@@ -477,7 +481,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 128000,
-    premiumMultiplier: 0.12,
+    premiumMultiplier: 0.3,
   }),
   factoryModel({
     id: "gpt-5.4-mini-fast",
@@ -486,7 +490,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 128000,
-    premiumMultiplier: 0.24,
+    premiumMultiplier: 0.6,
   }),
   factoryModel({
     id: "gpt-5.3-codex",
@@ -495,7 +499,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text"],
     contextWindow: 400000,
     maxTokens: 128000,
-    premiumMultiplier: 0.28,
+    premiumMultiplier: 0.7,
   }),
   factoryModel({
     id: "gpt-5.3-codex-fast",
@@ -504,7 +508,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text"],
     contextWindow: 400000,
     maxTokens: 128000,
-    premiumMultiplier: 0.56,
+    premiumMultiplier: 1.4,
   }),
   factoryModel({
     id: "gpt-5.2",
@@ -513,7 +517,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 128000,
-    premiumMultiplier: 0.28,
+    premiumMultiplier: 0.7,
   }),
 
   // Grok family (routed through OpenAI Responses gateway with x-api-provider: xai)
@@ -708,6 +712,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     maxTokens: 65_536,
     premiumMultiplier: 0.24,
   }),
+  factoryModel({
+    id: "qwen3.8-max",
+    name: "Qwen3.8 Max (Factory Core)",
+    reasoning: true,
+    input: ["text"],
+    contextWindow: 262_144,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.8,
+  }),
 
   // Google Gemini family
   factoryModel({
@@ -726,7 +739,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 65_536,
-    premiumMultiplier: 0.6,
+    premiumMultiplier: 0.3,
   }),
   factoryModel({
     id: "gemini-3.6-flash",
@@ -793,6 +806,7 @@ export function familyOf(id: string): FactoryModelFamily {
     id.startsWith("kimi-") ||
     id.startsWith("deepseek-") ||
     id.startsWith("nemotron-") ||
+    id.startsWith("qwen") ||
     id === "inkling" ||
     id.startsWith("inkling-")
   ) {
@@ -856,6 +870,9 @@ export function identityFor(id: string): ModelIdentity {
   }
   if (id.startsWith("nemotron-")) {
     return { class: "nemotron", family: "nemotron" };
+  }
+  if (id.startsWith("qwen")) {
+    return { class: "qwen", family: "qwen" };
   }
   if (id.startsWith("inkling")) {
     return { class: "inkling", family: "inkling" };
