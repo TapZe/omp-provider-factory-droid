@@ -157,7 +157,7 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id.startsWith("nemotron-")) {
     return { input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 };
   }
-  if (id === "qwen3.8-max" || id.startsWith("qwen")) {
+  if (id.startsWith("qwen")) {
     return { input: 0.8, output: 3.0, cacheRead: 0.08, cacheWrite: 0 };
   }
 
@@ -711,15 +711,6 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 202_000,
     maxTokens: 65_536,
     premiumMultiplier: 0.24,
-  }),
-  factoryModel({
-    id: "qwen3.8-max",
-    name: "Qwen3.8 Max (Factory Core)",
-    reasoning: true,
-    input: ["text"],
-    contextWindow: 262_144,
-    maxTokens: 131_072,
-    premiumMultiplier: 0.8,
   }),
 
   // Google Gemini family

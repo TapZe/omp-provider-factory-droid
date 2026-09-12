@@ -9,7 +9,7 @@
 
 ## Key Features
 
-- **Full Model Portfolio**: Access Claude Opus 5 / Fable 5, Gemini 3.8 / 3.7 / 3.6 Flash, Gemini 3.1 Pro, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, Qwen 3.8 Max, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4 Pro, and MiniMax M3 directly inside `omp`.
+- **Full Model Portfolio**: Access Claude Opus 5 / Fable 5, Gemini 3.8 / 3.7 / 3.6 Flash, Gemini 3.1 Pro, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4 Pro, and MiniMax M3 directly inside `omp`.
 - **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint with W3C `traceparent` telemetry injection:
   - Anthropic Messages (`/api/llm/a`)
   - OpenAI Responses (`/api/llm/o/v1/responses`)
@@ -45,7 +45,6 @@ Curated static catalog synchronized with Droid CLI v0.218.1, augmented by dynami
 
 ### 4. Factory Core & Open Models
 *Wire Endpoint: `POST /api/llm/o/v1/chat/completions`*
-- **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
 - **GLM**: `glm-5.3`, `glm-5.3-flash`, `glm-5.2`, `glm-5.2-fast`, `glm-5.1`, `glm-5`, `glm-4.7`, `glm-4.6` (`x-api-provider: fireworks`)
 - **Kimi**: `kimi-k3`, `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5` (`x-api-provider: fireworks`)
 - **DeepSeek**: `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
@@ -84,12 +83,11 @@ The plugin supports Oh My Pi's thinking effort levels (`minimal`, `low`, `medium
   - `gpt-5.6-sol` / `gpt-5.6-terra` / `gpt-5.6-luna`
   - `claude-opus-5` / `claude-fable-5`
   - `glm-5.3` / `glm-5.3-flash`
-  - `qwen3.8-max`
   - `grok-4.6`
   *(For models without extra-high effort support, `max` and `xhigh` automatically clamp to `high` upstream to prevent gateway rejection).*
 - **Google Gemini Thinking**: Mapped to native level-based thinking (`low`, `medium`, `high`; `minimal` supported on Flash Preview / 3.5).
 - **Claude Adaptive Thinking**: Claude models automatically infer Anthropic's adaptive thinking protocol (`type: "adaptive"`) with an allocated high-effort thinking budget of 24,576 tokens.
-- **Fireworks History Preservation**: Preserves multi-turn reasoning content across tool calls (`reasoning_history: "interleaved"` for DeepSeek, `"preserved"` for GLM/Kimi/Qwen).
+- **Fireworks History Preservation**: Preserves multi-turn reasoning content across tool calls (`reasoning_history: "interleaved"` for DeepSeek, `"preserved"` for GLM/Kimi).
 
 
 ## Installation

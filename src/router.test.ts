@@ -318,12 +318,10 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(upstreamProviderFor("kimi-k3")).toBe("fireworks");
     expect(familyOf("grok-4.6")).toBe("openai-responses");
     expect(upstreamProviderFor("grok-4.6")).toBe("xai");
-    expect(familyOf("glm-5.3-flash")).toBe("openai-completions");
-    expect(upstreamProviderFor("glm-5.3-flash")).toBe("fireworks");
     expect(familyOf("gemini-3.8-flash")).toBe("google");
     expect(upstreamProviderFor("gemini-3.8-flash")).toBe("google");
-    expect(familyOf("qwen3.8-max")).toBe("openai-completions");
-    expect(upstreamProviderFor("qwen3.8-max")).toBe("fireworks");
+    expect(familyOf("deepseek-v4-pro")).toBe("openai-completions");
+    expect(upstreamProviderFor("deepseek-v4-pro")).toBe("fireworks");
   });
   it("preserves Factory Core reasoning and tool-call history", async () => {
     const expectedReasoningContent = new Map([
@@ -582,22 +580,22 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(identityFor("gpt-6-astra")).toEqual({ class: "openai", family: "gpt" });
     expect(identityFor("claude-opus-5")).toEqual({ class: "anthropic", family: "opus" });
     expect(identityFor("gemini-3.8-flash")).toEqual({ class: "google", family: "gemini" });
-    expect(identityFor("qwen3.8-max")).toEqual({ class: "qwen", family: "qwen" });
+    expect(identityFor("nemotron-3-ultra")).toEqual({ class: "nemotron", family: "nemotron" });
     expect(FACTORY_EFFORTS).toContain("max");
 
     const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
     expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
     expect(gpt6Thinking?.effortMap?.[Effort.XHigh]).toBeUndefined();
 
-    const qwenThinking = factoryThinkingFor("qwen3.8-max", true, undefined);
-    expect(qwenThinking?.effortMap?.["max" as any]).toBe("xhigh");
+    const glmThinking = factoryThinkingFor("glm-5.3", true, undefined);
+    expect(glmThinking?.effortMap?.["max" as any]).toBe("xhigh");
 
-    const qwenCost = defaultCostFor("qwen3.8-max");
-    expect(qwenCost).toEqual({ input: 0.8, output: 3.0, cacheRead: 0.08, cacheWrite: 0 });
-    const qwenModel = FACTORY_MODELS.find((m: any) => m.id === "qwen3.8-max");
-    expect(qwenModel?.premiumMultiplier).toBe(0.8);
-    expect(qwenModel?.contextWindow).toBe(262_144);
-    expect(qwenModel?.maxTokens).toBe(131_072);
+    const nemoCost = defaultCostFor("nemotron-3-ultra");
+    expect(nemoCost).toEqual({ input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 });
+    const nemoModel = FACTORY_MODELS.find((m: any) => m.id === "nemotron-3-ultra");
+    expect(nemoModel?.premiumMultiplier).toBe(0.24);
+    expect(nemoModel?.contextWindow).toBe(202_000);
+    expect(nemoModel?.maxTokens).toBe(65_536);
 
     const flashCost = defaultCostFor("glm-5.3-flash");
     expect(flashCost).toEqual({ input: 0.15, output: 0.5, cacheRead: 0.03, cacheWrite: 0 });
