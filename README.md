@@ -3,19 +3,19 @@
 **`omp-provider-factory-droid` is a production-ready [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent) provider extension for accessing Factory.ai Droid models—including Claude Opus 5, Gemini 3.8 / 3.1 Pro, GPT-6 Astra, Grok 4.6, GLM 5.3, Kimi K3, and DeepSeek V4—through Factory's authenticated LLM Quad-Gateway.**
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.0.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Features complete Droid v0.215.1 contract parity, native Google Gemini Quad-Gateway routing, multi-account quota preflight failover, tool-call stream healing, and intelligent 403 diagnostics.
+> **Actively Maintained Fork (`v1.1.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Features complete Droid v0.218.1 contract parity, native Google Gemini Quad-Gateway routing, Droid CLI credentials auto-import, multi-account quota preflight failover, tool-call stream healing, and intelligent 403 diagnostics.
 
 ---
 
 ## Key Features
 
-- **Full Model Portfolio**: Access Claude Opus 5 / Fable 5, Gemini 3.8 / 3.7 / 3.6 Flash, Gemini 3.1 Pro, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4 Pro, and MiniMax M3 directly inside `omp`.
-- **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint:
+- **Full Model Portfolio**: Access Claude Opus 5 / Fable 5, Gemini 3.8 / 3.7 / 3.6 Flash, Gemini 3.1 Pro, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, Qwen 3.8 Max, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4 Pro, and MiniMax M3 directly inside `omp`.
+- **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint with W3C `traceparent` telemetry injection:
   - Anthropic Messages (`/api/llm/a`)
   - OpenAI Responses (`/api/llm/o/v1/responses`)
   - Google Generative AI (`/api/llm/g/v1/generate`)
   - Fireworks Completions (`/api/llm/o/v1/chat/completions`)
-- **Droid-Compatible Browser OAuth**: Run `/login factory` to initiate instant device authorization at `https://auth.factory.ai/device`. Supports multi-organization selection, token refresh, and regional endpoint discovery.
+- **Droid-Compatible Browser OAuth & CLI Auto-Import**: Run `/login factory` to instantly auto-import an existing Droid CLI login session (`~/.factory/`) or initiate device authorization at `https://auth.factory.ai/device`. Supports multi-organization selection, token refresh, and regional endpoint discovery.
 - **Account-Isolated Sibling Failover**: Manages credentials with atomic account isolation (`token`, `X-Factory-Org-Id`, `apiEndpoint`). Enables automated sibling account retry if an account runs out of quota or encounters an authentication error.
 - **Real-Time Quota Tracking & Preflight**: Query live Standard and Core usage limits and Extra Usage balances via `/usage`. Optionally enable `FACTORY_QUOTA_PREFLIGHT=1` to failover to sibling accounts before emitting model requests when a tier is exhausted.
 - **Defensive Tool Normalization & Stream Healing**: Automatically repairs in-band XML tool calls (`<tool_call>`) from open-weight models via Hermes markup healing, and unwraps malformed embedded JSON tool names into structured harness calls.
@@ -26,7 +26,7 @@
 
 ## Supported Models
 
-Curated static catalog synchronized with Droid CLI v0.215.1, augmented by dynamic discovery:
+Curated static catalog synchronized with Droid CLI v0.218.1, augmented by dynamic discovery:
 
 ### 1. Claude and Anthropic Family
 *Wire Endpoint: `POST /api/llm/a/v1/messages`*
@@ -45,6 +45,7 @@ Curated static catalog synchronized with Droid CLI v0.215.1, augmented by dynami
 
 ### 4. Factory Core & Open Models
 *Wire Endpoint: `POST /api/llm/o/v1/chat/completions`*
+- **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
 - **GLM**: `glm-5.3`, `glm-5.3-flash`, `glm-5.2`, `glm-5.2-fast`, `glm-5.1`, `glm-5`, `glm-4.7`, `glm-4.6` (`x-api-provider: fireworks`)
 - **Kimi**: `kimi-k3`, `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5` (`x-api-provider: fireworks`)
 - **DeepSeek**: `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
@@ -83,11 +84,12 @@ The plugin supports Oh My Pi's thinking effort levels (`minimal`, `low`, `medium
   - `gpt-5.6-sol` / `gpt-5.6-terra` / `gpt-5.6-luna`
   - `claude-opus-5` / `claude-fable-5`
   - `glm-5.3` / `glm-5.3-flash`
+  - `qwen3.8-max`
   - `grok-4.6`
   *(For models without extra-high effort support, `max` and `xhigh` automatically clamp to `high` upstream to prevent gateway rejection).*
 - **Google Gemini Thinking**: Mapped to native level-based thinking (`low`, `medium`, `high`; `minimal` supported on Flash Preview / 3.5).
 - **Claude Adaptive Thinking**: Claude models automatically infer Anthropic's adaptive thinking protocol (`type: "adaptive"`) with an allocated high-effort thinking budget of 24,576 tokens.
-- **Fireworks History Preservation**: Preserves multi-turn reasoning content across tool calls (`reasoning_history: "interleaved"` for DeepSeek, `"preserved"` for GLM/Kimi).
+- **Fireworks History Preservation**: Preserves multi-turn reasoning content across tool calls (`reasoning_history: "interleaved"` for DeepSeek, `"preserved"` for GLM/Kimi/Qwen).
 
 
 ## Installation
@@ -127,21 +129,22 @@ omp plugin uninstall omp-provider-factory-droid
 
 ## Authentication
 
-### 1. Browser OAuth Device Flow (Recommended)
+### 1. Droid CLI Session Auto-Import & Browser OAuth
 Inside Oh My Pi, run:
 
 ```text
 /login factory
 ```
 
-1. The plugin automatically generates a device code and opens your default browser to:
+1. **Native Droid CLI Auto-Import**: The extension automatically inspects your local Droid CLI environment (`~/.factory/auth.v2.loginkeychain` or `~/.factory/auth.v2.file`). If you are already logged in via `droid`, the plugin seamlessly decrypts and imports your credentials directly into Oh My Pi—**no browser interaction required**.
+2. **Device Code Fallback**: If no local Droid CLI session exists or if it has expired, the plugin automatically falls back to generating an interactive device authorization code:
    ```text
    https://auth.factory.ai/device
    ```
-2. Confirm the code and authenticate.
-3. If your account belongs to multiple Factory organizations, the CLI prompts you to select which organization to bind to this profile.
-4. Tokens and organization IDs are securely stored in OMP's native credentials storage.
-5. To add another organization or account, simply run `/login factory` again. OMP manages multiple accounts and enables automatic failover.
+3. Confirm the code in your browser and authorize the application.
+4. If your account belongs to multiple Factory organizations, the CLI prompts you to select which organization to bind to this profile.
+5. **Zero Re-Login Token Refresh**: Tokens are automatically refreshed in the background before expiry via WorkOS OAuth token refresh. Parameter filtering guarantees that internal WorkOS organizational scoping does not trigger `organization_not_found` errors, ensuring persistent session validity without requiring repeated manual logins.
+6. To add another organization or account, simply run `/login factory` again. OMP manages multiple accounts and enables automatic failover.
 
 ### 2. Factory API Key (Headless / CI Environments)
 If running in headless environments where browser login is unavailable:
@@ -156,7 +159,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`).
+All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.218.1.
 
 | Family | Wire Gateway URL | Upstream Provider Header | Protocol Details |
 | :--- | :--- | :--- | :--- |

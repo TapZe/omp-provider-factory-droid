@@ -203,7 +203,7 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("0.215.1");
+    expect(FACTORY_CLIENT_VERSION).toBe("0.218.1");
   });
 
   it("includes required Anthropic betas for tool streaming and thinking", () => {
@@ -322,6 +322,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(upstreamProviderFor("glm-5.3-flash")).toBe("fireworks");
     expect(familyOf("gemini-3.8-flash")).toBe("google");
     expect(upstreamProviderFor("gemini-3.8-flash")).toBe("google");
+    expect(familyOf("qwen3.8-max")).toBe("openai-completions");
+    expect(upstreamProviderFor("qwen3.8-max")).toBe("fireworks");
   });
   it("preserves Factory Core reasoning and tool-call history", async () => {
     const expectedReasoningContent = new Map([
@@ -407,8 +409,9 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
     expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
-    expect(capturedHeaders?.get("x-client-version")).toBe("0.215.1");
-    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/0.215.1");
+    expect(capturedHeaders?.get("x-client-version")).toBe("0.218.1");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/0.218.1");
+    expect(capturedHeaders?.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
   });
 
   it("routes Gemini through Factory's Google gateway with google provider and custom fetch", async () => {
@@ -579,11 +582,22 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(identityFor("gpt-6-astra")).toEqual({ class: "openai", family: "gpt" });
     expect(identityFor("claude-opus-5")).toEqual({ class: "anthropic", family: "opus" });
     expect(identityFor("gemini-3.8-flash")).toEqual({ class: "google", family: "gemini" });
+    expect(identityFor("qwen3.8-max")).toEqual({ class: "qwen", family: "qwen" });
     expect(FACTORY_EFFORTS).toContain("max");
 
     const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
     expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
     expect(gpt6Thinking?.effortMap?.[Effort.XHigh]).toBeUndefined();
+
+    const qwenThinking = factoryThinkingFor("qwen3.8-max", true, undefined);
+    expect(qwenThinking?.effortMap?.["max" as any]).toBe("xhigh");
+
+    const qwenCost = defaultCostFor("qwen3.8-max");
+    expect(qwenCost).toEqual({ input: 0.8, output: 3.0, cacheRead: 0.08, cacheWrite: 0 });
+    const qwenModel = FACTORY_MODELS.find((m: any) => m.id === "qwen3.8-max");
+    expect(qwenModel?.premiumMultiplier).toBe(0.8);
+    expect(qwenModel?.contextWindow).toBe(262_144);
+    expect(qwenModel?.maxTokens).toBe(131_072);
 
     const flashCost = defaultCostFor("glm-5.3-flash");
     expect(flashCost).toEqual({ input: 0.15, output: 0.5, cacheRead: 0.03, cacheWrite: 0 });

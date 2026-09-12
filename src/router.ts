@@ -60,8 +60,28 @@ function randomHeaderId(prefix: string): string {
   return globalThis.crypto?.randomUUID?.() ?? `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
+function randomHex(bytesCount: number): string {
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(bytesCount);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  let hex = "";
+  for (let i = 0; i < bytesCount; i++) {
+    hex += Math.floor(Math.random() * 256).toString(16).padStart(2, "0");
+  }
+  return hex;
+}
+
+export function randomTraceparent(): string {
+  const traceId = randomHex(16);
+  const spanId = randomHex(8);
+  return `00-${traceId}-${spanId}-01`;
+}
+
 function buildRequestHeaders(options: Parameters<NonNullable<ProviderConfig["streamSimple"]>>[2]): Record<string, string> {
   return {
+    traceparent: randomTraceparent(),
     "x-session-id": options?.sessionId ?? randomHeaderId("session"),
     "x-assistant-message-id": randomHeaderId("assistant"),
   };
@@ -224,6 +244,9 @@ export function createFactoryGoogleFetch(
     headers.set("User-Agent", FACTORY_HEADERS["User-Agent"]);
     headers.set("x-api-provider", "google");
     headers.set("x-provider-routing-source", "registry_default");
+    if (!headers.has("traceparent")) {
+      headers.set("traceparent", randomTraceparent());
+    }
     if (!headers.has("x-session-id")) {
       headers.set("x-session-id", sessionId ?? randomHeaderId("session"));
     }

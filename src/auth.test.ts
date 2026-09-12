@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { OAuthCredentials, OAuthLoginCallbacks } from "@oh-my-pi/pi-ai/oauth/types";
 
-import { login, refreshToken } from "./auth";
+import { login, refreshToken, resetInFlightRefreshesForTests } from "./auth";
 import { formatErrorDetails, parseUniqueOrganizationIds, readJsonResponse } from "./auth-parsing";
 import { factoryApiForRegion, validateHostedFactoryApiOrigin } from "./constants";
 
@@ -209,3 +209,287 @@ describe("Factory OAuth cancellation", () => {
     expect(requestSignal?.aborted).toBe(true);
   });
 });
+
+describe("Factory WorkOS refresh organization handling", () => {
+  test("omits Factory external org ID from WorkOS body to prevent organization_not_found error", async () => {
+    let capturedBody: URLSearchParams | undefined;
+    const factoryOrgId = "RFmWaCAuH8jTGM21tL5k";
+    const scopedToken = unsignedJwt({ external_org_id: factoryOrgId, exp: Math.floor(Date.now() / 1000) + 3600 });
+
+    const fetchImpl: OAuthFetch = async (input, init) => {
+      const url = String(input);
+      if (url.includes("authenticate")) {
+        capturedBody = new URLSearchParams(String(init?.body));
+        return jsonResponse({
+          access_token: scopedToken,
+          refresh_token: "new-refresh-token",
+          expires_in: 3600,
+        });
+      }
+      if (url.endsWith("/api/cli/whoami")) {
+        return jsonResponse({ orgId: factoryOrgId, region: "global" });
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const creds: OAuthCredentials = {
+      refresh: "old-refresh",
+      access: scopedToken,
+      expires: 1,
+      accountId: factoryOrgId,
+      projectId: factoryOrgId,
+      apiEndpoint: "https://api.factory.ai",
+    };
+
+    const refreshed = await refreshToken(creds, undefined, fetchImpl);
+    expect(capturedBody).toBeDefined();
+    expect(capturedBody?.get("grant_type")).toBe("refresh_token");
+    expect(capturedBody?.get("refresh_token")).toBe("old-refresh");
+    // Crucial: organization_id must NOT be passed when it is a Factory external org ID
+    expect(capturedBody?.has("organization_id")).toBe(false);
+    expect(refreshed.accountId).toBe(factoryOrgId);
+  });
+
+  test("passes WorkOS org ID when projectId starts with org_ or org-", async () => {
+    let capturedBody: URLSearchParams | undefined;
+    const workosOrgId = "org_01KFW5N9T2CN9QZBHSRSJHX469";
+    const scopedToken = unsignedJwt({ org_id: workosOrgId, exp: Math.floor(Date.now() / 1000) + 3600 });
+
+    const fetchImpl: OAuthFetch = async (input, init) => {
+      const url = String(input);
+      if (url.includes("authenticate")) {
+        capturedBody = new URLSearchParams(String(init?.body));
+        return jsonResponse({
+          access_token: scopedToken,
+          refresh_token: "new-refresh-token",
+          expires_in: 3600,
+        });
+      }
+      if (url.endsWith("/api/cli/whoami")) {
+        return jsonResponse({ orgId: workosOrgId, region: "global" });
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const creds: OAuthCredentials = {
+      refresh: "old-refresh",
+      access: scopedToken,
+      expires: 1,
+      accountId: workosOrgId,
+      projectId: workosOrgId,
+      apiEndpoint: "https://api.factory.ai",
+    };
+
+    const refreshed = await refreshToken(creds, undefined, fetchImpl);
+    expect(capturedBody?.get("organization_id")).toBe(workosOrgId);
+    expect(refreshed.accountId).toBe(workosOrgId);
+  });
+
+  test("accepts tokens containing both external_org_id and org_id when refreshed by WorkOS org ID", async () => {
+    const factoryOrgId = "RFmWaCAuH8jTGM21tL5k";
+    const workosOrgId = "org_01KFW5N9T2CN9QZBHSRSJHX469";
+    const dualToken = unsignedJwt({
+      external_org_id: factoryOrgId,
+      org_id: workosOrgId,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    const fetchImpl: OAuthFetch = async (input) => {
+      const url = String(input);
+      if (url.includes("authenticate")) {
+        return jsonResponse({
+          access_token: dualToken,
+          refresh_token: "new-refresh-token",
+          expires_in: 3600,
+        });
+      }
+      if (url.endsWith("/api/cli/whoami")) {
+        return jsonResponse({ orgId: factoryOrgId, region: "global" });
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const creds: OAuthCredentials = {
+      refresh: "old-refresh",
+      access: dualToken,
+      expires: 1,
+      accountId: factoryOrgId,
+      projectId: workosOrgId,
+      apiEndpoint: "https://api.factory.ai",
+    };
+
+    const refreshed = await refreshToken(creds, undefined, fetchImpl);
+    expect(refreshed.accountId).toBe(factoryOrgId);
+  });
+});
+
+describe("Factory OAuth refresh reliability & concurrency", () => {
+  test("coalesces concurrent refresh calls into a single WorkOS request", async () => {
+    resetInFlightRefreshesForTests();
+    let authCalls = 0;
+    const factoryOrgId = "RFmWaCAuH8jTGM21tL5k";
+    const scopedToken = unsignedJwt({ external_org_id: factoryOrgId, exp: Math.floor(Date.now() / 1000) + 3600 });
+
+    const fetchImpl: OAuthFetch = async (input) => {
+      const url = String(input);
+      if (url.includes("authenticate")) {
+        authCalls++;
+        await new Promise((r) => setTimeout(r, 20));
+        return jsonResponse({
+          access_token: scopedToken,
+          refresh_token: "coalesced-refresh-token",
+          expires_in: 3600,
+        });
+      }
+      if (url.endsWith("/api/cli/whoami")) {
+        return jsonResponse({ orgId: factoryOrgId, region: "global" });
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const creds: OAuthCredentials = {
+      refresh: "shared-refresh-token",
+      access: scopedToken,
+      expires: 1,
+      accountId: factoryOrgId,
+      projectId: factoryOrgId,
+      apiEndpoint: "https://api.factory.ai",
+    };
+
+    const [res1, res2, res3] = await Promise.all([
+      refreshToken(creds, undefined, fetchImpl),
+      refreshToken(creds, undefined, fetchImpl),
+      refreshToken(creds, undefined, fetchImpl),
+    ]);
+
+    expect(authCalls).toBe(1);
+    expect(res1.refresh).toBe("coalesced-refresh-token");
+    expect(res2.refresh).toBe("coalesced-refresh-token");
+    expect(res3.refresh).toBe("coalesced-refresh-token");
+  });
+
+  test("retries transient 500 error and succeeds on subsequent attempt", async () => {
+    resetInFlightRefreshesForTests();
+    let attempts = 0;
+    const factoryOrgId = "RFmWaCAuH8jTGM21tL5k";
+    const scopedToken = unsignedJwt({ external_org_id: factoryOrgId, exp: Math.floor(Date.now() / 1000) + 3600 });
+
+    const fetchImpl: OAuthFetch = async (input) => {
+      const url = String(input);
+      if (url.includes("authenticate")) {
+        attempts++;
+        if (attempts === 1) {
+          return new Response("Internal Server Error", { status: 500 });
+        }
+        return jsonResponse({
+          access_token: scopedToken,
+          refresh_token: "retry-refresh-token",
+          expires_in: 3600,
+        });
+      }
+      if (url.endsWith("/api/cli/whoami")) {
+        return jsonResponse({ orgId: factoryOrgId, region: "global" });
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const creds: OAuthCredentials = {
+      refresh: "retry-test-refresh",
+      access: scopedToken,
+      expires: 1,
+      accountId: factoryOrgId,
+      projectId: factoryOrgId,
+      apiEndpoint: "https://api.factory.ai",
+    };
+
+    const refreshed = await refreshToken(creds, undefined, fetchImpl);
+    expect(attempts).toBe(2);
+    expect(refreshed.refresh).toBe("retry-refresh-token");
+  });
+
+  test("fails fast without retry on permanent 400 invalid_grant", async () => {
+    resetInFlightRefreshesForTests();
+    let attempts = 0;
+    const factoryOrgId = "RFmWaCAuH8jTGM21tL5k";
+
+    const fetchImpl: OAuthFetch = async (input) => {
+      const url = String(input);
+      if (url.includes("authenticate")) {
+        attempts++;
+        return jsonResponse(
+          { error: "invalid_grant", error_description: "The refresh token is invalid or revoked" },
+          400,
+        );
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const creds: OAuthCredentials = {
+      refresh: "revoked-refresh",
+      access: "expired-token",
+      expires: 1,
+      accountId: factoryOrgId,
+      projectId: factoryOrgId,
+      apiEndpoint: "https://api.factory.ai",
+    };
+
+    await expect(refreshToken(creds, undefined, fetchImpl)).rejects.toThrow(/invalid_grant/);
+    expect(attempts).toBe(1);
+  });
+});
+
+describe("Factory login interactive Droid CLI selection", () => {
+  test("falls through to browser login when user chooses option 2", async () => {
+    const origForce = process.env.FACTORY_DROID_FORCE_CLI_AUTH;
+    process.env.FACTORY_DROID_FORCE_CLI_AUTH = "0"; // allow prompt
+    try {
+      let browserFlowStarted = false;
+      const browserToken = unsignedJwt({ org_id: "org_browser_user", exp: Math.floor(Date.now() / 1000) + 3600 });
+      const fetchImpl: OAuthFetch = async (input) => {
+        const url = String(input);
+        if (url.includes("authorize/device")) {
+          browserFlowStarted = true;
+          return jsonResponse({
+            device_code: "device-code",
+            user_code: "ABCD-1234",
+            verification_uri: "https://factory.ai/verify",
+            verification_uri_complete: "https://factory.ai/verify?code=ABCD-1234",
+            expires_in: 300,
+            interval: 0.001,
+          });
+        }
+        if (url.includes("authenticate")) {
+          return jsonResponse({ access_token: browserToken, refresh_token: "browser-refresh", expires_in: 3600 });
+        }
+        if (url.endsWith("/api/cli/whoami")) {
+          return jsonResponse({ orgId: "org_browser_user", region: "global" });
+        }
+        return new Response("Not Found", { status: 404 });
+      };
+
+      // Prompt answers "2" to indicate user wants browser login
+      const creds = await login({
+        fetch: fetchImpl,
+        onAuth() {},
+        async onPrompt(prompt) {
+          if (prompt.message.includes("Found active Factory Droid CLI login")) {
+            return "2";
+          }
+          return "1";
+        },
+      });
+
+      expect(browserFlowStarted).toBe(true);
+      expect(creds.accountId).toBe("org_browser_user");
+    } finally {
+      if (origForce !== undefined) {
+        process.env.FACTORY_DROID_FORCE_CLI_AUTH = origForce;
+      } else {
+        delete process.env.FACTORY_DROID_FORCE_CLI_AUTH;
+      }
+    }
+  });
+});
+
+
+

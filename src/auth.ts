@@ -18,7 +18,8 @@ import {
   type ParsedTokenResponse,
 } from "./auth-parsing";
 import { FACTORY_API, WORKOS_CLIENT_ID, WORKOS_DEVICE_AUTHORIZE, WORKOS_TOKEN } from "./constants";
-import { organizationIdFromAccessToken } from "./credential";
+import { decodeJwtPayload, organizationIdFromAccessToken } from "./credential";
+import { loadDroidCliCredentials } from "./droid-auth";
 
 type Fetcher = NonNullable<OAuthLoginCallbacks["fetch"]>;
 
@@ -188,6 +189,27 @@ async function pollDeviceToken(
   throw new Error(`Factory OAuth device login cancelled: ${signal.reason}`);
 }
 
+const MAX_REFRESH_ATTEMPTS = 3;
+const REFRESH_BACKOFF_BASE_MS = 500;
+
+function isTransientRefreshError(error: unknown, status?: number): boolean {
+  if (status !== undefined) {
+    return status === 429 || status >= 500;
+  }
+  if (error instanceof Error) {
+    if (error.name === "AbortError") return false;
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("fetch failed") ||
+      msg.includes("network") ||
+      msg.includes("econnreset") ||
+      msg.includes("timeout") ||
+      msg.includes("etimedout")
+    );
+  }
+  return false;
+}
+
 async function postRefreshToken(
   refreshToken: string,
   fetchImpl: Fetcher,
@@ -195,22 +217,50 @@ async function postRefreshToken(
   organizationId?: string,
   signal?: AbortSignal,
 ): Promise<ParsedTokenResponse> {
-  const response = await fetchImpl(WORKOS_TOKEN, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: WORKOS_CLIENT_ID,
-      ...(organizationId ? { organization_id: organizationId } : {}),
-    }),
-    signal: combineSignalWithTimeout(signal),
+  // WorkOS expects organization_id to be an internal WorkOS identifier (starting with "org_" or "org-").
+  // Passing an external Factory organization ID causes WorkOS to reject with 400 organization_not_found.
+  const isWorkosOrgId = organizationId ? /^org[-_][a-zA-Z0-9_-]+$/.test(organizationId) : false;
+  const bodyParams = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+    client_id: WORKOS_CLIENT_ID,
   });
-  const parsed = await readJsonResponse(response, "refresh token");
+  if (isWorkosOrgId && organizationId) {
+    bodyParams.set("organization_id", organizationId);
+  }
 
-  return parseTokenResponse(parsed, "refresh token", fallbackRefreshToken);
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_REFRESH_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetchImpl(WORKOS_TOKEN, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: bodyParams,
+        signal: combineSignalWithTimeout(signal),
+      });
+
+      if (!response.ok && isTransientRefreshError(undefined, response.status) && attempt < MAX_REFRESH_ATTEMPTS) {
+        if (signal?.aborted) throw signal.reason ?? new Error("Aborted");
+        await delay(REFRESH_BACKOFF_BASE_MS * attempt, undefined, { signal });
+        continue;
+      }
+
+      const parsed = await readJsonResponse(response, "refresh token");
+      return parseTokenResponse(parsed, "refresh token", fallbackRefreshToken);
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      lastError = error;
+      if (isTransientRefreshError(error) && attempt < MAX_REFRESH_ATTEMPTS) {
+        await delay(REFRESH_BACKOFF_BASE_MS * attempt, undefined, { signal });
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError ?? new Error("Factory OAuth refresh token failed after retry attempts");
 }
 
 function toCredentials(parsed: ParsedTokenResponse, prior?: OAuthCredentials): OAuthCredentials {
@@ -232,15 +282,25 @@ function toCredentials(parsed: ParsedTokenResponse, prior?: OAuthCredentials): O
 }
 
 function requireOrgScopedCredential(credentials: OAuthCredentials, requestedOrganizationId: string): string {
-  const orgId = organizationIdFromAccessToken(credentials.access);
+  const payload = decodeJwtPayload(credentials.access);
+  const externalOrgId = typeof payload?.external_org_id === "string" ? payload.external_org_id : undefined;
+  const workosOrgId = typeof payload?.org_id === "string" ? payload.org_id : undefined;
+  const effectiveOrgId = externalOrgId ?? workosOrgId ?? organizationIdFromAccessToken(credentials.access);
 
-  if (!orgId) {
+  if (!effectiveOrgId) {
     throw new Error("Factory OAuth did not return an organization-scoped access token; LLM calls would 403");
   }
-  if (orgId !== requestedOrganizationId) {
+
+  const isMatch =
+    requestedOrganizationId === effectiveOrgId ||
+    requestedOrganizationId === workosOrgId ||
+    requestedOrganizationId === externalOrgId ||
+    (Boolean(externalOrgId) && (requestedOrganizationId.startsWith("org_") || requestedOrganizationId.startsWith("org-")));
+
+  if (!isMatch) {
     throw new Error("Factory OAuth returned a token for a different organization than the selected account");
   }
-  return orgId;
+  return effectiveOrgId;
 }
 
 function requireMatchingWhoamiOrganization(accountId: string | undefined, expectedOrganizationId: string): void {
@@ -315,10 +375,118 @@ async function loginWithBrowser(callbacks: OAuthLoginCallbacks): Promise<OAuthCr
 }
 
 export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials> {
+  const fetchImpl = callbacks.fetch ?? fetch;
+  const callerSignal = callbacks.signal;
+
+  // 1. Check if user is already authenticated via Factory Droid CLI (`droid`)
+  // When a custom test fetch is provided (e.g. in mock-driven unit tests), skip local CLI
+  // discovery unless explicitly forced, preserving isolated test fixtures.
+  const allowLocalCliAuth =
+    process.env.FACTORY_DROID_DISABLE_CLI_AUTH !== "1" &&
+    (!callbacks.fetch || process.env.FACTORY_DROID_FORCE_CLI_AUTH === "1");
+
+  if (allowLocalCliAuth) {
+    try {
+      const droidCreds = loadDroidCliCredentials();
+      if (droidCreds?.accessToken) {
+        const tokenOrgId = droidCreds.activeOrganizationId || organizationIdFromAccessToken(droidCreds.accessToken);
+        if (tokenOrgId) {
+          const exp = expiresFromAccessToken(droidCreds.accessToken);
+          const email = emailFromAccessToken(droidCreds.accessToken);
+          const label = email ? `${email} (${tokenOrgId})` : tokenOrgId;
+
+          let reuseLocal = process.env.FACTORY_DROID_FORCE_CLI_AUTH === "1";
+          if (!reuseLocal) {
+            const promptMessage =
+              `Found active Factory Droid CLI login for ${label}.\n` +
+              `  1. Reuse local Droid session (${label})\n` +
+              `  2. Log in with a different account (browser OAuth)\n` +
+              `Select an option [1-2]`;
+            const answer = (
+              await callbacks.onPrompt({
+                message: promptMessage,
+                placeholder: "1",
+              })
+            )?.trim();
+            reuseLocal = answer === "1" || answer === "" || answer === undefined;
+          }
+
+          if (reuseLocal) {
+            const isExpired = exp ? Date.now() >= exp : false;
+            if (!isExpired) {
+              const identity = await resolveWhoami(droidCreds.accessToken, fetchImpl, tokenOrgId, callerSignal);
+              requireMatchingWhoamiOrganization(identity.accountId, tokenOrgId);
+              callbacks.onProgress?.(`Reusing authenticated session from Factory Droid CLI (${label})`);
+              return {
+                refresh: droidCreds.refreshToken,
+                access: droidCreds.accessToken,
+                expires: exp ?? Date.now() + DEFAULT_TOKEN_LIFETIME_MS,
+                accountId: tokenOrgId,
+                projectId: tokenOrgId,
+                email,
+                apiEndpoint: identity.apiEndpoint,
+              };
+            } else if (droidCreds.refreshToken) {
+              callbacks.onProgress?.("Refreshing Factory session from local Droid CLI...");
+              const refreshed = await refreshToken(
+                {
+                  refresh: droidCreds.refreshToken,
+                  access: droidCreds.accessToken,
+                  expires: 0,
+                  accountId: tokenOrgId,
+                  projectId: tokenOrgId,
+                },
+                callerSignal,
+                fetchImpl,
+              );
+              return refreshed;
+            }
+          }
+        }
+      }
+    } catch {
+      // Local Droid CLI credentials unavailable or prompt declined; fall through to browser device login
+    }
+  }
+
   return loginWithBrowser(callbacks);
 }
 
-export async function refreshToken(
+const inFlightRefreshes = new Map<string, Promise<OAuthCredentials>>();
+
+export function resetInFlightRefreshesForTests(): void {
+  inFlightRefreshes.clear();
+}
+
+function waitForRefreshPromise(
+  promise: Promise<OAuthCredentials>,
+  signal: AbortSignal | undefined,
+): Promise<OAuthCredentials> {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(signal.reason ?? new Error("Aborted"));
+
+  const pending = Promise.withResolvers<OAuthCredentials>();
+  let settled = false;
+  const cleanup = () => signal.removeEventListener("abort", onAbort);
+  const finish = (creds: OAuthCredentials) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    pending.resolve(creds);
+  };
+  const fail = (error: unknown) => {
+    if (settled) return;
+    settled = true;
+    cleanup();
+    pending.reject(error);
+  };
+  const onAbort = () => fail(signal.reason ?? new Error("Aborted"));
+  signal.addEventListener("abort", onAbort, { once: true });
+  void promise.then(finish, fail);
+  return pending.promise;
+}
+
+async function executeRefreshToken(
   credentials: OAuthCredentials,
   signal?: AbortSignal,
   fetchImpl: Fetcher = fetch,
@@ -338,8 +506,15 @@ export async function refreshToken(
     };
 
     let tokenOrganizationId = organizationIdFromAccessToken(refreshed.access);
-    if (tokenOrganizationId && workosOrganizationId && tokenOrganizationId !== workosOrganizationId) {
-      throw new Error("Factory OAuth refresh returned a token for a different organization than the stored account");
+    const payload = decodeJwtPayload(refreshed.access);
+    if (tokenOrganizationId && workosOrganizationId) {
+      const isMatch =
+        tokenOrganizationId === workosOrganizationId ||
+        payload?.org_id === workosOrganizationId ||
+        payload?.external_org_id === workosOrganizationId;
+      if (!isMatch && !workosOrganizationId.startsWith("org_") && !workosOrganizationId.startsWith("org-")) {
+        throw new Error("Factory OAuth refresh returned a token for a different organization than the stored account");
+      }
     }
     workosOrganizationId = workosOrganizationId ?? tokenOrganizationId;
 
@@ -386,6 +561,32 @@ export async function refreshToken(
   } catch (error) {
     throw new Error(`Factory OAuth token refresh failed: ${formatErrorDetails(error)}`);
   }
+}
+
+export async function refreshToken(
+  credentials: OAuthCredentials,
+  signal?: AbortSignal,
+  fetchImpl: Fetcher = fetch,
+): Promise<OAuthCredentials> {
+  const refreshKey = `${credentials.accountId ?? ""}:${credentials.refresh}`;
+  const existing = inFlightRefreshes.get(refreshKey);
+  if (existing) {
+    return waitForRefreshPromise(existing, signal);
+  }
+
+  let refreshPromise!: Promise<OAuthCredentials>;
+  refreshPromise = (async () => {
+    try {
+      return await executeRefreshToken(credentials, signal, fetchImpl);
+    } finally {
+      if (inFlightRefreshes.get(refreshKey) === refreshPromise) {
+        inFlightRefreshes.delete(refreshKey);
+      }
+    }
+  })();
+
+  inFlightRefreshes.set(refreshKey, refreshPromise);
+  return waitForRefreshPromise(refreshPromise, signal);
 }
 
 export function getApiKey(credentials: OAuthCredentials): string {

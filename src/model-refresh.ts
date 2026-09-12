@@ -26,6 +26,8 @@ const PROVIDER_PREFIXES = [
   "minimax/",
   "x-ai/",
   "nvidia/",
+  "qwen/",
+  "alibaba/",
 ] as const;
 
 function parsePerMillionCost(rawPricePerToken: string | undefined): number {
