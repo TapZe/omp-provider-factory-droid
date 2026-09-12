@@ -392,40 +392,60 @@ export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCreden
         const tokenOrgId = droidCreds.activeOrganizationId || organizationIdFromAccessToken(droidCreds.accessToken);
         if (tokenOrgId) {
           const exp = expiresFromAccessToken(droidCreds.accessToken);
-          const isExpired = exp ? Date.now() >= exp : false;
+          const email = emailFromAccessToken(droidCreds.accessToken);
+          const label = email ? `${email} (${tokenOrgId})` : tokenOrgId;
 
-          if (!isExpired) {
-            const identity = await resolveWhoami(droidCreds.accessToken, fetchImpl, tokenOrgId, callerSignal);
-            requireMatchingWhoamiOrganization(identity.accountId, tokenOrgId);
-            callbacks.onProgress?.(`Reusing authenticated session from Factory Droid CLI (${tokenOrgId})`);
-            return {
-              refresh: droidCreds.refreshToken,
-              access: droidCreds.accessToken,
-              expires: exp ?? Date.now() + DEFAULT_TOKEN_LIFETIME_MS,
-              accountId: tokenOrgId,
-              projectId: tokenOrgId,
-              email: emailFromAccessToken(droidCreds.accessToken),
-              apiEndpoint: identity.apiEndpoint,
-            };
-          } else if (droidCreds.refreshToken) {
-            callbacks.onProgress?.("Refreshing Factory session from local Droid CLI...");
-            const refreshed = await refreshToken(
-              {
+          let reuseLocal = process.env.FACTORY_DROID_FORCE_CLI_AUTH === "1";
+          if (!reuseLocal) {
+            const promptMessage =
+              `Found active Factory Droid CLI login for ${label}.\n` +
+              `  1. Reuse local Droid session (${label})\n` +
+              `  2. Log in with a different account (browser OAuth)\n` +
+              `Select an option [1-2]`;
+            const answer = (
+              await callbacks.onPrompt({
+                message: promptMessage,
+                placeholder: "1",
+              })
+            )?.trim();
+            reuseLocal = answer === "1" || answer === "" || answer === undefined;
+          }
+
+          if (reuseLocal) {
+            const isExpired = exp ? Date.now() >= exp : false;
+            if (!isExpired) {
+              const identity = await resolveWhoami(droidCreds.accessToken, fetchImpl, tokenOrgId, callerSignal);
+              requireMatchingWhoamiOrganization(identity.accountId, tokenOrgId);
+              callbacks.onProgress?.(`Reusing authenticated session from Factory Droid CLI (${label})`);
+              return {
                 refresh: droidCreds.refreshToken,
                 access: droidCreds.accessToken,
-                expires: 0,
+                expires: exp ?? Date.now() + DEFAULT_TOKEN_LIFETIME_MS,
                 accountId: tokenOrgId,
                 projectId: tokenOrgId,
-              },
-              callerSignal,
-              fetchImpl,
-            );
-            return refreshed;
+                email,
+                apiEndpoint: identity.apiEndpoint,
+              };
+            } else if (droidCreds.refreshToken) {
+              callbacks.onProgress?.("Refreshing Factory session from local Droid CLI...");
+              const refreshed = await refreshToken(
+                {
+                  refresh: droidCreds.refreshToken,
+                  access: droidCreds.accessToken,
+                  expires: 0,
+                  accountId: tokenOrgId,
+                  projectId: tokenOrgId,
+                },
+                callerSignal,
+                fetchImpl,
+              );
+              return refreshed;
+            }
           }
         }
       }
     } catch {
-      // Local Droid CLI credentials unavailable or invalid; fall through to browser device login
+      // Local Droid CLI credentials unavailable or prompt declined; fall through to browser device login
     }
   }
 

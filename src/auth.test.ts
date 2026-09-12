@@ -438,4 +438,58 @@ describe("Factory OAuth refresh reliability & concurrency", () => {
   });
 });
 
+describe("Factory login interactive Droid CLI selection", () => {
+  test("falls through to browser login when user chooses option 2", async () => {
+    const origForce = process.env.FACTORY_DROID_FORCE_CLI_AUTH;
+    process.env.FACTORY_DROID_FORCE_CLI_AUTH = "0"; // allow prompt
+    try {
+      let browserFlowStarted = false;
+      const browserToken = unsignedJwt({ org_id: "org_browser_user", exp: Math.floor(Date.now() / 1000) + 3600 });
+      const fetchImpl: OAuthFetch = async (input) => {
+        const url = String(input);
+        if (url.includes("authorize/device")) {
+          browserFlowStarted = true;
+          return jsonResponse({
+            device_code: "device-code",
+            user_code: "ABCD-1234",
+            verification_uri: "https://factory.ai/verify",
+            verification_uri_complete: "https://factory.ai/verify?code=ABCD-1234",
+            expires_in: 300,
+            interval: 0.001,
+          });
+        }
+        if (url.includes("authenticate")) {
+          return jsonResponse({ access_token: browserToken, refresh_token: "browser-refresh", expires_in: 3600 });
+        }
+        if (url.endsWith("/api/cli/whoami")) {
+          return jsonResponse({ orgId: "org_browser_user", region: "global" });
+        }
+        return new Response("Not Found", { status: 404 });
+      };
+
+      // Prompt answers "2" to indicate user wants browser login
+      const creds = await login({
+        fetch: fetchImpl,
+        onAuth() {},
+        async onPrompt(prompt) {
+          if (prompt.message.includes("Found active Factory Droid CLI login")) {
+            return "2";
+          }
+          return "1";
+        },
+      });
+
+      expect(browserFlowStarted).toBe(true);
+      expect(creds.accountId).toBe("org_browser_user");
+    } finally {
+      if (origForce !== undefined) {
+        process.env.FACTORY_DROID_FORCE_CLI_AUTH = origForce;
+      } else {
+        delete process.env.FACTORY_DROID_FORCE_CLI_AUTH;
+      }
+    }
+  });
+});
+
+
 
