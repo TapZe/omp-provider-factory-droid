@@ -10,15 +10,15 @@ export interface DroidCliCredentials {
   activeOrganizationId?: string;
 }
 
-const FACTORY_DIR = path.join(os.homedir(), ".factory");
-const LOGIN_KEYCHAIN_PATH = path.join(FACTORY_DIR, "auth.v2.loginkeychain");
-const FILE_STORAGE_PATH = path.join(FACTORY_DIR, "auth.v2.file");
-const KEYFILE_PATH = path.join(FACTORY_DIR, "auth.v2.key");
+export const FACTORY_DIR = path.join(os.homedir(), ".factory");
+export const LOGIN_KEYCHAIN_PATH = path.join(FACTORY_DIR, "auth.v2.loginkeychain");
+export const FILE_STORAGE_PATH = path.join(FACTORY_DIR, "auth.v2.file");
+export const KEYFILE_PATH = path.join(FACTORY_DIR, "auth.v2.key");
 
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
-function decryptPayload(ciphertext: string, key: Buffer): Record<string, unknown> | null {
+export function decryptPayload(ciphertext: string, key: Buffer): Record<string, unknown> | null {
   const parts = ciphertext.trim().split(":");
   if (parts.length !== 3) {
     return null;
@@ -43,7 +43,21 @@ function decryptPayload(ciphertext: string, key: Buffer): Record<string, unknown
   }
 }
 
-function readKeychainKey(): Buffer | null {
+export function encryptPayload(payload: Record<string, unknown>, key: Buffer): string | null {
+  if (!payload || !key) return null;
+  try {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+    const json = Buffer.from(JSON.stringify(payload), "utf8");
+    const encrypted = Buffer.concat([cipher.update(json), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    return `${iv.toString("base64")}:${authTag.toString("base64")}:${encrypted.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+export function readKeychainKey(): Buffer | null {
   if (process.platform !== "darwin") {
     return null;
   }
@@ -66,7 +80,7 @@ function readKeychainKey(): Buffer | null {
   return null;
 }
 
-function readKeyfileKey(): Buffer | null {
+export function readKeyfileKey(): Buffer | null {
   try {
     if (fs.existsSync(KEYFILE_PATH)) {
       const raw = fs.readFileSync(KEYFILE_PATH, "utf8").trim();
@@ -132,4 +146,55 @@ export function loadDroidCliCredentials(): DroidCliCredentials | null {
   }
 
   return null;
+}
+
+/**
+ * Encrypts and writes credentials back to local Factory Droid CLI storage (`droid`).
+ *
+ * Keeps local Keychain/file storage in sync when external token refresh rotates the
+ * single-use refresh token.
+ */
+export function saveDroidCliCredentials(creds: DroidCliCredentials | null | undefined): boolean {
+  if (!creds || typeof creds.accessToken !== "string" || typeof creds.refreshToken !== "string") {
+    return false;
+  }
+  if (creds.accessToken.trim().length === 0 || creds.refreshToken.trim().length === 0) {
+    return false;
+  }
+
+  const payload: Record<string, unknown> = {
+    access_token: creds.accessToken,
+    refresh_token: creds.refreshToken,
+    ...(creds.activeOrganizationId ? { active_organization_id: creds.activeOrganizationId } : {}),
+  };
+
+  // 1. Try macOS Keychain
+  const keychainKey = readKeychainKey();
+  if (keychainKey && fs.existsSync(LOGIN_KEYCHAIN_PATH)) {
+    try {
+      const encrypted = encryptPayload(payload, keychainKey);
+      if (encrypted) {
+        fs.writeFileSync(LOGIN_KEYCHAIN_PATH, encrypted, { mode: 0o600 });
+        return true;
+      }
+    } catch {
+      // Continue to next backend
+    }
+  }
+
+  // 2. Try file-backed key
+  const fileKey = readKeyfileKey();
+  if (fileKey && fs.existsSync(FILE_STORAGE_PATH)) {
+    try {
+      const encrypted = encryptPayload(payload, fileKey);
+      if (encrypted) {
+        fs.writeFileSync(FILE_STORAGE_PATH, encrypted, { mode: 0o600 });
+        return true;
+      }
+    } catch {
+      // Continue
+    }
+  }
+
+  return false;
 }

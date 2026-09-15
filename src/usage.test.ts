@@ -69,6 +69,27 @@ describe("parseFactoryUsagePayload", () => {
     ]);
   });
 
+  test("ignores redundant session and weekly aliases in payload", () => {
+    const fixtureWithJunk = {
+      ...FIXTURE,
+      limits: {
+        ...FIXTURE.limits,
+        session: { usedPercent: 42.5 },
+        weekly: { usedPercent: 91.2 },
+      },
+    };
+    const parsed = parseFactoryUsagePayload(fixtureWithJunk, CONTEXT);
+    expect(parsed?.limits.map((l) => l.id)).toEqual([
+      "factory:standard:5h",
+      "factory:standard:weekly",
+      "factory:standard:monthly",
+      "factory:core:5h",
+      "factory:core:weekly",
+      "factory:core:monthly",
+      "factory:extra-usage-balance",
+    ]);
+  });
+
   test("normalizes percentages, statuses, scopes, and reset timestamps", () => {
     const fiveHour = requireLimit(report, "factory:standard:5h");
     expect(fiveHour.amount).toEqual({

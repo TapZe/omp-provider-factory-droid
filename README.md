@@ -3,7 +3,7 @@
 **`omp-provider-factory-droid` is a production-ready [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent) provider extension for accessing Factory.ai Droid models—including Claude Opus 5, Gemini 3.8 / 3.1 Pro, GPT-6 Astra, Grok 4.6, GLM 5.3, Kimi K3, and DeepSeek V4—through Factory's authenticated LLM Quad-Gateway.**
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.1.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Features complete Droid v0.218.1 contract parity, native Google Gemini Quad-Gateway routing, Droid CLI credentials auto-import, multi-account quota preflight failover, tool-call stream healing, and intelligent 403 diagnostics.
+> **Actively Maintained Fork (`v1.2.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Features complete Droid v0.218.1 contract parity, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), seamless session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and intelligent 403 diagnostics.
 
 ---
 
@@ -15,7 +15,7 @@
   - OpenAI Responses (`/api/llm/o/v1/responses`)
   - Google Generative AI (`/api/llm/g/v1/generate`)
   - Fireworks Completions (`/api/llm/o/v1/chat/completions`)
-- **Droid-Compatible Browser OAuth & CLI Auto-Import**: Run `/login factory` to instantly auto-import an existing Droid CLI login session (`~/.factory/`) or initiate device authorization at `https://auth.factory.ai/device`. Supports multi-organization selection, token refresh, and regional endpoint discovery.
+- **Droid-Compatible OAuth, Bidirectional Keychain Sync & Auto-Recovery**: Run `/login factory` to instantly auto-import an existing Droid CLI login session (`~/.factory/`) or initiate device authorization at `https://auth.factory.ai/device`. Rotated credentials automatically synchronize back to macOS Keychain (`auth.v2.loginkeychain`) and Linux file storage (`auth.v2.file`) with AES-256-GCM, and stale sessions seamlessly recover from local Droid CLI.
 - **Account-Isolated Sibling Failover**: Manages credentials with atomic account isolation (`token`, `X-Factory-Org-Id`, `apiEndpoint`). Enables automated sibling account retry if an account runs out of quota or encounters an authentication error.
 - **Real-Time Quota Tracking & Preflight**: Query live Standard and Core usage limits and Extra Usage balances via `/usage`. Optionally enable `FACTORY_QUOTA_PREFLIGHT=1` to failover to sibling accounts before emitting model requests when a tier is exhausted.
 - **Defensive Tool Normalization & Stream Healing**: Automatically repairs in-band XML tool calls (`<tool_call>`) from open-weight models via Hermes markup healing, and unwraps malformed embedded JSON tool names into structured harness calls.

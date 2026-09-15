@@ -1,9 +1,10 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import type { OAuthCredentials, OAuthLoginCallbacks } from "@oh-my-pi/pi-ai/oauth/types";
 
 import { login, refreshToken, resetInFlightRefreshesForTests } from "./auth";
 import { formatErrorDetails, parseUniqueOrganizationIds, readJsonResponse } from "./auth-parsing";
 import { factoryApiForRegion, validateHostedFactoryApiOrigin } from "./constants";
+import * as droidAuth from "./droid-auth";
 
 type OAuthFetch = NonNullable<OAuthLoginCallbacks["fetch"]>;
 
@@ -487,6 +488,139 @@ describe("Factory login interactive Droid CLI selection", () => {
       } else {
         delete process.env.FACTORY_DROID_FORCE_CLI_AUTH;
       }
+    }
+  });
+});
+
+describe("Factory OAuth refresh JWT exp & local Droid CLI sync", () => {
+  test("derives expires timestamp from JWT exp when WorkOS omits expires_in", async () => {
+    resetInFlightRefreshesForTests();
+    const futureExp = Math.floor(Date.now() / 1000) + 86400; // 24 hours
+    const factoryOrgId = "org_exp_test";
+    const jwtToken = unsignedJwt({ external_org_id: factoryOrgId, exp: futureExp });
+
+    const fetchImpl: OAuthFetch = async (input) => {
+      const url = String(input);
+      if (url.includes("authenticate")) {
+        return jsonResponse({
+          access_token: jwtToken,
+          refresh_token: "new-rotated-token",
+        });
+      }
+      if (url.endsWith("/api/cli/whoami")) {
+        return jsonResponse({ orgId: factoryOrgId, region: "global" });
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const creds: OAuthCredentials = {
+      refresh: "old-refresh-token",
+      access: "old-access-token",
+      expires: 1,
+      accountId: factoryOrgId,
+      projectId: factoryOrgId,
+      apiEndpoint: "https://api.factory.ai",
+    };
+
+    const refreshed = await refreshToken(creds, undefined, fetchImpl);
+    expect(refreshed.access).toBe(jwtToken);
+    expect(refreshed.refresh).toBe("new-rotated-token");
+    expect(refreshed.expires).toBe(futureExp * 1000 - 60_000);
+  });
+
+  test("persists rotated tokens to local Droid CLI on successful refresh", async () => {
+    resetInFlightRefreshesForTests();
+    let savedCreds: droidAuth.DroidCliCredentials | null | undefined;
+    const saveSpy = spyOn(droidAuth, "saveDroidCliCredentials").mockImplementation((creds) => {
+      savedCreds = creds;
+      return true;
+    });
+
+    try {
+      const factoryOrgId = "org_sync_test";
+      const futureExp = Math.floor(Date.now() / 1000) + 3600;
+      const jwtToken = unsignedJwt({ external_org_id: factoryOrgId, exp: futureExp });
+
+      const fetchImpl: OAuthFetch = async (input) => {
+        const url = String(input);
+        if (url.includes("authenticate")) {
+          return jsonResponse({
+            access_token: jwtToken,
+            refresh_token: "rotated-sync-token",
+            expires_in: 3600,
+          });
+        }
+        if (url.endsWith("/api/cli/whoami")) {
+          return jsonResponse({ orgId: factoryOrgId, region: "global" });
+        }
+        return new Response("Not Found", { status: 404 });
+      };
+
+      const creds: OAuthCredentials = {
+        refresh: "old-token-sync",
+        access: "old-access-sync",
+        expires: 1,
+        accountId: factoryOrgId,
+        projectId: factoryOrgId,
+        apiEndpoint: "https://api.factory.ai",
+      };
+
+      const refreshed = await refreshToken(creds, undefined, fetchImpl);
+      expect(refreshed.access).toBe(jwtToken);
+      expect(saveSpy).toHaveBeenCalled();
+      expect(savedCreds?.accessToken).toBe(jwtToken);
+      expect(savedCreds?.refreshToken).toBe("rotated-sync-token");
+      expect(savedCreds?.activeOrganizationId).toBe(factoryOrgId);
+    } finally {
+      saveSpy.mockRestore();
+    }
+  });
+
+  test("recovers Factory session from local Droid CLI after upstream refresh failure", async () => {
+    resetInFlightRefreshesForTests();
+    const factoryOrgId = "org_recovered_cli";
+    const futureExp = Math.floor(Date.now() / 1000) + 7200;
+    const localAccessToken = unsignedJwt({
+      external_org_id: factoryOrgId,
+      exp: futureExp,
+      email: "cli-user@example.com",
+    });
+
+    const loadSpy = spyOn(droidAuth, "loadDroidCliCredentials").mockReturnValue({
+      accessToken: localAccessToken,
+      refreshToken: "local-cli-refresh-token",
+      activeOrganizationId: factoryOrgId,
+    });
+
+    try {
+      const fetchImpl: OAuthFetch = async (input) => {
+        const url = String(input);
+        if (url.includes("authenticate")) {
+          return jsonResponse({ error: "invalid_grant", error_description: "The refresh token has already been used" }, 400);
+        }
+        if (url.endsWith("/api/cli/whoami")) {
+          return jsonResponse({ orgId: factoryOrgId, region: "global" });
+        }
+        return new Response("Not Found", { status: 404 });
+      };
+
+      const staleCreds: OAuthCredentials = {
+        refresh: "stale-dead-refresh-token",
+        access: "stale-dead-access-token",
+        expires: 1,
+        accountId: factoryOrgId,
+        projectId: factoryOrgId,
+        apiEndpoint: "https://api.factory.ai",
+      };
+
+      const recovered = await refreshToken(staleCreds, undefined, fetchImpl);
+      expect(recovered.access).toBe(localAccessToken);
+      expect(recovered.refresh).toBe("local-cli-refresh-token");
+      expect(recovered.accountId).toBe(factoryOrgId);
+      expect(recovered.email).toBe("cli-user@example.com");
+      expect(recovered.expires).toBe(futureExp * 1000 - 60_000);
+    } finally {
+      loadSpy.mockRestore();
     }
   });
 });

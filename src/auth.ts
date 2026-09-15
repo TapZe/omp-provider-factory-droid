@@ -19,7 +19,7 @@ import {
 } from "./auth-parsing";
 import { FACTORY_API, WORKOS_CLIENT_ID, WORKOS_DEVICE_AUTHORIZE, WORKOS_TOKEN } from "./constants";
 import { decodeJwtPayload, organizationIdFromAccessToken } from "./credential";
-import { loadDroidCliCredentials } from "./droid-auth";
+import { loadDroidCliCredentials, saveDroidCliCredentials } from "./droid-auth";
 
 type Fetcher = NonNullable<OAuthLoginCallbacks["fetch"]>;
 
@@ -493,13 +493,47 @@ async function executeRefreshToken(
 ): Promise<OAuthCredentials> {
   try {
     let workosOrganizationId = credentials.projectId;
-    let parsed = await postRefreshToken(
-      credentials.refresh,
-      fetchImpl,
-      credentials.refresh,
-      workosOrganizationId,
-      signal,
-    );
+    let parsed: ParsedTokenResponse;
+    try {
+      parsed = await postRefreshToken(
+        credentials.refresh,
+        fetchImpl,
+        credentials.refresh,
+        workosOrganizationId,
+        signal,
+      );
+    } catch (refreshError) {
+      // If refresh failed (e.g. WorkOS returned invalid_grant because token was rotated),
+      // check if local Droid CLI refreshed in the terminal and stored newer valid credentials.
+      try {
+        const localCreds = loadDroidCliCredentials();
+        if (localCreds?.accessToken && localCreds.accessToken !== credentials.access) {
+          const exp = expiresFromAccessToken(localCreds.accessToken);
+          if (typeof exp === "number" && exp > Date.now() + 60_000) {
+            const orgId =
+              localCreds.activeOrganizationId ||
+              organizationIdFromAccessToken(localCreds.accessToken) ||
+              credentials.accountId;
+            if (orgId) {
+              const identity = await resolveWhoami(localCreds.accessToken, fetchImpl, orgId, signal);
+              return {
+                refresh: localCreds.refreshToken,
+                access: localCreds.accessToken,
+                expires: exp,
+                accountId: orgId,
+                projectId: orgId,
+                email: emailFromAccessToken(localCreds.accessToken) ?? credentials.email,
+                apiEndpoint: identity.apiEndpoint ?? credentials.apiEndpoint,
+              };
+            }
+          }
+        }
+      } catch {
+        // Fall back to re-throwing original refresh error
+      }
+      throw refreshError;
+    }
+
     let refreshed = {
       ...toCredentials(parsed, credentials),
       projectId: workosOrganizationId ?? credentials.projectId,
@@ -551,6 +585,17 @@ async function executeRefreshToken(
     }
     const identity = await resolveWhoami(refreshed.access, fetchImpl, tokenOrganizationId, signal);
     requireMatchingWhoamiOrganization(identity.accountId, tokenOrganizationId);
+
+    // Sync rotated tokens back to local Factory Droid CLI storage so the terminal CLI does not get logged out
+    try {
+      saveDroidCliCredentials({
+        accessToken: refreshed.access,
+        refreshToken: refreshed.refresh,
+        activeOrganizationId: tokenOrganizationId,
+      });
+    } catch {
+      // Non-fatal if local CLI storage is absent or cannot be written
+    }
 
     return {
       ...refreshed,
