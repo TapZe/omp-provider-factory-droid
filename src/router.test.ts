@@ -598,6 +598,14 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
     expect(gpt6Thinking?.effortMap?.[Effort.XHigh]).toBeUndefined();
 
+    const atlasThinking = factoryThinkingFor("atlas-07-21", true, undefined);
+    expect(atlasThinking?.mode).toBe("anthropic-adaptive");
+    expect(atlasThinking?.supportsDisplay).toBe(true);
+
+    const asterThinking = factoryThinkingFor("aster-07-15", true, undefined);
+    expect(asterThinking?.mode).toBe("anthropic-adaptive");
+    expect(asterThinking?.supportsDisplay).toBe(true);
+
     const glmThinking = factoryThinkingFor("glm-5.3", true, undefined);
     expect(glmThinking?.effortMap?.["max" as any]).toBe("xhigh");
 

@@ -217,6 +217,14 @@ export function factoryThinkingFor(
     };
   }
 
+  if (modelId.startsWith("atlas-") || modelId.startsWith("aster-")) {
+    return {
+      mode: "anthropic-adaptive",
+      efforts: [Effort.Minimal, Effort.Low, Effort.Medium, Effort.High, Effort.XHigh],
+      supportsDisplay: true,
+    };
+  }
+
   const supportsExtraHighEffort =
     modelId === "grok-4.6" ||
     modelId.startsWith("gpt-6") ||
