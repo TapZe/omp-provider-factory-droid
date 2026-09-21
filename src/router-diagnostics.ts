@@ -82,21 +82,52 @@ function factoryForbiddenDiagnostic(args: FactoryDiagnosticArgs & { originalMess
   );
 }
 
-function enrichFactoryForbiddenError(message: AssistantMessage, args: FactoryDiagnosticArgs): AssistantMessage {
-  if (!looksLikeFactoryForbidden(message.errorStatus, message.errorMessage)) return message;
-  return {
-    ...message,
-    content: [],
-    errorMessage: factoryForbiddenDiagnostic({ ...args, originalMessage: message.errorMessage }),
-  };
+function looksLikeFactoryInvalidModel(status: number | undefined, message: string | undefined): boolean {
+  return Boolean(message && /invalid model id in request body/i.test(message));
 }
 
-function wrapThrownFactoryForbidden(error: unknown, args: FactoryDiagnosticArgs): unknown {
+function factoryInvalidModelDiagnostic(args: FactoryDiagnosticArgs & { originalMessage: string | undefined }): string {
+  const requestEndpoint = safeEndpointLabel(args.apiEndpoint);
+  return (
+    `factory: Factory gateway returned 400 Bad Request for ${args.model.provider}/${args.model.id} ` +
+    `via ${args.targetApi} at ${requestEndpoint}: Invalid model ID in request body. ` +
+    `This model is not currently activated on Factory's live gateway for this account. ` +
+    `Please select an active model such as factory/deepseek-v4-flash-0731, factory/deepseek-v4-pro, or factory/qwen3.8-max.`
+  );
+}
+
+function enrichFactoryError(message: AssistantMessage, args: FactoryDiagnosticArgs): AssistantMessage {
+  if (looksLikeFactoryForbidden(message.errorStatus, message.errorMessage)) {
+    return {
+      ...message,
+      content: [],
+      errorMessage: factoryForbiddenDiagnostic({ ...args, originalMessage: message.errorMessage }),
+    };
+  }
+  if (looksLikeFactoryInvalidModel(message.errorStatus, message.errorMessage)) {
+    return {
+      ...message,
+      content: [],
+      errorMessage: factoryInvalidModelDiagnostic({ ...args, originalMessage: message.errorMessage }),
+    };
+  }
+  return message;
+}
+
+function wrapThrownFactoryError(error: unknown, args: FactoryDiagnosticArgs): unknown {
   const status = statusFromUnknownError(error);
-  if (!(error instanceof Error) || !looksLikeFactoryForbidden(status, error.message)) return error;
-  return Object.assign(new Error(factoryForbiddenDiagnostic({ ...args, originalMessage: error.message })), {
-    status: status ?? 403,
-  });
+  if (!(error instanceof Error)) return error;
+  if (looksLikeFactoryForbidden(status, error.message)) {
+    return Object.assign(new Error(factoryForbiddenDiagnostic({ ...args, originalMessage: error.message })), {
+      status: status ?? 403,
+    });
+  }
+  if (looksLikeFactoryInvalidModel(status, error.message)) {
+    return Object.assign(new Error(factoryInvalidModelDiagnostic({ ...args, originalMessage: error.message })), {
+      status: status ?? 400,
+    });
+  }
+  return error;
 }
 
 export function routeWithFactoryDiagnostics(
@@ -107,12 +138,12 @@ export function routeWithFactoryDiagnostics(
   void (async () => {
     try {
       for await (const event of inner) {
-        outer.push(event.type === "error" ? { ...event, error: enrichFactoryForbiddenError(event.error, args) } : event);
+        outer.push(event.type === "error" ? { ...event, error: enrichFactoryError(event.error, args) } : event);
         if (outer.done) return;
       }
       if (!outer.done) outer.end(await inner.result());
     } catch (error) {
-      outer.fail(wrapThrownFactoryForbidden(error, args));
+      outer.fail(wrapThrownFactoryError(error, args));
     }
   })();
   return outer;

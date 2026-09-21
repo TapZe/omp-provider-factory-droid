@@ -154,6 +154,16 @@ function buildCompletionCompatibility(
 }
 
 
+export function resolveWireModelId(modelId: string): string {
+  // Factory gateway serves DeepSeek v4 flash via deepseek-v4-flash-0731;
+  // v4.1-flash is an unreleased internal model in Droid's binary gated behind
+  // a feature flag that Factory's live production gateway rejects with 400.
+  if (modelId === "deepseek-v4.1-flash" || modelId === "deepseek-v4-flash") {
+    return "deepseek-v4-flash-0731";
+  }
+  return modelId;
+}
+
 function buildFactoryTargetModel(
   model: Model<Api>,
   targetApi: FactoryTargetApi,
@@ -169,7 +179,7 @@ function buildFactoryTargetModel(
     : factoryThinkingFor(model.id, model.reasoning, model.thinking);
   const spec: ModelSpec<FactoryTargetApi> = {
     provider: PROVIDER_ID,
-    id: model.id,
+    id: resolveWireModelId(model.id),
     name: model.name,
     api: targetApi,
     baseUrl:

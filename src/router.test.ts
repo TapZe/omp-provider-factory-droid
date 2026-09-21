@@ -588,11 +588,16 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(FACTORY_EFFORTS).toContain("max");
 
     const { upstreamProviderFor } = require("./catalog");
+    const { resolveWireModelId } = require("./router");
     expect(upstreamProviderFor("mistral-medium-3.5")).toBe("mistral");
     expect(upstreamProviderFor("garnet-07-15")).toBe("google");
     expect(upstreamProviderFor("qwen3.8-max")).toBe("fireworks");
     expect(upstreamProviderFor("deepseek-v4.1-flash")).toBe("fireworks");
     expect(upstreamProviderFor("atlas-07-21")).toBe("anthropic");
+
+    expect(resolveWireModelId("deepseek-v4.1-flash")).toBe("deepseek-v4-flash-0731");
+    expect(resolveWireModelId("deepseek-v4-flash")).toBe("deepseek-v4-flash-0731");
+    expect(resolveWireModelId("qwen3.8-max")).toBe("qwen3.8-max");
 
     const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
     expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
