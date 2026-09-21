@@ -28,6 +28,8 @@ const PROVIDER_PREFIXES = [
   "nvidia/",
   "qwen/",
   "alibaba/",
+  "mistralai/",
+  "mistral/",
 ] as const;
 
 function parsePerMillionCost(rawPricePerToken: string | undefined): number {

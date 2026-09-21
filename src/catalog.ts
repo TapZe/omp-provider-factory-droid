@@ -62,6 +62,9 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id.startsWith("claude-haiku-")) {
     return { input: 1.0, output: 5.0, cacheRead: 0.1, cacheWrite: 1.25 };
   }
+  if (id.startsWith("atlas-") || id.startsWith("aster-")) {
+    return { input: 5.0, output: 25.0, cacheRead: 0.5, cacheWrite: 6.25 };
+  }
 
   // GPT family (OpenAI does not bill prompt cache creation / cacheWrite = 0)
   if (
@@ -121,6 +124,9 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id === "inkling" || id.startsWith("inkling-")) {
     return { input: 1.0, output: 3.0, cacheRead: 0.1, cacheWrite: 0 };
   }
+  if (id.startsWith("deepseek-v4.1-flash")) {
+    return { input: 0.12, output: 0.48, cacheRead: 0.012, cacheWrite: 0 };
+  }
   if (id.startsWith("deepseek-v4-flash")) {
     return { input: 0.14, output: 0.28, cacheRead: 0.0028, cacheWrite: 0 };
   }
@@ -149,7 +155,7 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
     return { input: 0.6, output: 3.0, cacheRead: 0.1, cacheWrite: 0 };
   }
   if (id.startsWith("minimax-m3")) {
-    return { input: 0.1, output: 0.4, cacheRead: 0.02, cacheWrite: 0 };
+    return { input: 0.12, output: 0.48, cacheRead: 0.012, cacheWrite: 0 };
   }
   if (id.startsWith("minimax-")) {
     return { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0 };
@@ -158,10 +164,16 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
     return { input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 };
   }
   if (id.startsWith("qwen")) {
-    return { input: 0.8, output: 3.0, cacheRead: 0.08, cacheWrite: 0 };
+    return { input: 0.8, output: 2.4, cacheRead: 0.08, cacheWrite: 0 };
+  }
+  if (id.startsWith("mistral-")) {
+    return { input: 0.6, output: 3.0, cacheRead: 0.06, cacheWrite: 0 };
   }
 
-  // Google Gemini family
+  // Google Gemini & Garnet family
+  if (id.startsWith("garnet-")) {
+    return { input: 0.6, output: 2.4, cacheRead: 0.06, cacheWrite: 0 };
+  }
   if (id.startsWith("gemini-3.1-pro") || id.startsWith("gemini-3-pro")) {
     return { input: 2.0, output: 8.0, cacheRead: 0.5, cacheWrite: 0 };
   }
@@ -212,6 +224,7 @@ export function factoryThinkingFor(
     modelId.startsWith("glm-5.3") ||
     modelId.startsWith("claude-opus-5") ||
     modelId.startsWith("claude-fable-5") ||
+    modelId.startsWith("deepseek-v4.1") ||
     modelId.startsWith("qwen");
 
   return {
@@ -784,7 +797,7 @@ export function familyOf(id: string): FactoryModelFamily {
     return "anthropic";
   }
 
-  if (id.startsWith("gemini-")) {
+  if (id.startsWith("gemini-") || id.startsWith("garnet-")) {
     return "google";
   }
 
@@ -798,6 +811,7 @@ export function familyOf(id: string): FactoryModelFamily {
     id.startsWith("deepseek-") ||
     id.startsWith("nemotron-") ||
     id.startsWith("qwen") ||
+    id.startsWith("mistral-") ||
     id === "inkling" ||
     id.startsWith("inkling-")
   ) {
@@ -807,18 +821,19 @@ export function familyOf(id: string): FactoryModelFamily {
   return "unsupported";
 }
 
-export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "xai" | "google";
+export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "xai" | "google" | "mistral";
 
 // Factory's `x-api-provider` request header names the UPSTREAM the gateway routes
 // to, independent of the wire API shape. Droid Core open models (GLM, Kimi,
-// DeepSeek, MiniMax, Nemotron, Inkling) all resolve to "fireworks" — even MiniMax,
-// which is served over the Anthropic-compatible API. Grok routes to direct "xai".
+// DeepSeek, MiniMax, Nemotron, Inkling, Qwen) resolve to "fireworks" — even MiniMax,
+// which is served over the Anthropic-compatible API. Mistral routes to direct "mistral",
+// and Grok routes to direct "xai".
 export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";
   }
 
-  if (id.startsWith("gemini-")) {
+  if (id.startsWith("gemini-") || id.startsWith("garnet-")) {
     return "google";
   }
 
@@ -830,6 +845,10 @@ export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
     return "xai";
   }
 
+  if (id.startsWith("mistral-")) {
+    return "mistral";
+  }
+
   return "fireworks";
 }
 
@@ -838,8 +857,12 @@ export function identityFor(id: string): ModelIdentity {
     const parts = id.split("-");
     return { class: "anthropic", family: parts[1] ?? "claude" };
   }
-  if (id.startsWith("gemini-")) {
-    return { class: "google", family: "gemini" };
+  if (id.startsWith("gemini-") || id.startsWith("garnet-")) {
+    const parts = id.split("-");
+    return { class: "google", family: parts[0] ?? "gemini" };
+  }
+  if (id.startsWith("mistral-")) {
+    return { class: "mistral", family: "mistral" };
   }
   if (id.startsWith("minimax-")) {
     return { class: "minimax", family: "minimax" };
@@ -882,7 +905,8 @@ export function factoryQuotaTierFor(id: string): FactoryQuotaTier {
     id.startsWith("gpt6") ||
     id.endsWith("-codex") ||
     id.startsWith("grok-") ||
-    id.startsWith("gemini-")
+    id.startsWith("gemini-") ||
+    id.startsWith("garnet-")
   ) {
     return "standard";
   }
