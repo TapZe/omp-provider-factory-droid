@@ -124,9 +124,6 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id === "inkling" || id.startsWith("inkling-")) {
     return { input: 1.0, output: 3.0, cacheRead: 0.1, cacheWrite: 0 };
   }
-  if (id.startsWith("deepseek-v4.1-flash")) {
-    return { input: 0.12, output: 0.48, cacheRead: 0.012, cacheWrite: 0 };
-  }
   if (id.startsWith("deepseek-v4-flash")) {
     return { input: 0.14, output: 0.28, cacheRead: 0.0028, cacheWrite: 0 };
   }
@@ -232,7 +229,6 @@ export function factoryThinkingFor(
     modelId.startsWith("glm-5.3") ||
     modelId.startsWith("claude-opus-5") ||
     modelId.startsWith("claude-fable-5") ||
-    modelId.startsWith("deepseek-v4.1") ||
     modelId.startsWith("qwen");
 
   return {
@@ -716,15 +712,6 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 0.25,
   }),
   factoryModel({
-    id: "deepseek-v4.1-flash",
-    name: "DeepSeek V4.1 Flash (Factory Core)",
-    reasoning: true,
-    input: ["text", "image"],
-    contextWindow: 1_040_000,
-    maxTokens: 131_072,
-    premiumMultiplier: 0.12,
-  }),
-  factoryModel({
     id: "deepseek-v4-flash-0731",
     name: "DeepSeek V4 Flash (Factory Core)",
     reasoning: true,
@@ -786,15 +773,6 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 262_144,
     maxTokens: 131_072,
     premiumMultiplier: 0.8,
-  }),
-  factoryModel({
-    id: "mistral-medium-3.5",
-    name: "Mistral Medium 3.5 (Factory Core)",
-    reasoning: true,
-    input: ["text", "image"],
-    contextWindow: 256_000,
-    maxTokens: 64_000,
-    premiumMultiplier: 0.6,
   }),
 
   // Google Gemini family

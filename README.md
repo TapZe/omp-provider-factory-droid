@@ -47,9 +47,8 @@ Curated static catalog synchronized with Droid CLI v0.223.0, augmented by dynami
 *Wire Endpoint: `POST /api/llm/o/v1/chat/completions`*
 - **GLM**: `glm-5.3`, `glm-5.3-flash`, `glm-5.2`, `glm-5.2-fast`, `glm-5.1`, `glm-5`, `glm-4.7`, `glm-4.6` (`x-api-provider: fireworks`)
 - **Kimi**: `kimi-k3`, `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5` (`x-api-provider: fireworks`)
-- **DeepSeek**: `deepseek-v4.1-flash`, `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
+- **DeepSeek**: `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
 - **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
-- **Mistral**: `mistral-medium-3.5` (`x-api-provider: mistral`)
 - **Nemotron / Inkling**: `nemotron-3-ultra`, `inkling` (`x-api-provider: fireworks`)
 
 ### 5. Dynamic Discovery & Live Pricing

@@ -588,16 +588,10 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(FACTORY_EFFORTS).toContain("max");
 
     const { upstreamProviderFor } = require("./catalog");
-    const { resolveWireModelId } = require("./router");
-    expect(upstreamProviderFor("mistral-medium-3.5")).toBe("mistral");
     expect(upstreamProviderFor("garnet-07-15")).toBe("google");
     expect(upstreamProviderFor("qwen3.8-max")).toBe("fireworks");
-    expect(upstreamProviderFor("deepseek-v4.1-flash")).toBe("fireworks");
+    expect(upstreamProviderFor("deepseek-v4-flash-0731")).toBe("fireworks");
     expect(upstreamProviderFor("atlas-07-21")).toBe("anthropic");
-
-    expect(resolveWireModelId("deepseek-v4.1-flash")).toBe("deepseek-v4-flash-0731");
-    expect(resolveWireModelId("deepseek-v4-flash")).toBe("deepseek-v4-flash-0731");
-    expect(resolveWireModelId("qwen3.8-max")).toBe("qwen3.8-max");
 
     const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
     expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
@@ -770,6 +764,86 @@ describe("Factory Droid tool-call normalization", () => {
     expect(deepseekCall?.type === "toolCall" ? deepseekCall.call.name : undefined).toBe("read");
     expect(deepseekCall?.type === "toolCall" ? JSON.parse(deepseekCall.call.arguments) : undefined).toEqual({
       path: "b.ts",
+    });
+  });
+
+  describe("Qwen completions reasoning compatibility and sanitization", () => {
+    const { createFactoryCompletionsFetch, factoryStreamSimple } = require("./router");
+    const { FACTORY_MODELS } = require("./catalog");
+
+    it("sanitizes enable_thinking from top-level body and chat_template_kwargs", async () => {
+      let interceptedBody: string | undefined;
+      const mockBaseFetch = async (_url: unknown, init?: RequestInit) => {
+        interceptedBody = typeof init?.body === "string" ? init.body : undefined;
+        return new Response("{}", { status: 200 });
+      };
+
+      const sanitizedFetch = createFactoryCompletionsFetch(mockBaseFetch as any);
+
+      // Case 1: top-level enable_thinking
+      await sanitizedFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
+        method: "POST",
+        body: JSON.stringify({
+          model: "qwen3.8-max",
+          enable_thinking: true,
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      });
+      const parsed1 = JSON.parse(interceptedBody!);
+      expect(parsed1.enable_thinking).toBeUndefined();
+      expect(parsed1.model).toBe("qwen3.8-max");
+
+      // Case 2: nested in chat_template_kwargs
+      await sanitizedFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
+        method: "POST",
+        body: JSON.stringify({
+          model: "qwen3.8-max",
+          chat_template_kwargs: { enable_thinking: true, other: 123 },
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      });
+      const parsed2 = JSON.parse(interceptedBody!);
+      expect(parsed2.chat_template_kwargs?.enable_thinking).toBeUndefined();
+      expect(parsed2.chat_template_kwargs?.other).toBe(123);
+    });
+
+    it("never emits enable_thinking in factoryStreamSimple request body for qwen3.8-max", async () => {
+      const qwenModel = FACTORY_MODELS.find((m: any) => m.id === "qwen3.8-max");
+      expect(qwenModel).toBeDefined();
+
+      let capturedPayload: any = null;
+      const mockFetch = async (_input: unknown, init?: RequestInit) => {
+        if (typeof init?.body === "string") {
+          capturedPayload = JSON.parse(init.body);
+        }
+        return new Response("data: [DONE]\n\n", {
+          status: 200,
+          headers: { "content-type": "text/event-stream" },
+        });
+      };
+
+      const stream = factoryStreamSimple(
+        qwenModel,
+        { messages: [{ role: "user", content: "hello" }] },
+        {
+          fetch: mockFetch as any,
+          apiKey: "test-token",
+          reasoning: "high",
+        },
+        "https://api.factory.ai",
+      );
+
+      try {
+        for await (const _ev of stream) {}
+      } catch {
+        // stream consumption complete
+      }
+
+      expect(capturedPayload).not.toBeNull();
+      expect(capturedPayload.enable_thinking).toBeUndefined();
+      expect(capturedPayload.chat_template_kwargs?.enable_thinking).toBeUndefined();
+      expect(capturedPayload.model).toBe("qwen3.8-max");
+      expect(capturedPayload.reasoning_effort).toBe("high");
     });
   });
 });

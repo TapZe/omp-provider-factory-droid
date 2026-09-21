@@ -139,6 +139,7 @@ function buildCompletionCompatibility(
   }
 
   const isDeepseek = modelId.startsWith("deepseek-");
+  const isQwen = modelId.startsWith("qwen");
   return {
     extraBody: {
       reasoning_history: isDeepseek ? "interleaved" : "preserved",
@@ -150,19 +151,15 @@ function buildCompletionCompatibility(
     requiresReasoningContentForAllAssistantTurns: isDeepseek,
     allowsSyntheticReasoningContentForToolCalls: !isDeepseek,
     requiresAssistantContentForToolCalls: true,
+    ...(isQwen
+      ? {
+          thinkingFormat: "openai",
+          reasoningDisableMode: "lowest-effort",
+        }
+      : {}),
   };
 }
 
-
-export function resolveWireModelId(modelId: string): string {
-  // Factory gateway serves DeepSeek v4 flash via deepseek-v4-flash-0731;
-  // v4.1-flash is an unreleased internal model in Droid's binary gated behind
-  // a feature flag that Factory's live production gateway rejects with 400.
-  if (modelId === "deepseek-v4.1-flash" || modelId === "deepseek-v4-flash") {
-    return "deepseek-v4-flash-0731";
-  }
-  return modelId;
-}
 
 function buildFactoryTargetModel(
   model: Model<Api>,
@@ -179,7 +176,7 @@ function buildFactoryTargetModel(
     : factoryThinkingFor(model.id, model.reasoning, model.thinking);
   const spec: ModelSpec<FactoryTargetApi> = {
     provider: PROVIDER_ID,
-    id: resolveWireModelId(model.id),
+    id: model.id,
     name: model.name,
     api: targetApi,
     baseUrl:
@@ -279,6 +276,36 @@ export function createFactoryGoogleFetch(
   }) as FetchImpl;
 }
 
+export function createFactoryCompletionsFetch(baseFetch: FetchImpl): FetchImpl {
+  return (async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    let sanitizedInit = init;
+    if (init && typeof init.body === "string" && init.body.includes("enable_thinking")) {
+      try {
+        const bodyObj = JSON.parse(init.body);
+        let modified = false;
+        if ("enable_thinking" in bodyObj) {
+          delete bodyObj.enable_thinking;
+          modified = true;
+        }
+        if (
+          bodyObj.chat_template_kwargs &&
+          typeof bodyObj.chat_template_kwargs === "object" &&
+          "enable_thinking" in bodyObj.chat_template_kwargs
+        ) {
+          delete bodyObj.chat_template_kwargs.enable_thinking;
+          modified = true;
+        }
+        if (modified) {
+          sanitizedInit = { ...init, body: JSON.stringify(bodyObj) };
+        }
+      } catch {
+        // preserve original body if not valid JSON
+      }
+    }
+    return baseFetch(input, sanitizedInit);
+  }) as FetchImpl;
+}
+
 function streamSimpleDirect(
   model: Model<Api>,
   context: Context,
@@ -323,7 +350,9 @@ function streamSimpleDirect(
           effectiveOrgId,
           options?.sessionId,
         )
-      : options?.fetch;
+      : targetApi === "openai-completions"
+        ? createFactoryCompletionsFetch(baseFetch)
+        : options?.fetch;
 
   const inner = streamSimple(target, routedContext, {
     ...options,
