@@ -3,18 +3,18 @@
 **`omp-provider-factory-droid` is a production-ready [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent) provider extension for accessing Factory.ai Droid models—including Claude Opus 5, Gemini 3.8 / 3.1 Pro, GPT-6 Astra, Grok 4.6, GLM 5.3, Kimi K3, and DeepSeek V4—through Factory's authenticated LLM Quad-Gateway.**
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.2.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Features complete Droid v0.218.1 contract parity, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), seamless session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and intelligent 403 diagnostics.
+> **Actively Maintained Fork (`v1.3.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Features complete Droid v0.223.0 contract parity, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), seamless session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and intelligent 403 diagnostics.
 
 ---
 
 ## Key Features
 
-- **Full Model Portfolio**: Access Claude Opus 5 / Fable 5, Gemini 3.8 / 3.7 / 3.6 Flash, Gemini 3.1 Pro, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4 Pro, and MiniMax M3 directly inside `omp`.
+- **Full Model Portfolio**: Access Claude Opus 5 / Fable 5, Gemini 3.8 / 3.7 / 3.6 Flash, Gemini 3.1 Pro, GPT-6 Astra, GPT-5.6 Sol/Luna/Terra, Grok 4.6, GLM 5.3 / 5.3 Flash, Kimi K3, DeepSeek V4.1 / V4 Pro, Qwen 3.8 Max, Mistral Medium 3.5, and MiniMax M3 directly inside `omp`.
 - **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint with W3C `traceparent` telemetry injection:
   - Anthropic Messages (`/api/llm/a`)
   - OpenAI Responses (`/api/llm/o/v1/responses`)
   - Google Generative AI (`/api/llm/g/v1/generate`)
-  - Fireworks Completions (`/api/llm/o/v1/chat/completions`)
+  - Fireworks & Upstream Completions (`/api/llm/o/v1/chat/completions`)
 - **Droid-Compatible OAuth, Bidirectional Keychain Sync & Auto-Recovery**: Run `/login factory` to instantly auto-import an existing Droid CLI login session (`~/.factory/`) or initiate device authorization at `https://auth.factory.ai/device`. Rotated credentials automatically synchronize back to macOS Keychain (`auth.v2.loginkeychain`) and Linux file storage (`auth.v2.file`) with AES-256-GCM, and stale sessions seamlessly recover from local Droid CLI.
 - **Account-Isolated Sibling Failover**: Manages credentials with atomic account isolation (`token`, `X-Factory-Org-Id`, `apiEndpoint`). Enables automated sibling account retry if an account runs out of quota or encounters an authentication error.
 - **Real-Time Quota Tracking & Preflight**: Query live Standard and Core usage limits and Extra Usage balances via `/usage`. Optionally enable `FACTORY_QUOTA_PREFLIGHT=1` to failover to sibling accounts before emitting model requests when a tier is exhausted.
@@ -26,7 +26,7 @@
 
 ## Supported Models
 
-Curated static catalog synchronized with Droid CLI v0.218.1, augmented by dynamic discovery:
+Curated static catalog synchronized with Droid CLI v0.223.0, augmented by dynamic discovery:
 
 ### 1. Claude and Anthropic Family
 *Wire Endpoint: `POST /api/llm/a/v1/messages`*
@@ -35,7 +35,7 @@ Curated static catalog synchronized with Droid CLI v0.218.1, augmented by dynami
 
 ### 2. Google Gemini Family
 *Wire Endpoint: `POST /api/llm/g/v1/generate`*
-- **Gemini**: `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview`, `gemini-3.1-pro-preview`, `gemini-3-pro-preview` (`x-api-provider: google`)
+- **Gemini & Garnet**: `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview`, `gemini-3.1-pro-preview`, `gemini-3-pro-preview`, `garnet-07-15` (`x-api-provider: google`)
 
 ### 3. GPT, Codex, and Grok Family
 *Wire Endpoint: `POST /api/llm/o/v1/responses`*
@@ -47,7 +47,9 @@ Curated static catalog synchronized with Droid CLI v0.218.1, augmented by dynami
 *Wire Endpoint: `POST /api/llm/o/v1/chat/completions`*
 - **GLM**: `glm-5.3`, `glm-5.3-flash`, `glm-5.2`, `glm-5.2-fast`, `glm-5.1`, `glm-5`, `glm-4.7`, `glm-4.6` (`x-api-provider: fireworks`)
 - **Kimi**: `kimi-k3`, `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5` (`x-api-provider: fireworks`)
-- **DeepSeek**: `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
+- **DeepSeek**: `deepseek-v4.1-flash`, `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
+- **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
+- **Mistral**: `mistral-medium-3.5` (`x-api-provider: mistral`)
 - **Nemotron / Inkling**: `nemotron-3-ultra`, `inkling` (`x-api-provider: fireworks`)
 
 ### 5. Dynamic Discovery & Live Pricing
@@ -157,14 +159,14 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.218.1.
+All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.223.0.
 
 | Family | Wire Gateway URL | Upstream Provider Header | Protocol Details |
 | :--- | :--- | :--- | :--- |
 | **Claude** | `POST /api/llm/a/v1/messages` | `x-api-provider: anthropic` | `anthropic-version: 2023-06-01`<br>`anthropic-beta: interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14`<br>`x-provider-routing-source: registry_default`<br>Native adaptive thinking |
-| **Google Gemini** | `POST /api/llm/g/v1/generate` | `x-api-provider: google` | `x-provider-routing-source: registry_default`<br>Factory Google fetch adapter with top-level `model` injection<br>Thinking Level (`low`, `medium`, `high`) |
+| **Google Gemini & Garnet** | `POST /api/llm/g/v1/generate` | `x-api-provider: google` | `x-provider-routing-source: registry_default`<br>Factory Google fetch adapter with top-level `model` injection<br>Thinking Level (`low`, `medium`, `high`) |
 | **GPT / Codex / Grok** | `POST /api/llm/o/v1/responses` | `x-api-provider: openai`<br>(`xai` for Grok) | `OpenAI-Platform: org-bHuLtG1fGmYk5YaOihAAXFBw`<br>`x-provider-routing-source: registry_default`<br>OpenAI Responses stream |
-| **Factory Core Models** | `POST /api/llm/o/v1/chat/completions` | `x-api-provider: fireworks` | `reasoning_history: "preserved"` (`"interleaved"` for DeepSeek)<br>`x-provider-routing-source: registry_default`<br>Hermes stream markup healing |
+| **Factory Core Models** | `POST /api/llm/o/v1/chat/completions` | `x-api-provider: fireworks`<br>(`mistral` for Mistral) | `reasoning_history: "preserved"` (`"interleaved"` for DeepSeek)<br>`x-provider-routing-source: registry_default`<br>Hermes stream markup healing |
 
 ---
 
