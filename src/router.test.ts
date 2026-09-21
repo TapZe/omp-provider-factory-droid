@@ -580,8 +580,19 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(identityFor("gpt-6-astra")).toEqual({ class: "openai", family: "gpt" });
     expect(identityFor("claude-opus-5")).toEqual({ class: "anthropic", family: "opus" });
     expect(identityFor("gemini-3.8-flash")).toEqual({ class: "google", family: "gemini" });
+    expect(identityFor("garnet-07-15")).toEqual({ class: "google", family: "garnet" });
     expect(identityFor("nemotron-3-ultra")).toEqual({ class: "nemotron", family: "nemotron" });
+    expect(identityFor("qwen3.8-max")).toEqual({ class: "qwen", family: "qwen" });
+    expect(identityFor("mistral-medium-3.5")).toEqual({ class: "mistral", family: "mistral" });
+    expect(identityFor("atlas-07-21")).toEqual({ class: "anthropic", family: "atlas" });
     expect(FACTORY_EFFORTS).toContain("max");
+
+    const { upstreamProviderFor } = require("./catalog");
+    expect(upstreamProviderFor("mistral-medium-3.5")).toBe("mistral");
+    expect(upstreamProviderFor("garnet-07-15")).toBe("google");
+    expect(upstreamProviderFor("qwen3.8-max")).toBe("fireworks");
+    expect(upstreamProviderFor("deepseek-v4.1-flash")).toBe("fireworks");
+    expect(upstreamProviderFor("atlas-07-21")).toBe("anthropic");
 
     const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
     expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");

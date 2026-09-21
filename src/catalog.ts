@@ -395,6 +395,24 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     maxTokens: 32000,
     premiumMultiplier: 0.4,
   }),
+  factoryModel({
+    id: "atlas-07-21",
+    name: "Atlas 07/21 Preview (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 2,
+  }),
+  factoryModel({
+    id: "aster-07-15",
+    name: "Aster 07/15 Preview (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 2,
+  }),
 
   // GPT and Codex models
   factoryModel({
@@ -531,6 +549,24 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 400000,
     maxTokens: 128000,
     premiumMultiplier: 0.7,
+  }),
+  factoryModel({
+    id: "gpt-5.2-codex",
+    name: "GPT-5.2 Codex [Deprecated] (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 400000,
+    maxTokens: 128000,
+    premiumMultiplier: 0.7,
+  }),
+  factoryModel({
+    id: "gpt-5.1-codex-max",
+    name: "GPT-5.1 Codex Max [Deprecated] (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 400000,
+    maxTokens: 32768,
+    premiumMultiplier: 0.5,
   }),
 
   // Grok family (routed through OpenAI Responses gateway with x-api-provider: xai)
@@ -672,6 +708,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 0.25,
   }),
   factoryModel({
+    id: "deepseek-v4.1-flash",
+    name: "DeepSeek V4.1 Flash (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_040_000,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.12,
+  }),
+  factoryModel({
     id: "deepseek-v4-flash-0731",
     name: "DeepSeek V4 Flash (Factory Core)",
     reasoning: true,
@@ -724,6 +769,24 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 202_000,
     maxTokens: 65_536,
     premiumMultiplier: 0.24,
+  }),
+  factoryModel({
+    id: "qwen3.8-max",
+    name: "Qwen3.8 Max (Factory Core)",
+    reasoning: true,
+    input: ["text"],
+    contextWindow: 262_144,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.8,
+  }),
+  factoryModel({
+    id: "mistral-medium-3.5",
+    name: "Mistral Medium 3.5 (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 256_000,
+    maxTokens: 64_000,
+    premiumMultiplier: 0.6,
   }),
 
   // Google Gemini family
@@ -790,6 +853,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     maxTokens: 65_536,
     premiumMultiplier: 0.8,
   }),
+  factoryModel({
+    id: "garnet-07-15",
+    name: "Garnet 07/15 Preview (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.6,
+  }),
 ];
 
 export function familyOf(id: string): FactoryModelFamily {
@@ -853,9 +925,13 @@ export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
 }
 
 export function identityFor(id: string): ModelIdentity {
-  if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
+  if (id.startsWith("claude-")) {
     const parts = id.split("-");
     return { class: "anthropic", family: parts[1] ?? "claude" };
+  }
+  if (id.startsWith("atlas-") || id.startsWith("aster-")) {
+    const parts = id.split("-");
+    return { class: "anthropic", family: parts[0] };
   }
   if (id.startsWith("gemini-") || id.startsWith("garnet-")) {
     const parts = id.split("-");
