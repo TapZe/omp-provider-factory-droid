@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-21T15:39:55.570Z",
+  "droidVersion": "0.223.0",
+  "routes": {
+    "chat": {
+      "method": "POST",
+      "path": "/api/llm/o/v1/chat/completions",
+      "headers": {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "traceparent": "<dynamic>",
+        "user-agent": "factory-cli/0.223.0",
+        "x-api-provider": "fireworks",
+        "x-assistant-message-id": "<dynamic>",
+        "x-client-version": "0.223.0",
+        "x-factory-client": "cli",
+        "x-factory-org-id": "<configured>",
+        "x-provider-routing-source": "registry_default",
+        "x-session-id": "<dynamic>",
+        "x-stainless-arch": "<environment>",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "<environment>",
+        "x-stainless-package-version": "6.25.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "<environment>"
+      },
+      "body": {
+        "messages": [
+          {
+            "role": "system",
+            "contentType": "string"
+          },
+          {
+            "role": "user",
+            "contentType": [
+              "text",
+              "text",
+              "text",
+              "text",
+              "text",
+              "text"
+            ]
+          },
+          {
+            "role": "user",
+            "contentType": "string"
+          }
+        ],
+        "model": "kimi-k2.6",
+        "tools": "array(13)",
+        "stream": true,
+        "stream_options": "<object keys=include_usage>",
+        "max_tokens": 65536,
+        "temperature": 1,
+        "reasoning_effort": "high",
+        "reasoning_history": "preserved"
+      },
+      "toolsCount": 13,
+      "systemChannel": {
+        "field": "messages[role=system]",
+        "present": true,
+        "length": 4084,
+        "sha256": "82d2f6c9652c00de623cbf81052472f77bcbee21badc3c42783f3cdd0aa5ada1"
+      }
+    },
+    "messages": {
+      "method": "POST",
+      "path": "/api/llm/a/v1/messages",
+      "headers": {
+        "accept": "application/json",
+        "anthropic-beta": "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "traceparent": "<dynamic>",
+        "user-agent": "factory-cli/0.223.0",
+        "x-api-provider": "anthropic",
+        "x-assistant-message-id": "<dynamic>",
+        "x-client-version": "0.223.0",
+        "x-factory-client": "cli",
+        "x-factory-org-id": "<configured>",
+        "x-provider-routing-source": "registry_default",
+        "x-session-id": "<dynamic>",
+        "x-stainless-arch": "<environment>",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "<environment>",
+        "x-stainless-package-version": "0.70.1",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "<environment>",
+        "x-stainless-timeout": "600"
+      },
+      "body": {
+        "model": "claude-haiku-4-5-20251001",
+        "max_tokens": 32000,
+        "messages": [
+          {
+            "role": "user",
+            "contentType": [
+              "text",
+              "text",
+              "text",
+              "text",
+              "text",
+              "text"
+            ]
+          },
+          {
+            "role": "user",
+            "contentType": [
+              "text"
+            ]
+          }
+        ],
+        "tools": "array(13)",
+        "thinking": "<object keys=type|budget_tokens>",
+        "stream": true
+      },
+      "toolsCount": 13,
+      "systemChannel": {
+        "field": "system",
+        "present": true,
+        "length": 4083,
+        "sha256": "0354f7afb7172db5e2bc7826bb5abc55870835a0d3e0c11f8fa021d99570e1b8",
+        "blockCount": 2
+      }
+    },
+    "responses": {
+      "method": "POST",
+      "path": "/api/llm/o/v1/responses",
+      "headers": {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "openai-platform": "org-bHuLtG1fGmYk5YaOihAAXFBw",
+        "traceparent": "<dynamic>",
+        "user-agent": "factory-cli/0.223.0",
+        "x-api-provider": "openai",
+        "x-assistant-message-id": "<dynamic>",
+        "x-client-version": "0.223.0",
+        "x-factory-client": "cli",
+        "x-factory-org-id": "<configured>",
+        "x-provider-routing-source": "session_lock",
+        "x-session-id": "<dynamic>",
+        "x-stainless-arch": "<environment>",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "<environment>",
+        "x-stainless-package-version": "6.25.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "<environment>"
+      },
+      "body": {
+        "model": "gpt-5.4-mini",
+        "input": [
+          {
+            "role": "user",
+            "contentType": [
+              "input_text",
+              "input_text",
+              "input_text",
+              "input_text",
+              "input_text",
+              "input_text"
+            ]
+          },
+          {
+            "role": "user",
+            "contentType": [
+              "input_text"
+            ]
+          },
+          {
+            "role": "user",
+            "contentType": [
+              "input_text"
+            ]
+          },
+          {
+            "role": "user",
+            "contentType": [
+              "input_text"
+            ]
+          }
+        ],
+        "store": false,
+        "tools": "array(12)",
+        "stream": true,
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "include": "<array(1) keys=0>",
+        "reasoning": "<object keys=effort|summary>",
+        "prompt_cache_key": "<dynamic>",
+        "prompt_cache_retention": "24h",
+        "text": "<object keys=verbosity>",
+        "safety_identifier": "<dynamic>"
+      },
+      "toolsCount": 12,
+      "systemChannel": {
+        "field": "instructions",
+        "present": true,
+        "length": 4084,
+        "sha256": "82d2f6c9652c00de623cbf81052472f77bcbee21badc3c42783f3cdd0aa5ada1"
+      }
+    }
+  }
+}
