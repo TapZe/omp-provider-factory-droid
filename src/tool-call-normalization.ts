@@ -2,6 +2,8 @@ import { wrapInbandToolStream } from "@oh-my-pi/pi-ai/dialect";
 import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
 import type { AssistantMessage, Context, ToolCall } from "@oh-my-pi/pi-ai";
 
+import { isRecord } from "./object-fields";
+
 function embeddedToolCallFromName(name: string): { name: string; arguments: Record<string, unknown> } | null {
   if (!name.trimStart().startsWith("{")) {
     return null;
@@ -9,7 +11,7 @@ function embeddedToolCallFromName(name: string): { name: string; arguments: Reco
 
   try {
     const parsed: unknown = JSON.parse(name);
-    if (!isObjectRecord(parsed) || typeof parsed.name !== "string" || parsed.name.length === 0) {
+    if (!isRecord(parsed) || typeof parsed.name !== "string" || parsed.name.length === 0) {
       return null;
     }
 
@@ -17,7 +19,7 @@ function embeddedToolCallFromName(name: string): { name: string; arguments: Reco
     if (typeof args === "string") {
       args = JSON.parse(args);
     }
-    if (!isObjectRecord(args)) {
+    if (!isRecord(args)) {
       return null;
     }
 
@@ -25,10 +27,6 @@ function embeddedToolCallFromName(name: string): { name: string; arguments: Reco
   } catch {
     return null;
   }
-}
-
-function isObjectRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export type FactoryStreamMarkupHealingPattern = "kimi" | "dsml" | "thinking";

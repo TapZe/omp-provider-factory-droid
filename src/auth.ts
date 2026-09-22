@@ -2,6 +2,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import type { OAuthCredentials, OAuthLoginCallbacks } from "@oh-my-pi/pi-ai/oauth/types";
 
+import { waitForSharedPromise } from "./abortable";
 import {
   emailFromAccessToken,
   expiresFromAccessToken,
@@ -374,11 +375,73 @@ async function loginWithBrowser(callbacks: OAuthLoginCallbacks): Promise<OAuthCr
   }
 }
 
-export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials> {
-  const fetchImpl = callbacks.fetch ?? fetch;
-  const callerSignal = callbacks.signal;
+// Reuse an active local Droid CLI login when present: the terminal `droid` and
+// omp share one Factory session. Returns null when local credentials are
+// absent, declined, expired without a refresh token, or fail validation —
+// the caller then falls through to browser device login.
+async function tryReuseDroidCliCredentials(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials | null> {
+  try {
+    const fetchImpl = callbacks.fetch ?? fetch;
+    const callerSignal = callbacks.signal;
+    const droidCreds = loadDroidCliCredentials();
+    if (!droidCreds?.accessToken) return null;
 
-  // 1. Check if user is already authenticated via Factory Droid CLI (`droid`)
+    const tokenOrgId = droidCreds.activeOrganizationId || organizationIdFromAccessToken(droidCreds.accessToken);
+    if (!tokenOrgId) return null;
+
+    const exp = expiresFromAccessToken(droidCreds.accessToken);
+    const email = emailFromAccessToken(droidCreds.accessToken);
+    const label = email ? `${email} (${tokenOrgId})` : tokenOrgId;
+
+    let reuseLocal = process.env.FACTORY_DROID_FORCE_CLI_AUTH === "1";
+    if (!reuseLocal) {
+      const promptMessage =
+        `Found active Factory Droid CLI login for ${label}.\n` +
+        `  1. Reuse local Droid session (${label})\n` +
+        `  2. Log in with a different account (browser OAuth)\n` +
+        `Select an option [1-2]`;
+      const answer = (await callbacks.onPrompt({ message: promptMessage, placeholder: "1" }))?.trim();
+      reuseLocal = answer === "1" || answer === "" || answer === undefined;
+    }
+    if (!reuseLocal) return null;
+
+    const isExpired = exp ? Date.now() >= exp : false;
+    if (!isExpired) {
+      const identity = await resolveWhoami(droidCreds.accessToken, fetchImpl, tokenOrgId, callerSignal);
+      requireMatchingWhoamiOrganization(identity.accountId, tokenOrgId);
+      callbacks.onProgress?.(`Reusing authenticated session from Factory Droid CLI (${label})`);
+      return {
+        refresh: droidCreds.refreshToken,
+        access: droidCreds.accessToken,
+        expires: exp ?? Date.now() + DEFAULT_TOKEN_LIFETIME_MS,
+        accountId: tokenOrgId,
+        projectId: tokenOrgId,
+        email,
+        apiEndpoint: identity.apiEndpoint,
+      };
+    }
+
+    if (!droidCreds.refreshToken) return null;
+
+    callbacks.onProgress?.("Refreshing Factory session from local Droid CLI...");
+    return await refreshToken(
+      {
+        refresh: droidCreds.refreshToken,
+        access: droidCreds.accessToken,
+        expires: 0,
+        accountId: tokenOrgId,
+        projectId: tokenOrgId,
+      },
+      callerSignal,
+      fetchImpl,
+    );
+  } catch {
+    // Local Droid CLI credentials unavailable or prompt declined; fall through to browser device login
+    return null;
+  }
+}
+
+export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials> {
   // When a custom test fetch is provided (e.g. in mock-driven unit tests), skip local CLI
   // discovery unless explicitly forced, preserving isolated test fixtures.
   const allowLocalCliAuth =
@@ -386,67 +449,8 @@ export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCreden
     (!callbacks.fetch || process.env.FACTORY_DROID_FORCE_CLI_AUTH === "1");
 
   if (allowLocalCliAuth) {
-    try {
-      const droidCreds = loadDroidCliCredentials();
-      if (droidCreds?.accessToken) {
-        const tokenOrgId = droidCreds.activeOrganizationId || organizationIdFromAccessToken(droidCreds.accessToken);
-        if (tokenOrgId) {
-          const exp = expiresFromAccessToken(droidCreds.accessToken);
-          const email = emailFromAccessToken(droidCreds.accessToken);
-          const label = email ? `${email} (${tokenOrgId})` : tokenOrgId;
-
-          let reuseLocal = process.env.FACTORY_DROID_FORCE_CLI_AUTH === "1";
-          if (!reuseLocal) {
-            const promptMessage =
-              `Found active Factory Droid CLI login for ${label}.\n` +
-              `  1. Reuse local Droid session (${label})\n` +
-              `  2. Log in with a different account (browser OAuth)\n` +
-              `Select an option [1-2]`;
-            const answer = (
-              await callbacks.onPrompt({
-                message: promptMessage,
-                placeholder: "1",
-              })
-            )?.trim();
-            reuseLocal = answer === "1" || answer === "" || answer === undefined;
-          }
-
-          if (reuseLocal) {
-            const isExpired = exp ? Date.now() >= exp : false;
-            if (!isExpired) {
-              const identity = await resolveWhoami(droidCreds.accessToken, fetchImpl, tokenOrgId, callerSignal);
-              requireMatchingWhoamiOrganization(identity.accountId, tokenOrgId);
-              callbacks.onProgress?.(`Reusing authenticated session from Factory Droid CLI (${label})`);
-              return {
-                refresh: droidCreds.refreshToken,
-                access: droidCreds.accessToken,
-                expires: exp ?? Date.now() + DEFAULT_TOKEN_LIFETIME_MS,
-                accountId: tokenOrgId,
-                projectId: tokenOrgId,
-                email,
-                apiEndpoint: identity.apiEndpoint,
-              };
-            } else if (droidCreds.refreshToken) {
-              callbacks.onProgress?.("Refreshing Factory session from local Droid CLI...");
-              const refreshed = await refreshToken(
-                {
-                  refresh: droidCreds.refreshToken,
-                  access: droidCreds.accessToken,
-                  expires: 0,
-                  accountId: tokenOrgId,
-                  projectId: tokenOrgId,
-                },
-                callerSignal,
-                fetchImpl,
-              );
-              return refreshed;
-            }
-          }
-        }
-      }
-    } catch {
-      // Local Droid CLI credentials unavailable or prompt declined; fall through to browser device login
-    }
+    const reused = await tryReuseDroidCliCredentials(callbacks);
+    if (reused) return reused;
   }
 
   return loginWithBrowser(callbacks);
@@ -457,33 +461,116 @@ const inFlightRefreshes = new Map<string, Promise<OAuthCredentials>>();
 export function resetInFlightRefreshesForTests(): void {
   inFlightRefreshes.clear();
 }
-
+// Aborted callers reject with the signal's reason; the shared in-flight
+// refresh keeps running for every other waiter.
 function waitForRefreshPromise(
   promise: Promise<OAuthCredentials>,
   signal: AbortSignal | undefined,
 ): Promise<OAuthCredentials> {
-  if (!signal) return promise;
-  if (signal.aborted) return Promise.reject(signal.reason ?? new Error("Aborted"));
+  return waitForSharedPromise(promise, signal, () => {
+    throw signal?.reason ?? new Error("Aborted");
+  });
+}
 
-  const pending = Promise.withResolvers<OAuthCredentials>();
-  let settled = false;
-  const cleanup = () => signal.removeEventListener("abort", onAbort);
-  const finish = (creds: OAuthCredentials) => {
-    if (settled) return;
-    settled = true;
-    cleanup();
-    pending.resolve(creds);
+// If refresh failed (e.g. WorkOS returned invalid_grant because the token was
+// rotated), the local Droid CLI may have refreshed in the terminal and stored
+// newer valid credentials; adopt them wholesale. Returns null when the local
+// copy is absent, stale, or unusable — the caller re-throws the original
+// refresh error.
+async function adoptLocalCliCredentialsIfNewer(
+  credentials: OAuthCredentials,
+  fetchImpl: Fetcher,
+  signal?: AbortSignal,
+): Promise<OAuthCredentials | null> {
+  try {
+    const localCreds = loadDroidCliCredentials();
+    if (!localCreds?.accessToken || localCreds.accessToken === credentials.access) return null;
+
+    const exp = expiresFromAccessToken(localCreds.accessToken);
+    if (typeof exp !== "number" || exp <= Date.now() + 60_000) return null;
+
+    const orgId =
+      localCreds.activeOrganizationId ||
+      organizationIdFromAccessToken(localCreds.accessToken) ||
+      credentials.accountId;
+    if (!orgId) return null;
+
+    const identity = await resolveWhoami(localCreds.accessToken, fetchImpl, orgId, signal);
+    return {
+      refresh: localCreds.refreshToken,
+      access: localCreds.accessToken,
+      expires: exp,
+      accountId: orgId,
+      projectId: orgId,
+      email: emailFromAccessToken(localCreds.accessToken) ?? credentials.email,
+      apiEndpoint: identity.apiEndpoint ?? credentials.apiEndpoint,
+    };
+  } catch {
+    // Local CLI storage absent or unreadable; fall back to the original refresh error
+    return null;
+  }
+}
+
+// Refresh tokens are organization-scoped. When the refreshed access token
+// carries no organization claim, resolve the organization and re-refresh
+// against it so LLM calls never 403.
+async function resolveOrgScopedRefresh(
+  parsed: ParsedTokenResponse,
+  credentials: OAuthCredentials,
+  workosOrganizationId: string | undefined,
+  fetchImpl: Fetcher,
+  signal?: AbortSignal,
+): Promise<{ refreshed: OAuthCredentials; tokenOrganizationId: string; workosOrganizationId: string | undefined }> {
+  let refreshed: OAuthCredentials = {
+    ...toCredentials(parsed, credentials),
+    projectId: workosOrganizationId ?? credentials.projectId,
   };
-  const fail = (error: unknown) => {
-    if (settled) return;
-    settled = true;
-    cleanup();
-    pending.reject(error);
-  };
-  const onAbort = () => fail(signal.reason ?? new Error("Aborted"));
-  signal.addEventListener("abort", onAbort, { once: true });
-  void promise.then(finish, fail);
-  return pending.promise;
+
+  let tokenOrganizationId = organizationIdFromAccessToken(refreshed.access);
+  const payload = decodeJwtPayload(refreshed.access);
+  if (tokenOrganizationId && workosOrganizationId) {
+    const isMatch =
+      tokenOrganizationId === workosOrganizationId ||
+      payload?.org_id === workosOrganizationId ||
+      payload?.external_org_id === workosOrganizationId;
+    if (!isMatch && !workosOrganizationId.startsWith("org_") && !workosOrganizationId.startsWith("org-")) {
+      throw new Error("Factory OAuth refresh returned a token for a different organization than the stored account");
+    }
+  }
+  workosOrganizationId = workosOrganizationId ?? tokenOrganizationId;
+
+  if (!tokenOrganizationId) {
+    if (!workosOrganizationId) {
+      const orgs = await resolveOrganizationIds(refreshed.access, fetchImpl, signal);
+      if (orgs.length === 1) {
+        workosOrganizationId = orgs[0];
+      } else if (orgs.length > 1) {
+        throw new Error(
+          "Factory OAuth refresh encountered multiple organizations without a stored projectId; run `/logout factory` and `/login factory` to select an organization",
+        );
+      } else {
+        throw new Error("Factory OAuth refresh did not expose an organization id; run `/logout factory` and `/login factory`");
+      }
+    }
+
+    const orgParsed = await postRefreshToken(
+      refreshed.refresh,
+      fetchImpl,
+      refreshed.refresh,
+      workosOrganizationId,
+      signal,
+    );
+    refreshed = {
+      ...toCredentials(orgParsed, { ...credentials, ...refreshed, projectId: workosOrganizationId }),
+      projectId: workosOrganizationId,
+    };
+    tokenOrganizationId = requireOrgScopedCredential(refreshed, workosOrganizationId);
+  }
+
+  if (!tokenOrganizationId) {
+    throw new Error("Factory OAuth refresh did not produce an organization-scoped token");
+  }
+  return { refreshed, tokenOrganizationId, workosOrganizationId };
 }
 
 async function executeRefreshToken(
@@ -492,97 +579,29 @@ async function executeRefreshToken(
   fetchImpl: Fetcher = fetch,
 ): Promise<OAuthCredentials> {
   try {
-    let workosOrganizationId = credentials.projectId;
     let parsed: ParsedTokenResponse;
     try {
       parsed = await postRefreshToken(
         credentials.refresh,
         fetchImpl,
         credentials.refresh,
-        workosOrganizationId,
+        credentials.projectId,
         signal,
       );
     } catch (refreshError) {
-      // If refresh failed (e.g. WorkOS returned invalid_grant because token was rotated),
-      // check if local Droid CLI refreshed in the terminal and stored newer valid credentials.
-      try {
-        const localCreds = loadDroidCliCredentials();
-        if (localCreds?.accessToken && localCreds.accessToken !== credentials.access) {
-          const exp = expiresFromAccessToken(localCreds.accessToken);
-          if (typeof exp === "number" && exp > Date.now() + 60_000) {
-            const orgId =
-              localCreds.activeOrganizationId ||
-              organizationIdFromAccessToken(localCreds.accessToken) ||
-              credentials.accountId;
-            if (orgId) {
-              const identity = await resolveWhoami(localCreds.accessToken, fetchImpl, orgId, signal);
-              return {
-                refresh: localCreds.refreshToken,
-                access: localCreds.accessToken,
-                expires: exp,
-                accountId: orgId,
-                projectId: orgId,
-                email: emailFromAccessToken(localCreds.accessToken) ?? credentials.email,
-                apiEndpoint: identity.apiEndpoint ?? credentials.apiEndpoint,
-              };
-            }
-          }
-        }
-      } catch {
-        // Fall back to re-throwing original refresh error
-      }
+      const adopted = await adoptLocalCliCredentialsIfNewer(credentials, fetchImpl, signal);
+      if (adopted) return adopted;
       throw refreshError;
     }
 
-    let refreshed = {
-      ...toCredentials(parsed, credentials),
-      projectId: workosOrganizationId ?? credentials.projectId,
-    };
+    const { refreshed, tokenOrganizationId, workosOrganizationId } = await resolveOrgScopedRefresh(
+      parsed,
+      credentials,
+      credentials.projectId,
+      fetchImpl,
+      signal,
+    );
 
-    let tokenOrganizationId = organizationIdFromAccessToken(refreshed.access);
-    const payload = decodeJwtPayload(refreshed.access);
-    if (tokenOrganizationId && workosOrganizationId) {
-      const isMatch =
-        tokenOrganizationId === workosOrganizationId ||
-        payload?.org_id === workosOrganizationId ||
-        payload?.external_org_id === workosOrganizationId;
-      if (!isMatch && !workosOrganizationId.startsWith("org_") && !workosOrganizationId.startsWith("org-")) {
-        throw new Error("Factory OAuth refresh returned a token for a different organization than the stored account");
-      }
-    }
-    workosOrganizationId = workosOrganizationId ?? tokenOrganizationId;
-
-    if (!tokenOrganizationId) {
-      if (!workosOrganizationId) {
-        const orgs = await resolveOrganizationIds(refreshed.access, fetchImpl, signal);
-        if (orgs.length === 1) {
-          workosOrganizationId = orgs[0];
-        } else if (orgs.length > 1) {
-          throw new Error(
-            "Factory OAuth refresh encountered multiple organizations without a stored projectId; run `/logout factory` and `/login factory` to select an organization",
-          );
-        } else {
-          throw new Error("Factory OAuth refresh did not expose an organization id; run `/logout factory` and `/login factory`");
-        }
-      }
-
-      parsed = await postRefreshToken(
-        refreshed.refresh,
-        fetchImpl,
-        refreshed.refresh,
-        workosOrganizationId,
-        signal,
-      );
-      refreshed = {
-        ...toCredentials(parsed, { ...credentials, ...refreshed, projectId: workosOrganizationId }),
-        projectId: workosOrganizationId,
-      };
-      tokenOrganizationId = requireOrgScopedCredential(refreshed, workosOrganizationId);
-    }
-
-    if (!tokenOrganizationId) {
-      throw new Error("Factory OAuth refresh did not produce an organization-scoped token");
-    }
     const identity = await resolveWhoami(refreshed.access, fetchImpl, tokenOrganizationId, signal);
     requireMatchingWhoamiOrganization(identity.accountId, tokenOrganizationId);
 

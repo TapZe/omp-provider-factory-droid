@@ -604,6 +604,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 0.4,
   }),
   factoryModel({
+    id: "mistral-medium-3.5",
+    name: "Mistral Medium 3.5 (Factory Core)",
+    reasoning: true,
+    input: ["text"],
+    contextWindow: 200_000,
+    maxTokens: 32_000,
+    premiumMultiplier: 0.6,
+  }),
+  factoryModel({
     id: "glm-5.3",
     name: "GLM 5.3 (Factory Core)",
     reasoning: true,

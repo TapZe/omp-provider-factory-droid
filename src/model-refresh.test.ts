@@ -95,6 +95,7 @@ const EXPECTED_LIMIT_GROUPS = [
   [512_000, 64_000, ["minimax-m3"]],
   [204_800, 64_000, ["minimax-m2.7", "minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
+  [200_000, 32_000, ["mistral-medium-3.5"]],
   [
     1_000_000,
     65_536,
