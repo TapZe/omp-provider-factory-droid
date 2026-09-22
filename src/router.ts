@@ -160,6 +160,14 @@ function buildCompletionCompatibility(
   };
 }
 
+// Gateway path prefix per wire API. All three families hang off the same
+// credential-resolved endpoint; only the path segment differs.
+function gatewayBaseFor(apiEndpoint: string, targetApi: FactoryTargetApi): string {
+  if (targetApi === "anthropic-messages") return `${apiEndpoint}/api/llm/a`;
+  if (targetApi === "google-generative-ai") return `${apiEndpoint}/api/llm/g/v1`;
+  return `${apiEndpoint}/api/llm/o/v1`;
+}
+
 
 function buildFactoryTargetModel(
   model: Model<Api>,
@@ -179,12 +187,7 @@ function buildFactoryTargetModel(
     id: model.id,
     name: model.name,
     api: targetApi,
-    baseUrl:
-      targetApi === "anthropic-messages"
-        ? `${apiEndpoint}/api/llm/a`
-        : targetApi === "google-generative-ai"
-          ? `${apiEndpoint}/api/llm/g/v1`
-          : `${apiEndpoint}/api/llm/o/v1`,
+    baseUrl: gatewayBaseFor(apiEndpoint, targetApi),
     reasoning: model.reasoning,
     thinking: explicitThinking,
     supportsTools: true,
@@ -212,7 +215,7 @@ export function createFactoryGoogleFetch(
   effectiveOrgId: string | null,
   sessionId?: string,
 ): FetchImpl {
-  const targetUrl = `${gatewayEndpoint}/api/llm/g/v1/generate`;
+  const targetUrl = `${gatewayBaseFor(gatewayEndpoint, "google-generative-ai")}/generate`;
 
   return (async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     let bodyObj: Record<string, unknown> = {};
@@ -222,7 +225,7 @@ export function createFactoryGoogleFetch(
       try {
         rawBody = await input.clone().text();
       } catch {
-        // ignore
+        // Unreadable request body: send an empty generate payload rather than failing the stream
       }
     }
 

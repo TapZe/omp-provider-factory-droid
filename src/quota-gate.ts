@@ -5,19 +5,9 @@ import { AssistantMessageEventStream as EventStream } from "@oh-my-pi/pi-ai/util
 
 import { factoryQuotaTierFor, type FactoryQuotaTier } from "./catalog";
 import type { ParsedFactoryCredential } from "./credential";
+import { runtimeGlobal } from "./constants";
 import { fetchFactoryUsageDirect, usageCacheKey } from "./usage";
-
 export const PREFLIGHT_TIMEOUT_MS = 2500;
-
-type ProcessLike = {
-  env?: Record<string, string | undefined>;
-};
-
-type GlobalWithProcess = typeof globalThis & {
-  process?: ProcessLike;
-};
-
-const runtimeGlobal: GlobalWithProcess = globalThis;
 
 export function isQuotaPreflightEnabled(
   rawValue: string | undefined = runtimeGlobal.process?.env?.FACTORY_QUOTA_PREFLIGHT,

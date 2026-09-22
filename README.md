@@ -3,7 +3,7 @@
 **`omp-provider-factory-droid` is a production-ready [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent) provider extension for accessing Factory.ai Droid models—including Claude Opus 5, Gemini 3.8 / 3.1 Pro, GPT-6 Astra, Grok 4.6, GLM 5.3, Kimi K3, and DeepSeek V4—through Factory's authenticated LLM Quad-Gateway.**
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.3.1`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Features complete Droid v0.223.0 contract parity, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), seamless session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and intelligent 403/400 diagnostics.
+> **Actively Maintained Fork (`v1.3.3`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid v0.224.1 contract parity, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
 
 ---
 
@@ -15,7 +15,7 @@
   - OpenAI Responses (`/api/llm/o/v1/responses`)
   - Google Generative AI (`/api/llm/g/v1/generate`)
   - Fireworks & Upstream Completions (`/api/llm/o/v1/chat/completions`)
-- **Droid-Compatible OAuth, Bidirectional Keychain Sync & Auto-Recovery**: Run `/login factory` to instantly auto-import an existing Droid CLI login session (`~/.factory/`) or initiate device authorization at `https://auth.factory.ai/device`. Rotated credentials automatically synchronize back to macOS Keychain (`auth.v2.loginkeychain`) and Linux file storage (`auth.v2.file`) with AES-256-GCM, and stale sessions seamlessly recover from local Droid CLI.
+- **Droid-Compatible OAuth, Bidirectional Keychain Sync & Auto-Recovery**: Run `/login factory` to auto-import an existing Droid CLI login session (`~/.factory/`) or initiate device authorization at `https://auth.factory.ai/device`. Rotated credentials synchronize back to macOS Keychain (`auth.v2.loginkeychain`) and Linux file storage (`auth.v2.file`) with AES-256-GCM, and stale sessions recover from local Droid CLI storage.
 - **Account-Isolated Sibling Failover**: Manages credentials with atomic account isolation (`token`, `X-Factory-Org-Id`, `apiEndpoint`). Enables automated sibling account retry if an account runs out of quota or encounters an authentication error.
 - **Real-Time Quota Tracking & Preflight**: Query live Standard and Core usage limits and Extra Usage balances via `/usage`. Optionally enable `FACTORY_QUOTA_PREFLIGHT=1` to failover to sibling accounts before emitting model requests when a tier is exhausted.
 - **Defensive Tool Normalization & Stream Healing**: Automatically repairs in-band XML tool calls (`<tool_call>`) from open-weight models via Hermes markup healing, and unwraps malformed embedded JSON tool names into structured harness calls.
@@ -26,7 +26,7 @@
 
 ## Supported Models
 
-Curated static catalog synchronized with Droid CLI v0.223.0, augmented by dynamic discovery:
+Curated static catalog synchronized with Droid CLI v0.224.1, augmented by dynamic discovery:
 
 ### 1. Claude and Anthropic Family
 *Wire Endpoint: `POST /api/llm/a/v1/messages`*
@@ -50,6 +50,7 @@ Curated static catalog synchronized with Droid CLI v0.223.0, augmented by dynami
 - **DeepSeek**: `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
 - **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
 - **Nemotron / Inkling**: `nemotron-3-ultra`, `inkling` (`x-api-provider: fireworks`)
+- **Mistral**: `mistral-medium-3.5` (`x-api-provider: mistral`)
 
 ### 5. Dynamic Discovery & Live Pricing
 Beyond the curated static catalog, the plugin automatically checks Factory's live model documentation (`https://docs.factory.ai/models.md`) and queries OpenRouter for live per-million token pricing at session start (throttled to every 15 minutes). Newly launched models become immediately discoverable without waiting for OMP's 24-hour cache TTL.
@@ -135,7 +136,7 @@ Inside Oh My Pi, run:
 /login factory
 ```
 
-1. **Native Droid CLI Auto-Import**: The extension automatically inspects your local Droid CLI environment (`~/.factory/auth.v2.loginkeychain` or `~/.factory/auth.v2.file`). If you are already logged in via `droid`, the plugin seamlessly decrypts and imports your credentials directly into Oh My Pi—**no browser interaction required**.
+1. **Native Droid CLI Auto-Import**: The extension automatically inspects your local Droid CLI environment (`~/.factory/auth.v2.loginkeychain` or `~/.factory/auth.v2.file`). If you are already logged in via `droid`, the plugin decrypts and imports your credentials directly into Oh My Pi with **no browser interaction required**.
 2. **Device Code Fallback**: If no local Droid CLI session exists or if it has expired, the plugin automatically falls back to generating an interactive device authorization code:
    ```text
    https://auth.factory.ai/device
@@ -158,7 +159,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.223.0.
+All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.224.1.
 
 | Family | Wire Gateway URL | Upstream Provider Header | Protocol Details |
 | :--- | :--- | :--- | :--- |
@@ -175,7 +176,7 @@ All tool declarations, parameter schemas, and tool execution routines are provid
 
 1. **System Prompt Attestation**: Factory's gateway requires Droid system instructions to validate client legitimacy and enforce active tool usage for reasoning models. The extension automatically prepends `FACTORY_DROID_SYSTEM_PROMPT` while preserving your custom instructions.
 2. **Stream Markup Healing**: Open-weight models (GLM, Kimi, DeepSeek) that occasionally output tool calls as in-band XML (`<tool_call>...`) are repaired on the fly into structured tool events via Hermes healing.
-3. **Embedded JSON Unwrapping**: If an open model mistakenly outputs a JSON payload inside the tool name field (e.g. `name: '{"name": "read", "arguments": ...}'`), the normalizer extracts the real tool name and arguments so OMP executes the tool seamlessly.
+3. **Embedded JSON Unwrapping**: If an open model mistakenly outputs a JSON payload inside the tool name field (e.g. `name: '{"name": "read", "arguments": ...}'`), the normalizer extracts the real tool name and arguments so OMP executes the tool call directly.
 
 ---
 

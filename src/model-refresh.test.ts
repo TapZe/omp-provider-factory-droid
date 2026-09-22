@@ -37,11 +37,13 @@ const FIXTURE = `
 `;
 
 const EXPECTED_LIMIT_GROUPS = [
+  // Docs-only entries (no Droid v0.224.1 table row to audit against): 1M-class Claude.
+  [1_000_000, 128_000, ["claude-fable-5.1", "claude-sonnet-5"]],
+  // Droid rBT: input 867_000 + output 128_000.
   [
-    1_000_000,
+    995_000,
     128_000,
     [
-      "claude-fable-5.1",
       "claude-fable-5",
       "claude-opus-5",
       "claude-opus-5-fast",
@@ -51,13 +53,13 @@ const EXPECTED_LIMIT_GROUPS = [
       "claude-opus-4-7-fast",
       "claude-opus-4-6",
       "claude-opus-4-6-fast",
-      "claude-sonnet-5",
       "atlas-07-21",
       "aster-07-15",
     ],
   ],
   [200_000, 64_000, ["claude-opus-4-5-20251101"]],
-  [1_000_000, 64_000, ["claude-sonnet-4-6"]],
+  // Droid Bpu: input 931_000 + output 64_000.
+  [995_000, 64_000, ["claude-sonnet-4-6"]],
   [200_000, 32_000, ["claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"]],
   [
     1_050_000,
@@ -81,25 +83,32 @@ const EXPECTED_LIMIT_GROUPS = [
     ["gpt-5.4-mini", "gpt-5.4-mini-fast", "gpt-5.3-codex", "gpt-5.3-codex-fast", "gpt-5.2", "gpt-5.2-codex"],
   ],
   [400_000, 32_768, ["gpt-5.1-codex-max"]],
-  [200_000, 63_356, ["grok-4.6", "grok-4.5"]],
-  [1_048_576, 32_768, ["inkling"]],
+  // Droid eo(): input + output is the total window.
+  [263_356, 63_356, ["grok-4.6", "grok-4.5"]],
+  [1_040_000, 32_768, ["inkling"]],
   [1_040_000, 131_072, ["glm-5.3", "glm-5.2"]],
   [1_048_576, 131_072, ["glm-5.3-flash"]],
   [524_288, 131_072, ["glm-5.2-fast"]],
-  [200_000, 131_072, ["glm-5.1"]],
-  [204_800, 131_072, ["glm-5", "glm-4.7", "glm-4.6"]],
+  [200_000, 65_536, ["glm-5.1"]],
+  [222_000, 32_000, ["glm-5"]],
+  [223_344, 25_344, ["glm-4.7"]],
+  [328_000, 128_000, ["glm-4.6"]],
   [262_144, 65_536, ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"]],
-  [262_144, 32_768, ["kimi-k2.5"]],
+  [288_768, 32_768, ["kimi-k2.5"]],
   [262_144, 131_072, ["qwen3.8-max"]],
   [1_040_000, 131_072, ["deepseek-v4-flash-0731", "deepseek-v4-pro"]],
   [512_000, 64_000, ["minimax-m3"]],
-  [204_800, 64_000, ["minimax-m2.7", "minimax-m2.5"]],
+  [260_600, 64_000, ["minimax-m2.7"]],
+  [268_800, 64_000, ["minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
+  [200_000, 32_000, ["mistral-medium-3.5"]],
+  // Docs-only: no Droid table row; keep the 1M Gemini convention.
+  [1_000_000, 65_536, ["gemini-3.8-flash"]],
+  // Droid rnT(1e6, 65536): input 1_000_000 + output 65_536.
   [
-    1_000_000,
+    1_065_536,
     65_536,
     [
-      "gemini-3.8-flash",
       "gemini-3.7-flash",
       "gemini-3.6-flash",
       "gemini-3.5-flash",

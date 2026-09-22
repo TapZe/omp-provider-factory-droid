@@ -1,5 +1,6 @@
 import type { FetchImpl, UsageFetchContext, UsageFetchParams, UsageProvider, UsageReport } from "@oh-my-pi/pi-ai";
 
+import { waitForSharedPromise } from "./abortable";
 import { FACTORY_HEADERS, PROVIDER_ID, resolveFactoryApiBase } from "./constants";
 import { parseFactoryUsagePayload, type FactoryUsageParseContext } from "./usage-parsing";
 
@@ -35,32 +36,13 @@ export function usageCacheKey(apiEndpoint: string, orgId?: string | null): strin
   return `${cleanEndpoint}|${cleanOrg}`;
 }
 
+// Aborted callers resolve with null; the shared in-flight fetch keeps running
+// for every other waiter.
 function waitForUsageFetch(
   promise: Promise<UsageReport | null>,
   signal: AbortSignal | undefined,
 ): Promise<UsageReport | null> {
-  if (!signal) return promise;
-  if (signal.aborted) return Promise.resolve(null);
-
-  const pending = Promise.withResolvers<UsageReport | null>();
-  let settled = false;
-  const cleanup = () => signal.removeEventListener("abort", onAbort);
-  const finish = (report: UsageReport | null) => {
-    if (settled) return;
-    settled = true;
-    cleanup();
-    pending.resolve(report);
-  };
-  const fail = (error: unknown) => {
-    if (settled) return;
-    settled = true;
-    cleanup();
-    pending.reject(error);
-  };
-  const onAbort = () => finish(null);
-  signal.addEventListener("abort", onAbort, { once: true });
-  void promise.then(finish, fail);
-  return pending.promise;
+  return waitForSharedPromise(promise, signal, () => null);
 }
 
 
