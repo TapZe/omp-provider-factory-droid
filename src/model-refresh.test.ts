@@ -37,13 +37,14 @@ const FIXTURE = `
 `;
 
 const EXPECTED_LIMIT_GROUPS = [
-  // Docs-only entries (no Droid v0.224.1 table row to audit against): 1M-class Claude.
-  [1_000_000, 128_000, ["claude-fable-5.1", "claude-sonnet-5"]],
+  // Droid Ue: input 872_000 + output 128_000.
+  [1_000_000, 128_000, ["claude-sonnet-5", "claude-opus-5-5", "claude-opus-5-5-fast"]],
   // Droid rBT: input 867_000 + output 128_000.
   [
     995_000,
     128_000,
     [
+      "claude-fable-5.1",
       "claude-fable-5",
       "claude-opus-5",
       "claude-opus-5-fast",
@@ -66,6 +67,8 @@ const EXPECTED_LIMIT_GROUPS = [
     128_000,
     [
       "gpt-6-astra",
+      "gpt-6-sol",
+      "gpt-6-luna",
       "gpt-5.6-sol",
       "gpt-5.6-sol-fast",
       "gpt-5.6-terra",
@@ -84,6 +87,7 @@ const EXPECTED_LIMIT_GROUPS = [
   ],
   [400_000, 32_768, ["gpt-5.1-codex-max"]],
   // Droid eo(): input + output is the total window.
+  [500_000, 63_356, ["grok-4.7"]],
   [263_356, 63_356, ["grok-4.6", "grok-4.5"]],
   [1_040_000, 32_768, ["inkling"]],
   [1_040_000, 131_072, ["glm-5.3", "glm-5.2"]],
@@ -96,19 +100,18 @@ const EXPECTED_LIMIT_GROUPS = [
   [262_144, 65_536, ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"]],
   [288_768, 32_768, ["kimi-k2.5"]],
   [262_144, 131_072, ["qwen3.8-max"]],
-  [1_040_000, 131_072, ["deepseek-v4-flash-0731", "deepseek-v4-pro"]],
+  [1_040_000, 131_072, ["deepseek-v4.1-flash", "deepseek-v4-flash-0731", "deepseek-v4-pro"]],
   [512_000, 64_000, ["minimax-m3"]],
   [260_600, 64_000, ["minimax-m2.7"]],
   [268_800, 64_000, ["minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
-  [200_000, 32_000, ["mistral-medium-3.5"]],
-  // Docs-only: no Droid table row; keep the 1M Gemini convention.
-  [1_000_000, 65_536, ["gemini-3.8-flash"]],
+  [256_000, 64_000, ["mistral-medium-3.5"]],
   // Droid rnT(1e6, 65536): input 1_000_000 + output 65_536.
   [
     1_065_536,
     65_536,
     [
+      "gemini-3.8-flash",
       "gemini-3.7-flash",
       "gemini-3.6-flash",
       "gemini-3.5-flash",

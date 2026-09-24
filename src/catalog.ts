@@ -47,6 +47,12 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id.startsWith("claude-fable-")) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 12.5 };
   }
+  if (id.startsWith("claude-opus-5-5-fast")) {
+    return { input: 8, output: 40, cacheRead: 0.8, cacheWrite: 10 };
+  }
+  if (id.startsWith("claude-opus-5-5")) {
+    return { input: 4, output: 20, cacheRead: 0.4, cacheWrite: 5 };
+  }
   if (id.includes("-fast") && id.startsWith("claude-opus-")) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 12.5 };
   }
@@ -74,6 +80,12 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
     id.startsWith("gpt6-astra")
   ) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 0 };
+  }
+  if (id === "gpt-6-sol" || id.startsWith("gpt-6-sol-")) {
+    return { input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0 };
+  }
+  if (id === "gpt-6-luna" || id.startsWith("gpt-6-luna-")) {
+    return { input: 0.1, output: 0.6, cacheRead: 0.01, cacheWrite: 0 };
   }
   if (id === "gpt-5.6-sol-fast" || id.startsWith("gpt-5.6-sol-fast")) {
     return { input: 10, output: 60, cacheRead: 1.0, cacheWrite: 0 };
@@ -123,6 +135,9 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   // Core Open Models (Fireworks / Standard host rates)
   if (id === "inkling" || id.startsWith("inkling-")) {
     return { input: 1.0, output: 3.0, cacheRead: 0.1, cacheWrite: 0 };
+  }
+  if (id === "deepseek-v4.1-flash" || id.startsWith("deepseek-v4.1-")) {
+    return { input: 0.1, output: 0.27, cacheRead: 0.01, cacheWrite: 0 };
   }
   if (id.startsWith("deepseek-v4-flash")) {
     return { input: 0.14, output: 0.28, cacheRead: 0.0028, cacheWrite: 0 };
@@ -224,6 +239,7 @@ export function factoryThinkingFor(
 
   const supportsExtraHighEffort =
     modelId === "grok-4.6" ||
+    modelId === "grok-4.7" ||
     modelId.startsWith("gpt-6") ||
     modelId.startsWith("gpt-5.6") ||
     modelId.startsWith("glm-5.3") ||
@@ -269,7 +285,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     name: "Claude Fable 5.1 (Factory)",
     reasoning: true,
     input: ["text", "image"],
-    contextWindow: 1_000_000,
+    contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
@@ -281,6 +297,24 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 995_000,
     maxTokens: 128000,
     premiumMultiplier: 4,
+  }),
+  factoryModel({
+    id: "claude-opus-5-5",
+    name: "Claude Opus 5.5 (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 1.6,
+  }),
+  factoryModel({
+    id: "claude-opus-5-5-fast",
+    name: "Claude Opus 5.5 Fast (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 3.2,
   }),
   factoryModel({
     id: "claude-opus-5",
@@ -429,6 +463,24 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 1.6,
   }),
   factoryModel({
+    id: "gpt-6-sol",
+    name: "GPT-6 Sol (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_050_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 0.8,
+  }),
+  factoryModel({
+    id: "gpt-6-luna",
+    name: "GPT-6 Luna (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_050_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 0.04,
+  }),
+  factoryModel({
     id: "gpt-5.6-sol",
     name: "GPT-5.6 Sol (Factory)",
     reasoning: true,
@@ -575,6 +627,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
 
   // Grok family (routed through OpenAI Responses gateway with x-api-provider: xai)
   factoryModel({
+    id: "grok-4.7",
+    name: "Grok 4.7 (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 500_000,
+    maxTokens: 63_356,
+    premiumMultiplier: 0.8,
+  }),
+  factoryModel({
     id: "grok-4.6",
     name: "Grok 4.6 (Factory)",
     reasoning: true,
@@ -608,8 +669,8 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     name: "Mistral Medium 3.5 (Factory Core)",
     reasoning: true,
     input: ["text"],
-    contextWindow: 200_000,
-    maxTokens: 32_000,
+    contextWindow: 256_000,
+    maxTokens: 64_000,
     premiumMultiplier: 0.6,
   }),
   factoryModel({
@@ -721,6 +782,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 0.25,
   }),
   factoryModel({
+    id: "deepseek-v4.1-flash",
+    name: "DeepSeek V4.1 Flash (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_040_000,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.12,
+  }),
+  factoryModel({
     id: "deepseek-v4-flash-0731",
     name: "DeepSeek V4 Flash (Factory Core)",
     reasoning: true,
@@ -790,7 +860,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     name: "Gemini 3.8 Flash (Factory)",
     reasoning: true,
     input: ["text", "image"],
-    contextWindow: 1_000_000,
+    contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.6,
   }),

@@ -3,7 +3,7 @@
 **`omp-provider-factory-droid` is a production-ready [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent) provider extension for accessing Factory.ai Droid models—including Claude Opus 5, Gemini 3.8 / 3.1 Pro, GPT-6 Astra, Grok 4.6, GLM 5.3, Kimi K3, and DeepSeek V4—through Factory's authenticated LLM Quad-Gateway.**
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.3.3`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid v0.224.1 contract parity, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
+> **Actively Maintained Fork (`v1.4.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid v0.226.1 contract parity, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
 
 ---
 
@@ -26,11 +26,11 @@
 
 ## Supported Models
 
-Curated static catalog synchronized with Droid CLI v0.224.1, augmented by dynamic discovery:
+Curated static catalog synchronized with Droid CLI v0.226.1, augmented by dynamic discovery:
 
 ### 1. Claude and Anthropic Family
 *Wire Endpoint: `POST /api/llm/a/v1/messages`*
-- **Claude**: `claude-fable-5.1`, `claude-fable-5`, `claude-opus-5`, `claude-opus-5-fast`, `claude-opus-4-8`, `claude-opus-4-8-fast`, `claude-opus-4-7`, `claude-opus-4-7-fast`, `claude-opus-4-6`, `claude-opus-4-6-fast`, `claude-opus-4-5-20251101`, `claude-sonnet-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`, `atlas-07-21`, `aster-07-15` (`x-api-provider: anthropic`)
+- **Claude**: `claude-fable-5.1`, `claude-fable-5`, `claude-opus-5-5`, `claude-opus-5-5-fast`, `claude-opus-5`, `claude-opus-5-fast`, `claude-opus-4-8`, `claude-opus-4-8-fast`, `claude-opus-4-7`, `claude-opus-4-7-fast`, `claude-opus-4-6`, `claude-opus-4-6-fast`, `claude-opus-4-5-20251101`, `claude-sonnet-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`, `atlas-07-21`, `aster-07-15` (`x-api-provider: anthropic`)
 - **MiniMax**: `minimax-m3`, `minimax-m2.7`, `minimax-m2.5` (`x-api-provider: fireworks`)
 
 ### 2. Google Gemini Family
@@ -39,15 +39,15 @@ Curated static catalog synchronized with Droid CLI v0.224.1, augmented by dynami
 
 ### 3. GPT, Codex, and Grok Family
 *Wire Endpoint: `POST /api/llm/o/v1/responses`*
-- **GPT**: `gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-sol-fast`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.5-pro`, `gpt-5.5-fast`, `gpt-5.4`, `gpt-5.4-fast`, `gpt-5.4-mini`, `gpt-5.4-mini-fast`, `gpt-5.2`, `gpt-5.1`, `gpt-5` (`x-api-provider: openai`)
+- **GPT**: `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-sol-fast`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.5-pro`, `gpt-5.5-fast`, `gpt-5.4`, `gpt-5.4-fast`, `gpt-5.4-mini`, `gpt-5.4-mini-fast`, `gpt-5.2`, `gpt-5.1`, `gpt-5` (`x-api-provider: openai`)
 - **Codex**: `gpt-5.3-codex`, `gpt-5.3-codex-fast`, `gpt-5.2-codex`, `gpt-5.1-codex`, `gpt-5.1-codex-max`, `gpt-5-codex` (`x-api-provider: openai`)
-- **Grok**: `grok-4.6`, `grok-4.5` (`x-api-provider: xai`)
+- **Grok**: `grok-4.7`, `grok-4.6`, `grok-4.5` (`x-api-provider: xai`)
 
 ### 4. Factory Core & Open Models
 *Wire Endpoint: `POST /api/llm/o/v1/chat/completions`*
 - **GLM**: `glm-5.3`, `glm-5.3-flash`, `glm-5.2`, `glm-5.2-fast`, `glm-5.1`, `glm-5`, `glm-4.7`, `glm-4.6` (`x-api-provider: fireworks`)
 - **Kimi**: `kimi-k3`, `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5` (`x-api-provider: fireworks`)
-- **DeepSeek**: `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
+- **DeepSeek**: `deepseek-v4.1-flash`, `deepseek-v4-pro`, `deepseek-v4-flash-0731` (`x-api-provider: fireworks`)
 - **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
 - **Nemotron / Inkling**: `nemotron-3-ultra`, `inkling` (`x-api-provider: fireworks`)
 - **Mistral**: `mistral-medium-3.5` (`x-api-provider: mistral`)
@@ -81,11 +81,11 @@ To set a Factory model as your default in `~/.omp/config.json`:
 The plugin supports Oh My Pi's thinking effort levels (`minimal`, `low`, `medium`, `high`, `xhigh`, `max`):
 
 - **Extra-High (`xhigh` / `max`)**: Supported on flagship reasoning models:
-  - `gpt-6-astra`
+  - `gpt-6-astra` / `gpt-6-sol` / `gpt-6-luna`
   - `gpt-5.6-sol` / `gpt-5.6-terra` / `gpt-5.6-luna`
-  - `claude-opus-5` / `claude-fable-5`
+  - `claude-opus-5-5` / `claude-opus-5` / `claude-fable-5`
   - `glm-5.3` / `glm-5.3-flash`
-  - `grok-4.6`
+  - `grok-4.7` / `grok-4.6`
   *(For models without extra-high effort support, `max` and `xhigh` automatically clamp to `high` upstream to prevent gateway rejection).*
 - **Google Gemini Thinking**: Mapped to native level-based thinking (`low`, `medium`, `high`; `minimal` supported on Flash Preview / 3.5).
 - **Claude Adaptive Thinking**: Claude models automatically infer Anthropic's adaptive thinking protocol (`type: "adaptive"`) with an allocated high-effort thinking budget of 24,576 tokens.
@@ -159,7 +159,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.224.1.
+All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.226.1.
 
 | Family | Wire Gateway URL | Upstream Provider Header | Protocol Details |
 | :--- | :--- | :--- | :--- |
