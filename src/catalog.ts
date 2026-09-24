@@ -136,6 +136,8 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id === "inkling" || id.startsWith("inkling-")) {
     return { input: 1.0, output: 3.0, cacheRead: 0.1, cacheWrite: 0 };
   }
+  // Kept despite `deepseek-v4.1-flash` being absent from FACTORY_MODELS: dynamic
+  // docs discovery routes newly published V4.1 IDs through this branch.
   if (id === "deepseek-v4.1-flash" || id.startsWith("deepseek-v4.1-")) {
     return { input: 0.1, output: 0.27, cacheRead: 0.01, cacheWrite: 0 };
   }
@@ -781,15 +783,10 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     maxTokens: 32_768,
     premiumMultiplier: 0.25,
   }),
-  factoryModel({
-    id: "deepseek-v4.1-flash",
-    name: "DeepSeek V4.1 Flash (Factory Core)",
-    reasoning: true,
-    input: ["text", "image"],
-    contextWindow: 1_040_000,
-    maxTokens: 131_072,
-    premiumMultiplier: 0.12,
-  }),
+  // `deepseek-v4.1-flash` is deliberately absent from the static catalog: Factory
+  // gates it behind a default-off feature flag and it is not yet published on
+  // docs.factory.ai/models, so requesting it returns HTTP 400 "Invalid model ID
+  // in request body". Dynamic discovery merges it in once Factory documents it.
   factoryModel({
     id: "deepseek-v4-flash-0731",
     name: "DeepSeek V4 Flash (Factory Core)",

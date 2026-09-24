@@ -328,10 +328,12 @@ describe("Factory Router & Tool Execution Configuration", () => {
       ["glm-5.3", "."],
       ["kimi-k3", "."],
       ["deepseek-v4-pro", ""],
+      ["deepseek-v4-flash-0731", ""],
     ]);
 
     for (const [modelId, reasoningContent] of expectedReasoningContent) {
       const { body: request } = await captureFactoryCoreRequest(modelId);
+      expect(request.model).toBe(modelId);
       const messages = request.messages as Array<Record<string, unknown>>;
       const assistantToolCall = messages.find((message) => Array.isArray(message.tool_calls));
 

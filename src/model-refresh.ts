@@ -1,6 +1,6 @@
 import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
-import { defaultCostFor, FACTORY_MODELS, factoryModel, familyOf } from "./catalog";
+import { defaultCostFor, FACTORY_MODELS, factoryModel, familyOf, type FactoryModelInput } from "./catalog";
 
 const FACTORY_MODEL_DOCS_URL = "https://docs.factory.ai/models.md";
 const FACTORY_MODEL_DOCS_TIMEOUT_MS = 10_000;
@@ -15,6 +15,20 @@ const DISCOVERED_MODEL_LIMITS = {
   "openai-completions": { contextWindow: 200_000, maxTokens: 32_000 },
   google: { contextWindow: 1_000_000, maxTokens: 65_536 },
 } as const;
+
+// Keep binary-audited limits for feature-gated IDs absent from Factory's docs.
+// Apply them only when the docs publish the ID; never advertise them statically.
+const STAGED_GATED_MODEL_SPECS: Record<
+  string,
+  Pick<FactoryModelInput, "contextWindow" | "maxTokens" | "input">
+> = {
+  "deepseek-v4.1-flash": { contextWindow: 1_040_000, maxTokens: 131_072, input: ["text", "image"] },
+};
+for (const id of Object.keys(STAGED_GATED_MODEL_SPECS)) {
+  if (familyOf(id) !== "openai-completions") {
+    throw new Error(`factory: staged model ${id} requires a chat-completions discovery path`);
+  }
+}
 
 const PROVIDER_PREFIXES = [
   "anthropic/",
@@ -165,6 +179,7 @@ export function parseFactoryModelDocs(markdown: string): FactoryModelDocsEntry[]
 
 function docsEntryToModel(entry: FactoryModelDocsEntry, liveCost?: LiveTokenCost): ProviderModelConfig | null {
   const cost = liveCost ?? defaultCostFor(entry.id);
+  const staged = STAGED_GATED_MODEL_SPECS[entry.id];
   switch (familyOf(entry.id)) {
     case "anthropic":
       return factoryModel({
@@ -191,10 +206,11 @@ function docsEntryToModel(entry: FactoryModelDocsEntry, liveCost?: LiveTokenCost
         id: entry.id,
         name: `${entry.displayName} (Factory Core)`,
         reasoning: true,
-        input: ["text"],
+        input: staged?.input ?? ["text"],
         cost,
         premiumMultiplier: entry.multiplier,
-        ...DISCOVERED_MODEL_LIMITS["openai-completions"],
+        contextWindow: staged?.contextWindow ?? DISCOVERED_MODEL_LIMITS["openai-completions"].contextWindow,
+        maxTokens: staged?.maxTokens ?? DISCOVERED_MODEL_LIMITS["openai-completions"].maxTokens,
       });
     case "google":
       return factoryModel({
