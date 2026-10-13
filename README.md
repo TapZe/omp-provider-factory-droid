@@ -26,12 +26,12 @@
 
 ## Supported Models
 
-Curated static catalog synchronized with the Droid CLI 0.230.0 model registry and Factory's published model list, augmented by dynamic discovery. Feature-gated models require access on the selected Factory organization.
+Curated static catalog synchronized with the Droid CLI 0.240.0 model registry and Factory's published model list, augmented by dynamic discovery. Feature-gated models require access on the selected Factory organization.
 
 ### 1. Claude and Anthropic Family
 *Wire Endpoint: `POST /api/llm/a/v1/messages`*
-- **Claude**: `claude-fable-5.1`, `claude-fable-5`, `claude-opus-5-5`, `claude-opus-5-5-fast`, `claude-opus-5`, `claude-opus-5-fast`, `claude-opus-4-8`, `claude-opus-4-8-fast`, `claude-opus-4-7`, `claude-opus-4-7-fast`, `claude-opus-4-6`, `claude-opus-4-6-fast`, `claude-opus-4-5-20251101`, `claude-sonnet-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`, `atlas-07-21`, `aster-07-15` (`x-api-provider: anthropic`)
-- **MiniMax**: `minimax-m3`, `minimax-m2.7`, `minimax-m2.5` (`x-api-provider: fireworks`)
+- **Claude**: `claude-fable-5.1`, `claude-fable-5`, `claude-opus-5-5`, `claude-opus-5-5-fast`, `claude-opus-5`, `claude-opus-5-fast`, `claude-opus-4-8`, `claude-opus-4-8-fast`, `claude-opus-4-7`, `claude-opus-4-7-fast`, `claude-opus-4-6`, `claude-opus-4-6-fast`, `claude-opus-4-5-20251101`, `claude-sonnet-5-5`, `claude-sonnet-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5-20250929`, `claude-haiku-5-5`, `claude-haiku-4-5-20251001`, `atlas-07-21`, `aster-07-15` (`x-api-provider: anthropic`)
+- **MiniMax**: `minimax-m2.7`, `minimax-m2.5` (`x-api-provider: fireworks`; Anthropic-compatible). `minimax-m3` uses chat completions.
 
 ### 2. Google Gemini Family
 *Wire Endpoint: `POST /api/llm/g/v1/generate`*
@@ -50,7 +50,8 @@ Curated static catalog synchronized with the Droid CLI 0.230.0 model registry an
 - **DeepSeek**: `deepseek-v4.1-flash`, `deepseek-v4-flash-0731`, `deepseek-v4-pro` (`x-api-provider: fireworks`); V4.1 Flash accepts images, while the deprecated V4 variants are text-only.
 - **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
 - **Nemotron / Inkling**: `nemotron-3-ultra`, `inkling` (`x-api-provider: fireworks`)
-- **Mistral**: `mistral-medium-3.5` (`x-api-provider: mistral`)
+- **MiniMax M3**: `minimax-m3` (`x-api-provider: fireworks`)
+- **Mistral**: `mistral-large-4`, `mistral-medium-3.5` (`x-api-provider: mistral`)
 
 ### 5. Dynamic Discovery & Live Pricing
 Beyond the curated static catalog, the plugin automatically checks Factory's live model documentation (`https://docs.factory.ai/models.md`) and queries OpenRouter for live per-million token pricing at session start (throttled to every 15 minutes). Newly launched models become immediately discoverable without waiting for OMP's 24-hour cache TTL.
