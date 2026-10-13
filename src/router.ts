@@ -36,9 +36,9 @@ type FactoryTargetApi =
 
 
 function resolveTargetApi(modelId: string): FactoryTargetApi | null {
-  // MiniMax is a Droid Core model, but Factory serves it through the
-  // Anthropic-compatible endpoint rather than chat completions.
-  if (modelId.startsWith("minimax-")) {
+  // MiniMax M2.x is a Droid Core model served through the Anthropic-compatible
+  // endpoint. MiniMax M3 moved to chat completions in Droid 0.240.0.
+  if (modelId.startsWith("minimax-") && modelId !== "minimax-m3" && !modelId.startsWith("minimax-m3-")) {
     return "anthropic-messages";
   }
 

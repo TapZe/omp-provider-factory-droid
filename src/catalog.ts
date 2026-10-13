@@ -65,6 +65,9 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id.startsWith("claude-sonnet-")) {
     return { input: 3.0, output: 15.0, cacheRead: 0.3, cacheWrite: 3.75 };
   }
+  if (id.startsWith("claude-haiku-5-5") || id.startsWith("claude-haiku-5.5")) {
+    return { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 };
+  }
   if (id.startsWith("claude-haiku-")) {
     return { input: 1.0, output: 5.0, cacheRead: 0.1, cacheWrite: 1.25 };
   }
@@ -255,6 +258,7 @@ export function factoryThinkingFor(
     modelId.startsWith("claude-opus-5") ||
     modelId.startsWith("claude-sonnet-5") ||
     modelId.startsWith("claude-fable-5") ||
+    modelId.startsWith("claude-haiku-5") ||
     modelId.startsWith("qwen");
 
   return {
@@ -442,6 +446,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 200_000,
     maxTokens: 32_000,
     premiumMultiplier: 1.2,
+  }),
+  factoryModel({
+    id: "claude-haiku-5-5",
+    name: "Claude Haiku 5.5 (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 0.04,
   }),
   factoryModel({
     id: "claude-haiku-4-5-20251001",
@@ -694,16 +707,25 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     id: "inkling",
     name: "Inkling (Factory Core)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     contextWindow: 1_040_000,
     maxTokens: 32_768,
     premiumMultiplier: 0.4,
   }),
   factoryModel({
+    id: "mistral-large-4",
+    name: "Mistral Large 4 (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 588_288,
+    maxTokens: 64_000,
+    premiumMultiplier: 0.544,
+  }),
+  factoryModel({
     id: "mistral-medium-3.5",
     name: "Mistral Medium 3.5 (Factory Core)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     contextWindow: 256_000,
     maxTokens: 64_000,
     premiumMultiplier: 0.6,
@@ -721,7 +743,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     id: "glm-5.3-flash",
     name: "GLM 5.3 Flash (Factory Core)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     contextWindow: 1_048_576,
     maxTokens: 131_072,
     premiumMultiplier: 0.06,
@@ -784,7 +806,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     id: "kimi-k3",
     name: "Kimi K3 (Factory Core)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     contextWindow: 262144,
     maxTokens: 65536,
     premiumMultiplier: 1.2,
@@ -849,7 +871,7 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     id: "minimax-m3",
     name: "MiniMax M3 (Factory Core)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     contextWindow: 512000,
     maxTokens: 64000,
     premiumMultiplier: 0.12,
@@ -967,6 +989,10 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
 ];
 
 export function familyOf(id: string): FactoryModelFamily {
+  if (id === "minimax-m3" || id.startsWith("minimax-m3-")) {
+    return "openai-completions";
+  }
+
   if (id.startsWith("claude-") || id.startsWith("minimax-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";
   }
@@ -999,9 +1025,9 @@ export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "xa
 
 // Factory's `x-api-provider` request header names the UPSTREAM the gateway routes
 // to, independent of the wire API shape. Droid Core open models (GLM, Kimi,
-// DeepSeek, MiniMax, Nemotron, Inkling, Qwen) resolve to "fireworks" — even MiniMax,
-// which is served over the Anthropic-compatible API. Mistral routes to direct "mistral",
-// and Grok routes to direct "xai".
+// DeepSeek, MiniMax, Nemotron, Inkling, Qwen) resolve to "fireworks" — even MiniMax
+// M2.x, which is served over the Anthropic-compatible API. MiniMax M3 uses chat
+// completions. Mistral routes to direct "mistral", and Grok routes to direct "xai".
 export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";

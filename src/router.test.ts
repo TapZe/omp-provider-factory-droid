@@ -223,7 +223,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
     }
   });
 
-  it("selects Claude generation-specific thinking without changing MiniMax", async () => {
+  it("selects Claude generation-specific thinking without changing MiniMax M2.x", async () => {
     const sonnet = await captureFactoryAnthropicRequest("claude-sonnet-4-6", Effort.High);
     expect(sonnet.body.thinking).toEqual({ type: "adaptive" });
     expect(sonnet.body.output_config).toEqual({ effort: "high" });
@@ -233,7 +233,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
     // Current pi-ai forwards the same budget-effort control Droid sends.
     expect(opus45.body.output_config).toEqual({ effort: "high" });
 
-    const minimax = await captureFactoryAnthropicRequest("minimax-m3", Effort.High);
+    const minimax = await captureFactoryAnthropicRequest("minimax-m2.7", Effort.High);
     expect(minimax.body.thinking).toMatchObject({ type: "enabled" });
     expect(minimax.body.output_config).toBeUndefined();
   });
@@ -308,8 +308,10 @@ describe("Factory Router & Tool Execution Configuration", () => {
     const { familyOf, upstreamProviderFor } = require("./catalog");
     expect(familyOf("claude-opus-5")).toBe("anthropic");
     expect(upstreamProviderFor("claude-opus-5")).toBe("anthropic");
-    expect(familyOf("minimax-m3")).toBe("anthropic");
+    expect(familyOf("minimax-m3")).toBe("openai-completions");
     expect(upstreamProviderFor("minimax-m3")).toBe("fireworks");
+    expect(familyOf("minimax-m2.7")).toBe("anthropic");
+    expect(upstreamProviderFor("minimax-m2.7")).toBe("fireworks");
     expect(familyOf("gpt-5.6-sol")).toBe("openai-responses");
     expect(upstreamProviderFor("gpt-5.6-sol")).toBe("openai");
     expect(familyOf("gpt-6-astra")).toBe("openai-responses");
@@ -322,6 +324,9 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(upstreamProviderFor("gemini-3.8-flash")).toBe("google");
     expect(familyOf("deepseek-v4-pro")).toBe("openai-completions");
     expect(upstreamProviderFor("deepseek-v4-pro")).toBe("fireworks");
+    expect(familyOf("claude-haiku-5-5")).toBe("anthropic");
+    expect(familyOf("mistral-large-4")).toBe("openai-completions");
+    expect(upstreamProviderFor("mistral-large-4")).toBe("mistral");
   });
   it("preserves Factory Core reasoning and tool-call history", async () => {
     const expectedReasoningContent = new Map([

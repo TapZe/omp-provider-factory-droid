@@ -39,7 +39,7 @@ const FIXTURE = `
 
 const EXPECTED_LIMIT_GROUPS = [
   // Droid Ue: input 872_000 + output 128_000.
-  [1_000_000, 128_000, ["claude-sonnet-5", "claude-sonnet-5-5", "claude-opus-5-5", "claude-opus-5-5-fast"]],
+  [1_000_000, 128_000, ["claude-sonnet-5", "claude-sonnet-5-5", "claude-opus-5-5", "claude-opus-5-5-fast", "claude-haiku-5-5"]],
   // Droid rBT: input 867_000 + output 128_000.
   [
     995_000,
@@ -108,6 +108,7 @@ const EXPECTED_LIMIT_GROUPS = [
   [268_800, 64_000, ["minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
   [256_000, 64_000, ["mistral-medium-3.5"]],
+  [588_288, 64_000, ["mistral-large-4"]],
   // Droid rnT(1e6, 65536): input 1_000_000 + output 65_536.
   [
     1_065_536,
@@ -160,7 +161,6 @@ describe("static catalog gating", () => {
     expect(FACTORY_MODELS.find((model) => model.id === "deepseek-v4-flash-0731")?.input).toEqual(["text"]);
     expect(FACTORY_MODELS.find((model) => model.id === "deepseek-v4-pro")?.input).toEqual(["text"]);
   });
-
   test("curates gpt-6.1-sol with sol-family cost and Droid binary thinking ladder", () => {
     const sol61 = FACTORY_MODELS.find((model) => model.id === "gpt-6.1-sol");
     expect(sol61).toBeDefined();
@@ -175,6 +175,30 @@ describe("static catalog gating", () => {
     expect(sol61?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
     expect(sol61?.thinking?.defaultLevel).toBe(Effort.Medium);
     expect(sol61?.thinking?.effortMap?.minimal).toBe("low");
+  });
+
+  test("curates claude-haiku-5-5 and mistral-large-4 from Droid 0.240.0", () => {
+    const haiku55 = FACTORY_MODELS.find((model) => model.id === "claude-haiku-5-5");
+    expect(haiku55).toBeDefined();
+    expect(haiku55?.input).toEqual(["text", "image"]);
+    expect(haiku55?.contextWindow).toBe(1_000_000);
+    expect(haiku55?.maxTokens).toBe(128_000);
+    expect(haiku55?.premiumMultiplier).toBe(0.04);
+    expect(haiku55?.reasoning).toBe(true);
+
+    const large4 = FACTORY_MODELS.find((model) => model.id === "mistral-large-4");
+    expect(large4).toBeDefined();
+    expect(large4?.input).toEqual(["text", "image"]);
+    expect(large4?.contextWindow).toBe(588_288);
+    expect(large4?.maxTokens).toBe(64_000);
+    expect(large4?.premiumMultiplier).toBe(0.544);
+
+    const m3 = FACTORY_MODELS.find((model) => model.id === "minimax-m3");
+    expect(m3?.input).toEqual(["text", "image"]);
+    expect(FACTORY_MODELS.find((model) => model.id === "kimi-k3")?.input).toEqual(["text", "image"]);
+    expect(FACTORY_MODELS.find((model) => model.id === "glm-5.3-flash")?.input).toEqual(["text", "image"]);
+    expect(FACTORY_MODELS.find((model) => model.id === "inkling")?.input).toEqual(["text", "image"]);
+    expect(FACTORY_MODELS.find((model) => model.id === "mistral-medium-3.5")?.input).toEqual(["text", "image"]);
   });
 });
 
