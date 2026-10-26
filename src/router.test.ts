@@ -3,8 +3,8 @@ import { Effort, type AssistantMessage, type Context, type ToolCall } from "@oh-
 import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
 import { StreamMarkupHealing } from "@oh-my-pi/pi-ai/utils/stream-markup-healing";
 import { ANTHROPIC_BETAS, FACTORY_CLIENT_VERSION, FACTORY_DROID_SYSTEM_PROMPT } from "./constants";
+import { familyOf, FACTORY_MODELS } from "./catalog";
 import { factoryStreamSimple, prepareContextForFactory } from "./router";
-import { FACTORY_MODELS } from "./catalog";
 import {
   factoryStreamMarkupHealingPattern,
   normalizeFactoryToolCallStream,
@@ -136,6 +136,70 @@ async function captureFactoryCoreRequest(modelId: string): Promise<CapturedFacto
   }
 
   return { body: requestBody, apiProvider };
+}
+
+type CapturedFactoryRequest = {
+  url: string;
+  apiProvider: string | null;
+  body: Record<string, unknown>;
+};
+
+async function captureFactoryRequest(modelId: string, disableReasoning = false): Promise<CapturedFactoryRequest> {
+  const originalFetch = globalThis.fetch;
+  let captured: CapturedFactoryRequest | undefined;
+
+  globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+    const [input, init] = args;
+    const request = input instanceof Request ? input : new Request(typeof input === "string" ? input : input.toString(), init);
+    captured = {
+      url: request.url,
+      apiProvider: request.headers.get("x-api-provider"),
+      body: (await request.json()) as Record<string, unknown>,
+    };
+
+    const sse =
+      familyOf(modelId) === "openai-responses"
+        ? [
+            'event: response.output_item.added\ndata: {"type":"response.output_item.added","output_index":0,"item":{"id":"msg_factory","type":"message","role":"assistant","content":[],"status":"in_progress"}}\n\n',
+            'event: response.output_text.delta\ndata: {"type":"response.output_text.delta","item_id":"msg_factory","output_index":0,"content_index":0,"delta":"ok"}\n\n',
+            'event: response.completed\ndata: {"type":"response.completed","response":{"id":"resp_factory","status":"completed","output":[],"usage":{"input_tokens":1,"output_tokens":1}}}\n\n',
+          ].join("")
+        : [
+            'data: {"id":"chatcmpl_factory","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":"ok"},"finish_reason":null}]}\n\n',
+            'data: {"id":"chatcmpl_factory","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\n',
+            "data: [DONE]\n\n",
+          ].join("");
+    return new Response(sse, { headers: { "content-type": "text/event-stream" } });
+  }) as typeof fetch;
+
+  try {
+    const stream = factoryStreamSimple(
+      testFactoryModel(modelId),
+      {
+        systemPrompt: [],
+        messages: [{ role: "user", content: [{ type: "text", text: "hello" }], timestamp: Date.now() }],
+      },
+      {
+        apiKey: JSON.stringify({
+          token: "test-factory-oauth-token",
+          orgId: "test-org",
+          apiEndpoint: "https://api.test.factory.ai",
+        }),
+        sessionId: "test-session",
+        disableReasoning,
+      },
+    );
+    const result = await stream.result();
+    expect(result.stopReason).not.toBe("error");
+    expect(result.content).toContainEqual(expect.objectContaining({ type: "text", text: "ok" }));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  if (!captured) {
+    throw new Error(`Factory request for ${modelId} was not captured`);
+  }
+  return captured;
 }
 
 type CapturedFactoryAnthropicRequest = {
@@ -270,7 +334,6 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(prepared.tools?.[0].name).toBe("read_file");
     expect(prepared.tools?.[1].name).toBe("bash");
   });
-
   it("preserves assistant messages and tool results verbatim", () => {
     const context = {
       messages: [
@@ -327,6 +390,48 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(familyOf("claude-haiku-5-5")).toBe("anthropic");
     expect(familyOf("mistral-large-4")).toBe("openai-completions");
     expect(upstreamProviderFor("mistral-large-4")).toBe("mistral");
+    expect(familyOf("minimax-m3.1-flash")).toBe("openai-completions");
+    expect(upstreamProviderFor("minimax-m3.1-flash")).toBe("fireworks");
+    expect(familyOf("muse-spark-1.2")).toBe("openai-completions");
+    expect(upstreamProviderFor("muse-spark-1.2")).toBe("fireworks");
+    expect(familyOf("beam-1.0")).toBe("openai-completions");
+    expect(upstreamProviderFor("beam-1.0")).toBe("baseten");
+  });
+  it("routes Beam through the Baseten upstream and Muse through Fireworks chat completions", async () => {
+    const beam = await captureFactoryRequest("beam-1.0");
+    expect(beam.apiProvider).toBe("baseten");
+    expect(beam.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+
+    const muse = await captureFactoryRequest("muse-spark-1.2");
+    expect(muse.apiProvider).toBe("fireworks");
+    expect(muse.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+  });
+  it("routes MiniMax M3.1 Flash through chat completions instead of the Anthropic endpoint", async () => {
+    const minimax = await captureFactoryRequest("minimax-m3.1-flash");
+    expect(minimax.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+    expect(minimax.apiProvider).toBe("fireworks");
+    expect(minimax.body.model).toBe("minimax-m3.1-flash");
+  });
+  it("routes GPT-6.1 Sol Ultrafast and DeepSeek V4.1 Flash 1017 to their upstreams", async () => {
+    const ultrafast = await captureFactoryRequest("gpt-6.1-sol-ultrafast");
+    expect(ultrafast.url).toBe("https://api.test.factory.ai/api/llm/o/v1/responses");
+    expect(ultrafast.apiProvider).toBe("openai");
+
+    const deepseek = await captureFactoryRequest("deepseek-v4.1-flash-1017");
+    expect(deepseek.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+    expect(deepseek.apiProvider).toBe("fireworks");
+  });
+  it("sends a disabled effort for new models that support Off", async () => {
+    const deepseek = await captureFactoryRequest("deepseek-v4.1-flash-1017", true);
+    expect(deepseek.body.reasoning_effort).toBe("none");
+
+    for (const id of ["gpt-6-sol-fast", "gpt-6-luna-fast"]) {
+      const request = await captureFactoryRequest(id, true);
+      expect(request.body.reasoning).toMatchObject({ effort: "none" });
+    }
+
+    const ultrafast = await captureFactoryRequest("gpt-6.1-sol-ultrafast", true);
+    expect(ultrafast.body.reasoning).toMatchObject({ effort: "low" });
   });
   it("preserves Factory Core reasoning and tool-call history", async () => {
     const expectedReasoningContent = new Map([

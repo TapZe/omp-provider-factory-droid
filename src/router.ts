@@ -36,12 +36,6 @@ type FactoryTargetApi =
 
 
 function resolveTargetApi(modelId: string): FactoryTargetApi | null {
-  // MiniMax M2.x is a Droid Core model served through the Anthropic-compatible
-  // endpoint. MiniMax M3 moved to chat completions in Droid 0.240.0.
-  if (modelId.startsWith("minimax-") && modelId !== "minimax-m3" && !modelId.startsWith("minimax-m3-")) {
-    return "anthropic-messages";
-  }
-
   switch (familyOf(modelId)) {
     case "anthropic":
       return "anthropic-messages";
@@ -134,9 +128,12 @@ function buildCompletionCompatibility(
   modelId: string,
   targetApi: FactoryTargetApi,
 ): ModelSpec<FactoryTargetApi>["compat"] {
-  if (targetApi !== "openai-completions") {
-    return undefined;
+  if (targetApi === "openai-responses") {
+    return modelId === "gpt-6-sol-fast" || modelId === "gpt-6-luna-fast"
+      ? { reasoningDisableMode: "none-effort" }
+      : undefined;
   }
+  if (targetApi !== "openai-completions") return undefined;
 
   const isDeepseek = modelId.startsWith("deepseek-");
   const isQwen = modelId.startsWith("qwen");
@@ -150,6 +147,7 @@ function buildCompletionCompatibility(
     requiresReasoningContentForToolCalls: true,
     requiresReasoningContentForAllAssistantTurns: isDeepseek,
     allowsSyntheticReasoningContentForToolCalls: !isDeepseek,
+    ...(modelId === "deepseek-v4.1-flash-1017" ? { reasoningDisableMode: "none-effort" as const } : {}),
     requiresAssistantContentForToolCalls: true,
     ...(isQwen
       ? {

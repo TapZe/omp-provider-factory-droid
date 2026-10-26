@@ -71,6 +71,9 @@ const EXPECTED_LIMIT_GROUPS = [
       "gpt-6-sol",
       "gpt-6.1-sol",
       "gpt-6-luna",
+      "gpt-6-luna-fast",
+      "gpt-6-sol-fast",
+      "gpt-6.1-sol-ultrafast",
       "gpt-5.6-sol",
       "gpt-5.6-sol-fast",
       "gpt-5.6-terra",
@@ -102,8 +105,11 @@ const EXPECTED_LIMIT_GROUPS = [
   [262_144, 65_536, ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"]],
   [288_768, 32_768, ["kimi-k2.5"]],
   [262_144, 131_072, ["qwen3.8-max"]],
-  [1_040_000, 131_072, ["deepseek-v4.1-flash", "deepseek-v4-flash-0731", "deepseek-v4-pro"]],
+  [1_040_000, 131_072, ["deepseek-v4.1-flash", "deepseek-v4.1-flash-1017", "deepseek-v4-flash-0731", "deepseek-v4-pro", "muse-spark-1.2"]],
   [512_000, 64_000, ["minimax-m3"]],
+  [1_000_000, 131_072, ["minimax-m3.1-flash"]],
+  // Droid binary limits for beam-1.0: 1_048_576 total window / 32_768 output.
+  [1_048_576, 32_768, ["beam-1.0"]],
   [260_600, 64_000, ["minimax-m2.7"]],
   [268_800, 64_000, ["minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
@@ -200,6 +206,62 @@ describe("static catalog gating", () => {
     expect(FACTORY_MODELS.find((model) => model.id === "inkling")?.input).toEqual(["text", "image"]);
     expect(FACTORY_MODELS.find((model) => model.id === "mistral-medium-3.5")?.input).toEqual(["text", "image"]);
   });
+
+  test("curates the seven Factory 0.249.0 models with binary inputs, multipliers, cost branches and disable states", () => {
+    const byId = (id: string) => FACTORY_MODELS.find((model) => model.id === id);
+
+    // GPT variants: cost comes from the existing sol/luna estimate branches.
+    const ultrafast = byId("gpt-6.1-sol-ultrafast");
+    expect(ultrafast?.input).toEqual(["text", "image"]);
+    expect(ultrafast?.premiumMultiplier).toBe(4.8);
+    expect(ultrafast?.cost).toEqual({ input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0 });
+    expect(ultrafast?.thinking?.requiresEffort).toBe(true);
+    expect(ultrafast?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(ultrafast?.thinking?.defaultLevel).toBe(Effort.Medium);
+
+    const solFast = byId("gpt-6-sol-fast");
+    expect(solFast?.input).toEqual(["text", "image"]);
+    expect(solFast?.premiumMultiplier).toBe(1.6);
+    expect(solFast?.cost).toEqual({ input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0 });
+    expect(solFast?.thinking?.requiresEffort).toBeUndefined();
+    expect(solFast?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
+
+    const lunaFast = byId("gpt-6-luna-fast");
+    expect(lunaFast?.premiumMultiplier).toBe(0.08);
+    expect(lunaFast?.cost).toEqual({ input: 0.1, output: 0.6, cacheRead: 0.01, cacheWrite: 0 });
+    expect(lunaFast?.thinking?.requiresEffort).toBeUndefined();
+    expect(lunaFast?.thinking?.defaultLevel).toBe(Effort.Medium);
+
+    const deepseek = byId("deepseek-v4.1-flash-1017");
+    expect(deepseek?.input).toEqual(["text", "image"]);
+    expect(deepseek?.premiumMultiplier).toBe(0.12);
+    expect(deepseek?.cost).toEqual({ input: 0.1, output: 0.27, cacheRead: 0.01, cacheWrite: 0 });
+    expect(deepseek?.thinking?.efforts.map(String)).toEqual(["low", "high", "max"]);
+    expect(deepseek?.thinking?.requiresEffort).toBeUndefined();
+    expect(deepseek?.thinking?.defaultLevel).toBe(Effort.High);
+
+    // MiniMax M3.1 has no published price; it reuses the minimax-m3 estimate branch.
+    const minimax = byId("minimax-m3.1-flash");
+    expect(minimax?.input).toEqual(["text", "image"]);
+    expect(minimax?.premiumMultiplier).toBe(0.06);
+    expect(minimax?.cost).toEqual({ input: 0.12, output: 0.48, cacheRead: 0.012, cacheWrite: 0 });
+    expect(minimax?.thinking?.requiresEffort).toBe(true);
+    expect(minimax?.thinking?.defaultLevel).toBe(Effort.Max);
+
+    // Factory does not publish per-token prices for Muse or Beam.
+    const muse = byId("muse-spark-1.2");
+    expect(muse?.input).toEqual(["text"]);
+    expect(muse?.premiumMultiplier).toBe(0.5);
+    expect(muse?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh"]);
+    expect(muse?.thinking?.requiresEffort).toBe(true);
+
+    const beam = byId("beam-1.0");
+    expect(beam?.input).toEqual(["text"]);
+    expect(beam?.premiumMultiplier).toBe(0.52);
+    expect(beam?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(beam?.thinking?.requiresEffort).toBe(true);
+    expect(beam?.thinking?.defaultLevel).toBe(Effort.High);
+  });
 });
 
 describe("parseFactoryModelDocs", () => {
@@ -225,6 +287,8 @@ describe("parseFactoryModelDocs", () => {
 
   test("excludes unsupported families", () => {
     expect(entries.some((entry) => entry.id.startsWith("cohere-"))).toBe(false);
+    // Droid 0.249.0 serves Muse Spark 1.3 over Responses, unlike 1.2.
+    expect(parseFactoryModelDocs("| Muse Spark 1.3 | `muse-spark-1.3` | 0.5× | high |")).toEqual([]);
   });
 
   test("extracts numeric multiplier from the multiplier column", () => {

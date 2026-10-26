@@ -503,6 +503,21 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 0.8,
   }),
   factoryModel({
+    id: "gpt-6-sol-fast",
+    name: "GPT-6 Sol Fast (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_050_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 1.6,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
+      defaultLevel: Effort.Medium,
+      effortMap: { [Effort.Minimal]: "low" },
+    },
+  }),
+  factoryModel({
     id: "gpt-6.1-sol",
     name: "GPT-6.1 Sol (Factory)",
     reasoning: true,
@@ -520,6 +535,23 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     },
   }),
   factoryModel({
+    id: "gpt-6.1-sol-ultrafast",
+    name: "GPT-6.1 Sol Ultrafast (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_050_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 4.8,
+    // Factory's high-cost opt-in is an account entitlement, not a catalog setting.
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
+      defaultLevel: Effort.Medium,
+      effortMap: { [Effort.Minimal]: "low" },
+      requiresEffort: true,
+    },
+  }),
+  factoryModel({
     id: "gpt-6-luna",
     name: "GPT-6 Luna (Factory)",
     reasoning: true,
@@ -527,6 +559,21 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.04,
+  }),
+  factoryModel({
+    id: "gpt-6-luna-fast",
+    name: "GPT-6 Luna Fast (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_050_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 0.08,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
+      defaultLevel: Effort.Medium,
+      effortMap: { [Effort.Minimal]: "low" },
+    },
   }),
   factoryModel({
     id: "gpt-5.6-sol",
@@ -850,6 +897,21 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 0.12,
   }),
   factoryModel({
+    id: "deepseek-v4.1-flash-1017",
+    name: "DeepSeek V4.1 Flash 1017 (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_040_000,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.12,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.High, FACTORY_MAX_EFFORT],
+      defaultLevel: Effort.High,
+      effortMap: { [Effort.Minimal]: "low" },
+    },
+  }),
+  factoryModel({
     id: "deepseek-v4-flash-0731",
     name: "DeepSeek V4 Flash [Deprecated] (Factory Core)",
     reasoning: true,
@@ -875,6 +937,22 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 512000,
     maxTokens: 64000,
     premiumMultiplier: 0.12,
+  }),
+  factoryModel({
+    id: "minimax-m3.1-flash",
+    name: "MiniMax M3.1 Flash (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.06,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
+      defaultLevel: FACTORY_MAX_EFFORT,
+      effortMap: { [Effort.Minimal]: "low" },
+      requiresEffort: true,
+    },
   }),
   factoryModel({
     id: "minimax-m2.7",
@@ -911,6 +989,38 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     contextWindow: 262_144,
     maxTokens: 131_072,
     premiumMultiplier: 0.8,
+  }),
+  factoryModel({
+    id: "muse-spark-1.2",
+    name: "Muse Spark 1.2 (Factory Core)",
+    reasoning: true,
+    input: ["text"],
+    contextWindow: 1_040_000,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.5,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh],
+      defaultLevel: Effort.High,
+      effortMap: { [Effort.Minimal]: "low" },
+      requiresEffort: true,
+    },
+  }),
+  factoryModel({
+    id: "beam-1.0",
+    name: "Beam 1.0 (Factory Core)",
+    reasoning: true,
+    input: ["text"],
+    contextWindow: 1_048_576,
+    maxTokens: 32_768,
+    premiumMultiplier: 0.52,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
+      defaultLevel: Effort.High,
+      effortMap: { [Effort.Minimal]: "low" },
+      requiresEffort: true,
+    },
   }),
 
   // Google Gemini family
@@ -989,7 +1099,8 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
 ];
 
 export function familyOf(id: string): FactoryModelFamily {
-  if (id === "minimax-m3" || id.startsWith("minimax-m3-")) {
+  // MiniMax M2.x uses Messages; audited M3 variants use chat completions.
+  if (id === "minimax-m3" || id.startsWith("minimax-m3-") || id === "minimax-m3.1-flash") {
     return "openai-completions";
   }
 
@@ -1013,7 +1124,9 @@ export function familyOf(id: string): FactoryModelFamily {
     id.startsWith("qwen") ||
     id.startsWith("mistral-") ||
     id === "inkling" ||
-    id.startsWith("inkling-")
+    id.startsWith("inkling-") ||
+    id === "muse-spark-1.2" ||
+    id === "beam-1.0"
   ) {
     return "openai-completions";
   }
@@ -1021,13 +1134,14 @@ export function familyOf(id: string): FactoryModelFamily {
   return "unsupported";
 }
 
-export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "xai" | "google" | "mistral";
+export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "baseten" | "xai" | "google" | "mistral";
 
 // Factory's `x-api-provider` request header names the UPSTREAM the gateway routes
 // to, independent of the wire API shape. Droid Core open models (GLM, Kimi,
-// DeepSeek, MiniMax, Nemotron, Inkling, Qwen) resolve to "fireworks" — even MiniMax
-// M2.x, which is served over the Anthropic-compatible API. MiniMax M3 uses chat
-// completions. Mistral routes to direct "mistral", and Grok routes to direct "xai".
+// DeepSeek, MiniMax, Nemotron, Inkling, Qwen, Muse) resolve to "fireworks" — even
+// MiniMax M2.x, which is served over the Anthropic-compatible API. MiniMax M3 and
+// M3.1 use chat completions. Beam routes to "baseten". Mistral routes to direct
+// "mistral", and Grok routes to direct "xai".
 export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";
@@ -1043,6 +1157,9 @@ export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
 
   if (id.startsWith("grok-")) {
     return "xai";
+  }
+  if (id === "beam-1.0") {
+    return "baseten";
   }
 
   if (id.startsWith("mistral-")) {
@@ -1094,6 +1211,12 @@ export function identityFor(id: string): ModelIdentity {
   }
   if (id.startsWith("inkling")) {
     return { class: "inkling", family: "inkling" };
+  }
+  if (id === "muse-spark-1.2") {
+    return { class: "muse", family: "muse" };
+  }
+  if (id === "beam-1.0") {
+    return { class: "beam", family: "beam" };
   }
   return { class: "unknown" };
 }
