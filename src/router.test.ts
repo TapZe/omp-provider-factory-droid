@@ -267,7 +267,7 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("0.224.1");
+    expect(FACTORY_CLIENT_VERSION).toBe("1.2.0");
   });
 
   it("includes required Anthropic betas for tool streaming and thinking", () => {
@@ -394,17 +394,39 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(upstreamProviderFor("minimax-m3.1-flash")).toBe("fireworks");
     expect(familyOf("muse-spark-1.2")).toBe("openai-completions");
     expect(upstreamProviderFor("muse-spark-1.2")).toBe("fireworks");
+    expect(familyOf("muse-spark-1.3")).toBe("openai-responses");
+    expect(upstreamProviderFor("muse-spark-1.3")).toBe("google");
+    expect(familyOf("nemotron-3.5-super")).toBe("openai-completions");
+    expect(upstreamProviderFor("nemotron-3.5-super")).toBe("baseten");
     expect(familyOf("beam-1.0")).toBe("openai-completions");
     expect(upstreamProviderFor("beam-1.0")).toBe("baseten");
+    expect(familyOf("gpt-6.1-terra")).toBe("openai-responses");
+    expect(upstreamProviderFor("gpt-6.1-terra")).toBe("openai");
+    expect(familyOf("muse-spark-open")).toBe("openai-completions");
+    expect(upstreamProviderFor("muse-spark-open")).toBe("baseten");
+    expect(familyOf("gemini-4-argon")).toBe("google");
+    expect(upstreamProviderFor("gemini-4-argon")).toBe("google");
   });
   it("routes Beam through the Baseten upstream and Muse through Fireworks chat completions", async () => {
     const beam = await captureFactoryRequest("beam-1.0");
     expect(beam.apiProvider).toBe("baseten");
     expect(beam.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
 
+    const museOpen = await captureFactoryRequest("muse-spark-open");
+    expect(museOpen.apiProvider).toBe("baseten");
+    expect(museOpen.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+
     const muse = await captureFactoryRequest("muse-spark-1.2");
     expect(muse.apiProvider).toBe("fireworks");
     expect(muse.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+
+    const muse13 = await captureFactoryRequest("muse-spark-1.3");
+    expect(muse13.apiProvider).toBe("google");
+    expect(muse13.url).toBe("https://api.test.factory.ai/api/llm/o/v1/responses");
+
+    const superNemo = await captureFactoryRequest("nemotron-3.5-super");
+    expect(superNemo.apiProvider).toBe("baseten");
+    expect(superNemo.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
   });
   it("routes MiniMax M3.1 Flash through chat completions instead of the Anthropic endpoint", async () => {
     const minimax = await captureFactoryRequest("minimax-m3.1-flash");
@@ -420,12 +442,21 @@ describe("Factory Router & Tool Execution Configuration", () => {
     const deepseek = await captureFactoryRequest("deepseek-v4.1-flash-1017");
     expect(deepseek.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
     expect(deepseek.apiProvider).toBe("fireworks");
+    const terra = await captureFactoryRequest("gpt-6.1-terra");
+    expect(terra.url).toBe("https://api.test.factory.ai/api/llm/o/v1/responses");
+    expect(terra.apiProvider).toBe("openai");
+
   });
   it("sends a disabled effort for new models that support Off", async () => {
     const deepseek = await captureFactoryRequest("deepseek-v4.1-flash-1017", true);
     expect(deepseek.body.reasoning_effort).toBe("none");
+    const nemotron = await captureFactoryRequest("nemotron-3.5-super", true);
+    expect(nemotron.body.reasoning_effort).toBe("none");
+    const muse = await captureFactoryRequest("muse-spark-open", true);
+    expect(muse.body.reasoning_effort).toBe("none");
 
-    for (const id of ["gpt-6-sol-fast", "gpt-6-luna-fast"]) {
+
+    for (const id of ["gpt-6-sol-fast", "gpt-6-luna-fast", "gpt-6.1-terra"]) {
       const request = await captureFactoryRequest(id, true);
       expect(request.body.reasoning).toMatchObject({ effort: "none" });
     }
@@ -519,8 +550,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
     expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
-    expect(capturedHeaders?.get("x-client-version")).toBe("0.224.1");
-    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/0.224.1");
+    expect(capturedHeaders?.get("x-client-version")).toBe("1.2.0");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.2.0");
     expect(capturedHeaders?.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
   });
 
@@ -694,9 +725,14 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(identityFor("gemini-3.8-flash")).toEqual({ class: "google", family: "gemini" });
     expect(identityFor("garnet-07-15")).toEqual({ class: "google", family: "garnet" });
     expect(identityFor("nemotron-3-ultra")).toEqual({ class: "nemotron", family: "nemotron" });
+    expect(identityFor("nemotron-3.5-super")).toEqual({ class: "nemotron", family: "nemotron" });
+    expect(identityFor("muse-spark-1.3")).toEqual({ class: "muse", family: "muse" });
     expect(identityFor("qwen3.8-max")).toEqual({ class: "qwen", family: "qwen" });
     expect(identityFor("mistral-medium-3.5")).toEqual({ class: "mistral", family: "mistral" });
     expect(identityFor("atlas-07-21")).toEqual({ class: "anthropic", family: "atlas" });
+    expect(identityFor("gpt-6.1-terra")).toEqual({ class: "openai", family: "gpt" });
+    expect(identityFor("muse-spark-open")).toEqual({ class: "muse", family: "muse" });
+    expect(identityFor("gemini-4-argon")).toEqual({ class: "google", family: "gemini" });
     expect(FACTORY_EFFORTS).toContain("max");
 
     const { upstreamProviderFor } = require("./catalog");

@@ -72,11 +72,16 @@ describe("Quota Preflight and Model Tier Classification", () => {
     expect(factoryQuotaTierFor("mistral-medium-3.5")).toBe("core");
     expect(factoryQuotaTierFor("muse-spark-1.2")).toBe("core");
     expect(factoryQuotaTierFor("beam-1.0")).toBe("core");
+    expect(factoryQuotaTierFor("muse-spark-1.3")).toBe("core");
+    expect(factoryQuotaTierFor("nemotron-3.5-super")).toBe("core");
     expect(factoryQuotaTierFor("minimax-m3.1-flash")).toBe("core");
     expect(factoryQuotaTierFor("deepseek-v4.1-flash-1017")).toBe("core");
     expect(factoryQuotaTierFor("gpt-6.1-sol-ultrafast")).toBe("standard");
     expect(factoryQuotaTierFor("gpt-6-sol-fast")).toBe("standard");
     expect(factoryQuotaTierFor("gpt-6-luna-fast")).toBe("standard");
+    expect(factoryQuotaTierFor("gpt-6.1-terra")).toBe("standard");
+    expect(factoryQuotaTierFor("gemini-4-argon")).toBe("standard");
+    expect(factoryQuotaTierFor("muse-spark-open")).toBe("core");
   });
 
   it("is disabled by default and accepts only explicit 1 or true values", () => {

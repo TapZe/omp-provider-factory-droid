@@ -3,7 +3,7 @@
 **`omp-provider-factory-droid` is a production-ready [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent) provider extension for accessing Factory.ai Droid models—including Claude Opus 5, Gemini 3.8 / 3.1 Pro, GPT-6 Astra, Grok 4.6, GLM 5.3, Kimi K3, and DeepSeek V4—through Factory's authenticated LLM Quad-Gateway.**
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.6.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 0.249.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
+> **Actively Maintained Fork (`v1.6.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.2.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## Supported Models
 
-Curated static catalog synchronized with the Droid CLI 0.249.0 model registry and Factory's published model list, augmented by dynamic discovery. Feature-gated models require access on the selected Factory organization.
+Curated static catalog synchronized with the Droid CLI 1.2.0 model registry and Factory's published model list, augmented by dynamic discovery. Feature-gated models require access on the selected Factory organization.
 
 `gpt-6.1-sol-ultrafast` requires Factory's explicit high-cost opt-in; listing it does not grant access or bypass organization model entitlements.
 
@@ -37,11 +37,11 @@ Curated static catalog synchronized with the Droid CLI 0.249.0 model registry an
 
 ### 2. Google Gemini Family
 *Wire Endpoint: `POST /api/llm/g/v1/generate`*
-- **Gemini & Garnet**: `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview`, `gemini-3.1-pro-preview`, `gemini-3-pro-preview`, `garnet-07-15` (`x-api-provider: google`)
+- **Gemini & Garnet**: `gemini-4-argon`, `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview`, `gemini-3.1-pro-preview`, `gemini-3-pro-preview`, `garnet-07-15` (`x-api-provider: google`)
 
 ### 3. GPT, Codex, and Grok Family
 *Wire Endpoint: `POST /api/llm/o/v1/responses`*
-- **GPT**: `gpt-6.1-sol`, `gpt-6.1-sol-ultrafast`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-sol-fast`, `gpt-6-luna`, `gpt-6-luna-fast`, `gpt-5.6-sol`, `gpt-5.6-sol-fast`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.5-pro`, `gpt-5.5-fast`, `gpt-5.4`, `gpt-5.4-fast`, `gpt-5.4-mini`, `gpt-5.4-mini-fast`, `gpt-5.2`, `gpt-5.1`, `gpt-5` (`x-api-provider: openai`)
+- **GPT**: `gpt-6.1-sol`, `gpt-6.1-sol-ultrafast`, `gpt-6.1-terra`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-sol-fast`, `gpt-6-luna`, `gpt-6-luna-fast`, `gpt-5.6-sol`, `gpt-5.6-sol-fast`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.5-pro`, `gpt-5.5-fast`, `gpt-5.4`, `gpt-5.4-fast`, `gpt-5.4-mini`, `gpt-5.4-mini-fast`, `gpt-5.2`, `gpt-5.1`, `gpt-5` (`x-api-provider: openai`)
 - **Codex**: `gpt-5.3-codex`, `gpt-5.3-codex-fast`, `gpt-5.2-codex`, `gpt-5.1-codex`, `gpt-5.1-codex-max`, `gpt-5-codex` (`x-api-provider: openai`)
 - **Grok**: `grok-4.7`, `grok-4.6`, `grok-4.5` (`x-api-provider: xai`)
 
@@ -51,7 +51,7 @@ Curated static catalog synchronized with the Droid CLI 0.249.0 model registry an
 - **Kimi**: `kimi-k3`, `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5` (`x-api-provider: fireworks`)
 - **DeepSeek**: `deepseek-v4.1-flash`, `deepseek-v4.1-flash-1017`, `deepseek-v4-flash-0731`, `deepseek-v4-pro` (`x-api-provider: fireworks`); V4.1 Flash variants accept images, while the deprecated V4 variants are text-only.
 - **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)
-- **Nemotron / Inkling / Muse**: `nemotron-3-ultra`, `inkling`, `muse-spark-1.2` (`x-api-provider: fireworks`); Muse Spark 1.2 is text-only.
+- **Nemotron / Inkling / Muse**: `nemotron-3.5-super` (`x-api-provider: baseten`; vision), `nemotron-3-ultra`, `inkling`, `muse-spark-open` (`x-api-provider: baseten`; vision), `muse-spark-1.3` (Responses API, `x-api-provider: google`; text-only), `muse-spark-1.2` (`x-api-provider: fireworks`; text-only).
 - **MiniMax M3**: `minimax-m3`, `minimax-m3.1-flash` (`x-api-provider: fireworks`)
 - **Beam**: `beam-1.0` (`x-api-provider: baseten`); text-only.
 - **Mistral**: `mistral-large-4`, `mistral-medium-3.5` (`x-api-provider: mistral`)
@@ -163,7 +163,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v0.226.1.
+All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v1.2.0.
 
 | Family | Wire Gateway URL | Upstream Provider Header | Protocol Details |
 | :--- | :--- | :--- | :--- |

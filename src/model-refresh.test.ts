@@ -70,6 +70,7 @@ const EXPECTED_LIMIT_GROUPS = [
       "gpt-6-astra",
       "gpt-6-sol",
       "gpt-6.1-sol",
+      "gpt-6.1-terra",
       "gpt-6-luna",
       "gpt-6-luna-fast",
       "gpt-6-sol-fast",
@@ -105,7 +106,7 @@ const EXPECTED_LIMIT_GROUPS = [
   [262_144, 65_536, ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"]],
   [288_768, 32_768, ["kimi-k2.5"]],
   [262_144, 131_072, ["qwen3.8-max"]],
-  [1_040_000, 131_072, ["deepseek-v4.1-flash", "deepseek-v4.1-flash-1017", "deepseek-v4-flash-0731", "deepseek-v4-pro", "muse-spark-1.2"]],
+  [1_040_000, 131_072, ["deepseek-v4.1-flash", "deepseek-v4.1-flash-1017", "deepseek-v4-flash-0731", "deepseek-v4-pro", "muse-spark-1.2", "muse-spark-1.3", "muse-spark-open"]],
   [512_000, 64_000, ["minimax-m3"]],
   [1_000_000, 131_072, ["minimax-m3.1-flash"]],
   // Droid binary limits for beam-1.0: 1_048_576 total window / 32_768 output.
@@ -113,6 +114,7 @@ const EXPECTED_LIMIT_GROUPS = [
   [260_600, 64_000, ["minimax-m2.7"]],
   [268_800, 64_000, ["minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
+  [1_000_000, 65_536, ["nemotron-3.5-super"]],
   [256_000, 64_000, ["mistral-medium-3.5"]],
   [588_288, 64_000, ["mistral-large-4"]],
   // Droid rnT(1e6, 65536): input 1_000_000 + output 65_536.
@@ -130,6 +132,7 @@ const EXPECTED_LIMIT_GROUPS = [
       "garnet-07-15",
     ],
   ],
+  [1_000_000, 65_536, ["gemini-4-argon"]],
 ] as const;
 
 describe("Factory model token limits", () => {
@@ -262,6 +265,66 @@ describe("static catalog gating", () => {
     expect(beam?.thinking?.requiresEffort).toBe(true);
     expect(beam?.thinking?.defaultLevel).toBe(Effort.High);
   });
+
+  test("curates the two Factory Droid 1.2.0 models with binary inputs, multipliers, and thinking ladders", () => {
+    const muse = FACTORY_MODELS.find((model) => model.id === "muse-spark-1.3");
+    expect(muse?.input).toEqual(["text"]);
+    expect(muse?.premiumMultiplier).toBe(0.5);
+    expect(muse?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh"]);
+    expect(muse?.thinking?.requiresEffort).toBe(true);
+    expect(muse?.thinking?.defaultLevel).toBe(Effort.High);
+
+    const nemotron = FACTORY_MODELS.find((model) => model.id === "nemotron-3.5-super");
+    expect(nemotron?.input).toEqual(["text", "image"]);
+    expect(nemotron?.premiumMultiplier).toBe(0.08);
+    expect(nemotron?.thinking?.efforts.map(String)).toEqual(["high"]);
+    expect(nemotron?.thinking?.requiresEffort).toBeUndefined();
+    expect(nemotron?.thinking?.defaultLevel).toBe(Effort.High);
+    expect(nemotron?.cost).toEqual({ input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 });
+  });
+
+  test("curates gpt-6.1-terra and muse-spark-open with binary limits, thinking ladders, and cost branches", () => {
+    const terra = FACTORY_MODELS.find((model) => model.id === "gpt-6.1-terra");
+    expect(terra).toBeDefined();
+    expect(terra?.input).toEqual(["text", "image"]);
+    expect(terra?.contextWindow).toBe(1_050_000);
+    expect(terra?.maxTokens).toBe(128_000);
+    expect(terra?.premiumMultiplier).toBe(0.4);
+    expect(terra?.cost).toEqual({ input: 1, output: 6, cacheRead: 0.1, cacheWrite: 0 });
+    expect(terra?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(terra?.thinking?.defaultLevel).toBe(Effort.Medium);
+    expect(terra?.thinking?.effortMap?.minimal).toBe("low");
+    expect(terra?.thinking?.requiresEffort).toBeUndefined();
+
+    const museOpen = FACTORY_MODELS.find((model) => model.id === "muse-spark-open");
+    expect(museOpen).toBeDefined();
+    expect(museOpen?.input).toEqual(["text", "image"]);
+    expect(museOpen?.contextWindow).toBe(1_040_000);
+    expect(museOpen?.maxTokens).toBe(131_072);
+    expect(museOpen?.premiumMultiplier).toBe(0.5);
+    expect(museOpen?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(museOpen?.thinking?.defaultLevel).toBe(Effort.High);
+    expect(museOpen?.thinking?.effortMap?.minimal).toBe("low");
+    expect(museOpen?.thinking?.requiresEffort).toBeUndefined();
+
+    const argon = FACTORY_MODELS.find((model) => model.id === "gemini-4-argon");
+    expect(argon).toBeDefined();
+    expect(argon?.input).toEqual(["text", "image"]);
+    expect(argon?.contextWindow).toBe(1_000_000);
+    expect(argon?.maxTokens).toBe(65_536);
+    expect(argon?.premiumMultiplier).toBe(0.8);
+    expect(argon?.reasoning).toBe(true);
+    expect(argon?.thinking?.mode).toBe("google-level");
+    expect(argon?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high"]);
+    expect(argon?.thinking?.defaultLevel).toBe(Effort.Medium);
+  });
+
+  test("excludes unreleased, router, and flex models from the catalog", () => {
+    const uncuratedIds = ["auto", "auto-fast", "gpt-6-sol-flex", "gpt-6-astra-ultrafast"];
+    for (const id of uncuratedIds) {
+      expect(FACTORY_MODELS.some((model) => model.id === id)).toBe(false);
+    }
+  });
 });
 
 describe("parseFactoryModelDocs", () => {
@@ -287,8 +350,7 @@ describe("parseFactoryModelDocs", () => {
 
   test("excludes unsupported families", () => {
     expect(entries.some((entry) => entry.id.startsWith("cohere-"))).toBe(false);
-    // Droid 0.249.0 serves Muse Spark 1.3 over Responses, unlike 1.2.
-    expect(parseFactoryModelDocs("| Muse Spark 1.3 | `muse-spark-1.3` | 0.5× | high |")).toEqual([]);
+    expect(parseFactoryModelDocs("| Other Model | `cohere-command-r` | 0.5× | high |")).toEqual([]);
   });
 
   test("extracts numeric multiplier from the multiplier column", () => {

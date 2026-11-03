@@ -129,7 +129,7 @@ function buildCompletionCompatibility(
   targetApi: FactoryTargetApi,
 ): ModelSpec<FactoryTargetApi>["compat"] {
   if (targetApi === "openai-responses") {
-    return modelId === "gpt-6-sol-fast" || modelId === "gpt-6-luna-fast"
+    return modelId === "gpt-6-sol-fast" || modelId === "gpt-6-luna-fast" || modelId === "gpt-6.1-terra"
       ? { reasoningDisableMode: "none-effort" }
       : undefined;
   }
@@ -147,7 +147,11 @@ function buildCompletionCompatibility(
     requiresReasoningContentForToolCalls: true,
     requiresReasoningContentForAllAssistantTurns: isDeepseek,
     allowsSyntheticReasoningContentForToolCalls: !isDeepseek,
-    ...(modelId === "deepseek-v4.1-flash-1017" ? { reasoningDisableMode: "none-effort" as const } : {}),
+    ...(modelId === "deepseek-v4.1-flash-1017" ||
+    modelId === "nemotron-3.5-super" ||
+    modelId === "muse-spark-open"
+      ? { reasoningDisableMode: "none-effort" as const }
+      : {}),
     requiresAssistantContentForToolCalls: true,
     ...(isQwen
       ? {

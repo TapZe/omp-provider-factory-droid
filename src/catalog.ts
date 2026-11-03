@@ -84,6 +84,12 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   ) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 0 };
   }
+  if (
+    id === "gpt-6.1-terra" ||
+    id.startsWith("gpt-6.1-terra-")
+  ) {
+    return { input: 1, output: 6, cacheRead: 0.1, cacheWrite: 0 };
+  }
   // Factory publishes only GPT-6.1 Sol's 0.8x subscription multiplier, not
   // token prices; use the existing GPT-6 Sol estimate until live pricing resolves.
   if (
@@ -198,7 +204,7 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   if (id.startsWith("garnet-")) {
     return { input: 0.6, output: 2.4, cacheRead: 0.06, cacheWrite: 0 };
   }
-  if (id.startsWith("gemini-3.1-pro") || id.startsWith("gemini-3-pro")) {
+  if (id.startsWith("gemini-4") || id.startsWith("gemini-3.1-pro") || id.startsWith("gemini-3-pro")) {
     return { input: 2.0, output: 8.0, cacheRead: 0.5, cacheWrite: 0 };
   }
   if (
@@ -237,7 +243,7 @@ export function factoryThinkingFor(
       efforts: supportsMinimal
         ? [Effort.Minimal, Effort.Low, Effort.Medium, Effort.High]
         : [Effort.Low, Effort.Medium, Effort.High],
-      defaultLevel: Effort.High,
+      defaultLevel: modelId === "gemini-4-argon" ? Effort.Medium : Effort.High,
     };
   }
 
@@ -549,6 +555,21 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
       defaultLevel: Effort.Medium,
       effortMap: { [Effort.Minimal]: "low" },
       requiresEffort: true,
+    },
+  }),
+  factoryModel({
+    id: "gpt-6.1-terra",
+    name: "GPT-6.1 Terra (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_050_000,
+    maxTokens: 128_000,
+    premiumMultiplier: 0.4,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
+      defaultLevel: Effort.Medium,
+      effortMap: { [Effort.Minimal]: "low" },
     },
   }),
   factoryModel({
@@ -982,6 +1003,20 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     premiumMultiplier: 0.24,
   }),
   factoryModel({
+    id: "nemotron-3.5-super",
+    name: "Nemotron 3.5 Super (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.08,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.High],
+      defaultLevel: Effort.High,
+    },
+  }),
+  factoryModel({
     id: "qwen3.8-max",
     name: "Qwen3.8 Max (Factory Core)",
     reasoning: true,
@@ -1007,6 +1042,37 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     },
   }),
   factoryModel({
+    id: "muse-spark-1.3",
+    name: "Muse Spark 1.3 (Factory Core)",
+    reasoning: true,
+    input: ["text"],
+    contextWindow: 1_040_000,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.5,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh],
+      defaultLevel: Effort.High,
+      effortMap: { [Effort.Minimal]: "low" },
+      requiresEffort: true,
+    },
+  }),
+  factoryModel({
+    id: "muse-spark-open",
+    name: "Muse Spark Open (Factory Core)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_040_000,
+    maxTokens: 131_072,
+    premiumMultiplier: 0.5,
+    thinking: {
+      mode: "effort",
+      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
+      defaultLevel: Effort.High,
+      effortMap: { [Effort.Minimal]: "low" },
+    },
+  }),
+  factoryModel({
     id: "beam-1.0",
     name: "Beam 1.0 (Factory Core)",
     reasoning: true,
@@ -1024,6 +1090,20 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
 
   // Google Gemini family
+  factoryModel({
+    id: "gemini-4-argon",
+    name: "Gemini 4 Argon (Factory)",
+    reasoning: true,
+    input: ["text", "image"],
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    premiumMultiplier: 0.8,
+    thinking: {
+      mode: "google-level",
+      efforts: [Effort.Low, Effort.Medium, Effort.High],
+      defaultLevel: Effort.Medium,
+    },
+  }),
   factoryModel({
     id: "gemini-3.8-flash",
     name: "Gemini 3.8 Flash (Factory)",
@@ -1116,6 +1196,10 @@ export function familyOf(id: string): FactoryModelFamily {
     return "openai-responses";
   }
 
+  if (id === "muse-spark-1.3") {
+    return "openai-responses";
+  }
+
   if (
     id.startsWith("glm-") ||
     id.startsWith("kimi-") ||
@@ -1125,7 +1209,7 @@ export function familyOf(id: string): FactoryModelFamily {
     id.startsWith("mistral-") ||
     id === "inkling" ||
     id.startsWith("inkling-") ||
-    id === "muse-spark-1.2" ||
+    id.startsWith("muse-spark-") ||
     id === "beam-1.0"
   ) {
     return "openai-completions";
@@ -1158,7 +1242,10 @@ export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
   if (id.startsWith("grok-")) {
     return "xai";
   }
-  if (id === "beam-1.0") {
+  if (id === "muse-spark-1.3") {
+    return "google";
+  }
+  if (id === "beam-1.0" || id === "muse-spark-open" || id === "nemotron-3.5-super") {
     return "baseten";
   }
 
@@ -1212,7 +1299,7 @@ export function identityFor(id: string): ModelIdentity {
   if (id.startsWith("inkling")) {
     return { class: "inkling", family: "inkling" };
   }
-  if (id === "muse-spark-1.2") {
+  if (id.startsWith("muse-spark-")) {
     return { class: "muse", family: "muse" };
   }
   if (id === "beam-1.0") {
