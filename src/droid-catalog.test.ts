@@ -66,3 +66,38 @@ describe("catalog reasoning follows Droid 1.3.0", () => {
     expect(curated("gpt-5.5").thinking?.mode).toBe("effort");
   });
 });
+
+describe("catalog limits and images follow Droid 1.3.0", () => {
+  // Anthropic's window for the 4.5 models is 200k, below Droid's 180k input
+  // plus 64k output, so those keep the upstream window.
+  const UPSTREAM_WINDOW: Record<string, number> = {
+    "claude-opus-4-5-20251101": 200_000,
+    "claude-sonnet-4-5-20250929": 200_000,
+    "claude-haiku-4-5-20251001": 200_000,
+  };
+
+  test("context is Droid's input limit plus output limit, output is Droid's output limit", () => {
+    for (const model of FACTORY_MODELS) {
+      const droid = DROID_MODELS[model.id];
+      expect({ id: model.id, contextWindow: model.contextWindow, maxTokens: model.maxTokens }).toEqual({
+        id: model.id,
+        contextWindow: UPSTREAM_WINDOW[model.id] ?? droid.maxInputTokens + droid.maxOutputTokens,
+        maxTokens: droid.maxOutputTokens,
+      });
+    }
+  });
+
+  test("image input follows Droid's supportedImageFormats gate", () => {
+    for (const model of FACTORY_MODELS) {
+      const droid = DROID_MODELS[model.id];
+      expect({ id: model.id, input: model.input }).toEqual({
+        id: model.id,
+        input: droid.images ? ["text", "image"] : ["text"],
+      });
+    }
+    // gpt-5.3-codex and kimi-k2.6 carry no images:false in 1.3.0.
+    expect(curated("gpt-5.3-codex").input).toEqual(["text", "image"]);
+    expect(curated("kimi-k2.6").input).toEqual(["text", "image"]);
+    expect(curated("glm-5.3").input).toEqual(["text"]);
+  });
+});
