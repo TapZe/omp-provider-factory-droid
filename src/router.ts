@@ -4,7 +4,13 @@ import type { Api, Model, ModelSpec } from "@oh-my-pi/pi-catalog/types";
 import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
 import { streamSimple, type Context, type Effort, type FetchImpl } from "@oh-my-pi/pi-ai";
 
-import { factoryThinkingFor, familyOf, identityFor, upstreamProviderFor } from "./catalog";
+import {
+  factoryThinkingFor,
+  familyOf,
+  identityFor,
+  type FactoryUpstreamProvider,
+  upstreamProviderFor,
+} from "./catalog";
 import {
   ANTHROPIC_VERSION,
   FACTORY_CLIENT_VERSION,
@@ -104,10 +110,14 @@ export function prepareContextForFactory(context: Context): Context {
   };
 }
 
-function buildTargetHeaders(modelId: string, targetApi: FactoryTargetApi, orgId: string | null): Record<string, string> {
+function buildTargetHeaders(
+  provider: FactoryUpstreamProvider,
+  targetApi: FactoryTargetApi,
+  orgId: string | null,
+): Record<string, string> {
   const headers: Record<string, string> = {
     ...FACTORY_HEADERS,
-    "x-api-provider": upstreamProviderFor(modelId),
+    "x-api-provider": provider,
     "x-provider-routing-source": "registry_default",
   };
 
@@ -160,6 +170,7 @@ function buildFactoryTargetModel(
   targetApi: FactoryTargetApi,
   orgId: string | null,
   apiEndpoint: string,
+  provider: FactoryUpstreamProvider,
 ): Model<FactoryTargetApi> {
   const explicitThinking = factoryThinkingFor(model.id, model.reasoning, model.thinking);
   const spec: ModelSpec<FactoryTargetApi> = {
@@ -177,7 +188,7 @@ function buildFactoryTargetModel(
     premiumMultiplier: model.premiumMultiplier,
     contextWindow: model.contextWindow,
     maxTokens: model.maxTokens,
-    headers: buildTargetHeaders(model.id, targetApi, orgId),
+    headers: buildTargetHeaders(provider, targetApi, orgId),
   };
 
   const target = Object.assign(buildModel(spec), { identity: identityFor(model.id) });
@@ -279,7 +290,15 @@ function streamSimpleDirect(
     );
   }
 
-  const target = buildFactoryTargetModel(model, targetApi, effectiveOrgId, apiEndpoint);
+  const provider = upstreamProviderFor(model.id, credential.inferenceRegion);
+  if (!provider) {
+    return createFactoryErrorStream(
+      model,
+      `factory: model ${model.id} is not available in the ${credential.inferenceRegion} inference region`,
+    );
+  }
+
+  const target = buildFactoryTargetModel(model, targetApi, effectiveOrgId, apiEndpoint, provider);
   const routedContext = prepareContextForFactory(context);
   const hasTools = (routedContext.tools?.length ?? 0) > 0;
   const resolvedToolChoice = options?.toolChoice ?? (hasTools ? "auto" : undefined);
@@ -289,7 +308,7 @@ function streamSimpleDirect(
   const baseFetch = options?.fetch ?? (globalThis.fetch.bind(globalThis) as FetchImpl);
   const droidFetch = createDroidRequestFetch(baseFetch, {
     modelId: model.id,
-    provider: upstreamProviderFor(model.id),
+    provider,
     requestedEffort: effort,
     sessionId,
   });

@@ -2,7 +2,7 @@ import { Effort } from "@oh-my-pi/pi-ai";
 import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
 import { CUSTOM_API } from "./constants";
-import { DROID_MODELS, type DroidModel } from "./droid-registry";
+import { DROID_MODELS, type DroidModel, type DroidRegion } from "./droid-registry";
 
 export type FactoryModelFamily =
   | "anthropic"
@@ -724,21 +724,25 @@ export function familyOf(id: string): FactoryModelFamily {
   return "unsupported";
 }
 
-export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "baseten" | "xai" | "google" | "mistral";
+export type FactoryUpstreamProvider =
+  | "anthropic"
+  | "vertex_anthropic"
+  | "openai"
+  | "fireworks"
+  | "baseten"
+  | "xai"
+  | "google"
+  | "mistral";
 
-// Factory's `x-api-provider` request header names the UPSTREAM the gateway routes
-// to, independent of the wire API shape. Droid Core open models (GLM, Kimi,
-// DeepSeek, MiniMax, Nemotron, Inkling, Qwen, Muse) resolve to "fireworks", even
-// MiniMax M2.x, which is served over the Anthropic-compatible API. MiniMax M3 and
-// M3.1 use chat completions. Beam routes to "baseten". Droid 1.3.0 configures
-// only Baseten (and Mistral in the EU) for GLM 5.2, GLM 5.2 Fast, and GLM 4.6, so
-// they route to "baseten" too. Mistral routes to direct "mistral", and Grok
-// routes to direct "xai".
-// Droid 1.3.0 sends a model to the first of its apiProviders that Ne allows
-// in the inference region. Docs-only models fall back to their id prefix.
-export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
-  const droidProvider = DROID_MODELS[id]?.providers.global;
-  if (droidProvider) return droidProvider as FactoryUpstreamProvider;
+// Factory's `x-api-provider` request header names the upstream the gateway
+// sends a request to. Droid 1.3.0 picks the first of a model's apiProviders
+// that its region rules allow in the inference region, and src/droid-registry.ts
+// holds that pick per region. A Droid model with no provider in the region is
+// not offered there, so this returns undefined. Models found only in
+// Factory's docs fall back to their id prefix.
+export function upstreamProviderFor(id: string, region: DroidRegion = "global"): FactoryUpstreamProvider | undefined {
+  const droid = DROID_MODELS[id];
+  if (droid) return droid.providers[region] as FactoryUpstreamProvider | undefined;
 
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";

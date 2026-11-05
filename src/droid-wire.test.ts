@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { Context } from "@oh-my-pi/pi-ai";
 
 import { FACTORY_MODELS } from "./catalog";
-import { DROID_MODELS, type DroidApi, type DroidEffort } from "./droid-registry";
+import { DROID_MODELS, type DroidApi, type DroidEffort, type DroidRegion } from "./droid-registry";
 import { factoryStreamSimple } from "./router";
 
 const SESSION = "wire-session";
@@ -63,10 +63,13 @@ function withSession(value: unknown): unknown {
 
 type Captured = { body: Record<string, unknown>; provider: string | null; beta: string | null };
 
-async function capture(modelId: string, effort: DroidEffort): Promise<Captured> {
+const REGIONS: readonly DroidRegion[] = ["global", "eu", "us"];
+
+async function send(modelId: string, effort: DroidEffort, region: DroidRegion) {
   const model = FACTORY_MODELS.find((entry) => entry.id === modelId)!;
   const originalFetch = globalThis.fetch;
   let captured: Captured | undefined;
+  let result: Awaited<ReturnType<ReturnType<typeof factoryStreamSimple>["result"]>> | undefined;
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     captured = {
@@ -85,42 +88,62 @@ async function capture(modelId: string, effort: DroidEffort): Promise<Captured> 
         tools: [READ_TOOL],
       },
       {
-        apiKey: JSON.stringify({ token: "t", orgId: "o", apiEndpoint: "https://api.test.factory.ai" }),
+        apiKey: JSON.stringify({
+          token: "t",
+          orgId: "o",
+          apiEndpoint: "https://api.test.factory.ai",
+          inferenceRegion: region,
+        }),
         sessionId: SESSION,
         ...(effort === "off" ? {} : { reasoning: effort as never }),
       },
     );
-    await stream.result();
+    result = await stream.result();
   } finally {
     globalThis.fetch = originalFetch;
   }
-  if (!captured) throw new Error(`no request captured for ${modelId} at ${effort}`);
+  return { captured, result: result! };
+}
+
+async function capture(modelId: string, effort: DroidEffort, region: DroidRegion): Promise<Captured> {
+  const { captured } = await send(modelId, effort, region);
+  if (!captured) throw new Error(`no request captured for ${modelId} at ${effort} in ${region}`);
   return captured;
 }
 
-describe("request fields follow Droid 1.3.0 for every model and effort", () => {
-  for (const model of FACTORY_MODELS) {
-    const droid = DROID_MODELS[model.id];
-    const provider = droid.providers.global!;
-    for (const effort of droid.efforts) {
-      test(`${model.id} at ${effort} on ${provider}`, async () => {
-        const expected = droid.requests[provider][effort]!;
-        const request = await capture(model.id, effort);
-        const body = withSession(expected.body) as Record<string, unknown>;
+describe("request fields follow Droid 1.3.0 for every model, effort, and region", () => {
+  for (const region of REGIONS) {
+    for (const model of FACTORY_MODELS) {
+      const droid = DROID_MODELS[model.id];
+      const provider = droid.providers[region];
+      if (!provider) {
+        test(`${model.id} is not offered in ${region}`, async () => {
+          const { captured, result } = await send(model.id, droid.defaultEffort, region);
+          expect(captured).toBeUndefined();
+          expect(result.errorMessage).toContain(`not available in the ${region} inference region`);
+        });
+        continue;
+      }
+      for (const effort of droid.efforts) {
+        test(`${model.id} at ${effort} in ${region} on ${provider}`, async () => {
+          const expected = droid.requests[provider][effort]!;
+          const request = await capture(model.id, effort, region);
+          const body = withSession(expected.body) as Record<string, unknown>;
 
-        expect(request.provider).toBe(provider);
-        expect(request.body).toMatchObject(body);
-        for (const path of OWNED[droid.api]) {
-          expect({ path, value: lookup(request.body, path) }).toEqual({ path, value: lookup(body, path) });
-        }
-        if (droid.api === "anthropic") {
-          const betas = [
-            ...(expected.betas ?? []),
-            ...(TOOL_STREAMING_PROVIDERS.has(provider) ? ["fine-grained-tool-streaming-2025-05-14"] : []),
-          ];
-          expect(request.beta?.split(",").sort() ?? []).toEqual(betas.sort());
-        }
-      });
+          expect(request.provider).toBe(provider);
+          expect(request.body).toMatchObject(body);
+          for (const path of OWNED[droid.api]) {
+            expect({ path, value: lookup(request.body, path) }).toEqual({ path, value: lookup(body, path) });
+          }
+          if (droid.api === "anthropic") {
+            const betas = [
+              ...(expected.betas ?? []),
+              ...(TOOL_STREAMING_PROVIDERS.has(provider) ? ["fine-grained-tool-streaming-2025-05-14"] : []),
+            ];
+            expect(request.beta?.split(",").sort() ?? []).toEqual(betas.sort());
+          }
+        });
+      }
     }
   }
 });

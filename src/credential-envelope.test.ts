@@ -31,6 +31,7 @@ describe("Factory credential envelope contract", () => {
       token: "test-access-token-123",
       orgId: "org_factory_main",
       apiEndpoint: "https://api.factory.ai",
+      inferenceRegion: null,
     });
     expect(parsed.access).toBeUndefined();
     expect(parsed.refresh).toBeUndefined();
@@ -51,6 +52,7 @@ describe("Factory credential envelope contract", () => {
       access: "test-token-abc",
       orgId: "org_custom",
       apiEndpoint: "https://api.eu.factory.ai",
+      inferenceRegion: "eu",
     });
   });
 
@@ -63,11 +65,12 @@ describe("Factory credential envelope contract", () => {
           apiEndpoint: "https://api.factory.ai",
         }),
       ),
-    ).toEqual({ source: "invalid", orgId: null, apiEndpoint: null });
+    ).toEqual({ source: "invalid", orgId: null, apiEndpoint: null, inferenceRegion: "global" });
     expect(parseFactoryCredential(JSON.stringify({ arbitrary: "value" }))).toEqual({
       source: "invalid",
       orgId: null,
       apiEndpoint: null,
+      inferenceRegion: "global",
     });
   });
 
@@ -77,17 +80,29 @@ describe("Factory credential envelope contract", () => {
       access: "fk-live-direct-api-key",
       orgId: null,
       apiEndpoint: null,
+      inferenceRegion: "global",
     });
-    expect(parseFactoryCredential(undefined)).toEqual({ source: "missing", orgId: null, apiEndpoint: null });
-    expect(parseFactoryCredential(" ")).toEqual({ source: "missing", orgId: null, apiEndpoint: null });
+    expect(parseFactoryCredential(undefined)).toEqual({
+      source: "missing",
+      orgId: null,
+      apiEndpoint: null,
+      inferenceRegion: "global",
+    });
+    expect(parseFactoryCredential(" ")).toEqual({
+      source: "missing",
+      orgId: null,
+      apiEndpoint: null,
+      inferenceRegion: "global",
+    });
   });
 
-  test("round-trips the selected token, organization, and endpoint atomically", () => {
-    expect(parseFactoryCredential(getApiKey(SAMPLE_CREDENTIAL))).toEqual({
+  test("round-trips the selected token, organization, endpoint, and region atomically", () => {
+    expect(parseFactoryCredential(getApiKey({ ...SAMPLE_CREDENTIAL, inferenceRegion: "us" }))).toEqual({
       source: "oauth-envelope",
       access: "test-access-token-123",
       orgId: "org_factory_main",
       apiEndpoint: "https://api.factory.ai",
+      inferenceRegion: "us",
     });
   });
 });

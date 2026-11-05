@@ -1,3 +1,4 @@
+import type { DroidRegion } from "./droid-registry";
 import { firstStringField, isRecord, stringField } from "./object-fields";
 
 const ORGANIZATION_ID_CLAIMS = [
@@ -15,6 +16,30 @@ export interface ParsedFactoryCredential {
   access?: string;
   orgId: string | null;
   apiEndpoint: string | null;
+  inferenceRegion: DroidRegion;
+}
+
+const INFERENCE_REGIONS: readonly string[] = ["global", "eu", "us"] satisfies DroidRegion[];
+const EU_API_HOST = "api.eu.factory.ai";
+
+// Droid 1.3.0 picks the region that serves model inference as
+//   e?.inferenceRegion ?? cd(e?.region ?? "global", void 0)
+// An unknown inferenceRegion reads as absent, and cd sends an eu org to eu
+// and every other org to global.
+export function inferenceRegionOf(inferenceRegion: unknown, region: string | undefined): DroidRegion {
+  if (typeof inferenceRegion === "string" && INFERENCE_REGIONS.includes(inferenceRegion)) {
+    return inferenceRegion as DroidRegion;
+  }
+  return region === "eu" ? "eu" : "global";
+}
+
+function regionOfEndpoint(apiEndpoint: string | undefined): string | undefined {
+  if (!apiEndpoint) return undefined;
+  try {
+    return new URL(apiEndpoint).hostname.toLowerCase() === EU_API_HOST ? "eu" : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function decodeBase64UrlBinary(segment: string): string {
@@ -66,12 +91,13 @@ function rawFactoryCredential(access: string): ParsedFactoryCredential {
     access,
     orgId: organizationIdFromCredentialToken(access) ?? null,
     apiEndpoint: null,
+    inferenceRegion: "global",
   };
 }
 
 export function parseFactoryCredential(raw: string | undefined): ParsedFactoryCredential {
   if (!raw || raw.trim().length === 0) {
-    return { source: "missing", orgId: null, apiEndpoint: null };
+    return { source: "missing", orgId: null, apiEndpoint: null, inferenceRegion: "global" };
   }
 
   let parsed: unknown;
@@ -87,13 +113,16 @@ export function parseFactoryCredential(raw: string | undefined): ParsedFactoryCr
 
   const access = stringField(parsed, "token");
   if (!access) {
-    return { source: "invalid", orgId: null, apiEndpoint: null };
+    return { source: "invalid", orgId: null, apiEndpoint: null, inferenceRegion: "global" };
   }
 
+  // Credentials saved before the region was stored still name the EU endpoint.
+  const apiEndpoint = stringField(parsed, "apiEndpoint");
   return {
     source: "oauth-envelope",
     access,
     orgId: stringField(parsed, "orgId") ?? organizationIdFromCredentialToken(access) ?? null,
-    apiEndpoint: stringField(parsed, "apiEndpoint") ?? null,
+    apiEndpoint: apiEndpoint ?? null,
+    inferenceRegion: inferenceRegionOf(parsed.inferenceRegion, regionOfEndpoint(apiEndpoint)),
   };
 }

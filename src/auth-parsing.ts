@@ -1,5 +1,6 @@
 import { factoryApiForRegion } from "./constants";
-import { decodeJwtPayload } from "./credential";
+import { decodeJwtPayload, inferenceRegionOf } from "./credential";
+import type { DroidRegion } from "./droid-registry";
 import { firstStringField, isRecord, numberField, stringField } from "./object-fields";
 
 export const TOKEN_EXPIRY_SKEW_MS = 60_000;
@@ -25,6 +26,7 @@ export interface FactoryIdentity {
   accountId?: string;
   region?: string;
   apiEndpoint?: string;
+  inferenceRegion?: DroidRegion;
 }
 
 export function formatErrorDetails(error: unknown): string {
@@ -142,6 +144,7 @@ export function identityFromWhoami(value: unknown): FactoryIdentity {
     accountId,
     region,
     apiEndpoint: factoryApiForRegion(region),
+    inferenceRegion: inferenceRegionOf(value.inferenceRegion, region),
   };
 }
 
