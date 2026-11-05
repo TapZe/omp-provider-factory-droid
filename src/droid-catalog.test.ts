@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { droidMultiplierFor, FACTORY_MODELS } from "./catalog";
+import { droidMultiplierFor, FACTORY_MODELS, upstreamProviderFor } from "./catalog";
 import { DROID_MODELS } from "./droid-registry";
 
 function curated(id: string) {
@@ -139,5 +139,22 @@ describe("catalog multipliers follow Droid 1.3.0", () => {
 
   test("ids with no Droid row have no Droid multiplier", () => {
     expect(droidMultiplierFor("not-a-droid-model")).toBeUndefined();
+  });
+});
+
+describe("upstream providers follow Droid 1.3.0", () => {
+  // Droid picks the first apiProviders entry that Ne allows in the region.
+  test("every curated model goes to Droid's first global provider", () => {
+    for (const model of FACTORY_MODELS) {
+      expect({ id: model.id, provider: upstreamProviderFor(model.id) as string | undefined }).toEqual({
+        id: model.id,
+        provider: DROID_MODELS[model.id].providers.global,
+      });
+    }
+  });
+
+  test("nemotron-3-ultra goes to Baseten", () => {
+    // apiProviders:["baseten"], apiProviderConfig:{baseten:{modelId:"nvidia/Nemotron-120B-A12B"}}
+    expect(upstreamProviderFor("nemotron-3-ultra")).toBe("baseten");
   });
 });

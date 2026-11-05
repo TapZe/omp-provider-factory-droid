@@ -734,16 +734,12 @@ export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "ba
 // only Baseten (and Mistral in the EU) for GLM 5.2, GLM 5.2 Fast, and GLM 4.6, so
 // they route to "baseten" too. Mistral routes to direct "mistral", and Grok
 // routes to direct "xai".
-const BASETEN_MODEL_IDS = new Set([
-  "beam-1.0",
-  "muse-spark-open",
-  "nemotron-3.5-super",
-  "glm-5.2",
-  "glm-5.2-fast",
-  "glm-4.6",
-]);
-
+// Droid 1.3.0 sends a model to the first of its apiProviders that Ne allows
+// in the inference region. Docs-only models fall back to their id prefix.
 export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
+  const droidProvider = DROID_MODELS[id]?.providers.global;
+  if (droidProvider) return droidProvider as FactoryUpstreamProvider;
+
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";
   }
@@ -758,12 +754,6 @@ export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
 
   if (id.startsWith("grok-")) {
     return "xai";
-  }
-  if (id === "muse-spark-1.3") {
-    return "google";
-  }
-  if (BASETEN_MODEL_IDS.has(id)) {
-    return "baseten";
   }
 
   if (id.startsWith("mistral-")) {
