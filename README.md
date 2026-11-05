@@ -47,7 +47,7 @@ Curated static catalog synchronized with the Droid CLI 1.3.0 model registry and 
 
 ### 4. Factory Core & Open Models
 *Wire Endpoint: `POST /api/llm/o/v1/chat/completions`*
-- **GLM**: `glm-5.3`, `glm-5.3-flash`, `glm-5.2`, `glm-5.2-fast`, `glm-5.1`, `glm-5`, `glm-4.7`, `glm-4.6` (`x-api-provider: fireworks`)
+- **GLM**: `glm-5.3`, `glm-5.3-flash`, `glm-5.1`, `glm-5`, `glm-4.7` (`x-api-provider: fireworks`); `glm-5.2`, `glm-5.2-fast`, `glm-4.6` (`x-api-provider: baseten`)
 - **Kimi**: `kimi-k3`, `kimi-k2.7-code`, `kimi-k2.6`, `kimi-k2.5` (`x-api-provider: fireworks`)
 - **DeepSeek**: `deepseek-v4.1-flash`, `deepseek-v4.1-flash-1017`, `deepseek-v4-flash-0731`, `deepseek-v4-pro` (`x-api-provider: fireworks`); V4.1 Flash variants accept images, while the deprecated V4 variants are text-only.
 - **Qwen**: `qwen3.8-max` (`x-api-provider: fireworks`)

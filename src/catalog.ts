@@ -1222,10 +1222,21 @@ export type FactoryUpstreamProvider = "anthropic" | "openai" | "fireworks" | "ba
 
 // Factory's `x-api-provider` request header names the UPSTREAM the gateway routes
 // to, independent of the wire API shape. Droid Core open models (GLM, Kimi,
-// DeepSeek, MiniMax, Nemotron, Inkling, Qwen, Muse) resolve to "fireworks" — even
+// DeepSeek, MiniMax, Nemotron, Inkling, Qwen, Muse) resolve to "fireworks", even
 // MiniMax M2.x, which is served over the Anthropic-compatible API. MiniMax M3 and
-// M3.1 use chat completions. Beam routes to "baseten". Mistral routes to direct
-// "mistral", and Grok routes to direct "xai".
+// M3.1 use chat completions. Beam routes to "baseten". Droid 1.3.0 configures
+// only Baseten (and Mistral in the EU) for GLM 5.2, GLM 5.2 Fast, and GLM 4.6, so
+// they route to "baseten" too. Mistral routes to direct "mistral", and Grok
+// routes to direct "xai".
+const BASETEN_MODEL_IDS = new Set([
+  "beam-1.0",
+  "muse-spark-open",
+  "nemotron-3.5-super",
+  "glm-5.2",
+  "glm-5.2-fast",
+  "glm-4.6",
+]);
+
 export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
   if (id.startsWith("claude-") || id.startsWith("atlas-") || id.startsWith("aster-")) {
     return "anthropic";
@@ -1245,7 +1256,7 @@ export function upstreamProviderFor(id: string): FactoryUpstreamProvider {
   if (id === "muse-spark-1.3") {
     return "google";
   }
-  if (id === "beam-1.0" || id === "muse-spark-open" || id === "nemotron-3.5-super") {
+  if (BASETEN_MODEL_IDS.has(id)) {
     return "baseten";
   }
 

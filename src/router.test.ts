@@ -407,6 +407,13 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(familyOf("gemini-4-argon")).toBe("google");
     expect(upstreamProviderFor("gemini-4-argon")).toBe("google");
   });
+  it("routes GLM 5.2, GLM 5.2 Fast, and GLM 4.6 to Baseten, their only Droid 1.3.0 upstream outside the EU", async () => {
+    for (const modelId of ["glm-5.2", "glm-5.2-fast", "glm-4.6"]) {
+      const request = await captureFactoryRequest(modelId);
+      expect(request.apiProvider).toBe("baseten");
+      expect(request.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+    }
+  });
   it("routes Beam through the Baseten upstream and Muse through Fireworks chat completions", async () => {
     const beam = await captureFactoryRequest("beam-1.0");
     expect(beam.apiProvider).toBe("baseten");
