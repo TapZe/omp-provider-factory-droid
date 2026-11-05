@@ -1,6 +1,13 @@
 import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
-import { defaultCostFor, FACTORY_MODELS, factoryModel, familyOf, type FactoryModelInput } from "./catalog";
+import {
+  defaultCostFor,
+  droidMultiplierFor,
+  FACTORY_MODELS,
+  factoryModel,
+  familyOf,
+  type FactoryModelInput,
+} from "./catalog";
 
 const FACTORY_MODEL_DOCS_URL = "https://docs.factory.ai/models.md";
 const FACTORY_MODEL_DOCS_TIMEOUT_MS = 10_000;
@@ -216,9 +223,11 @@ function mergeDocsModels(
   entries: FactoryModelDocsEntry[],
   livePrices: Map<string, LiveTokenCost> = new Map(),
 ): ProviderModelConfig[] {
+  // Promotions start and end by date, so each refresh recomputes the multiplier.
   const merged: ProviderModelConfig[] = FACTORY_MODELS.map((model) => {
     const liveCost = matchLivePrice(model.id, livePrices);
-    return liveCost ? { ...model, cost: liveCost } : model;
+    const premiumMultiplier = droidMultiplierFor(model.id) ?? model.premiumMultiplier;
+    return liveCost ? { ...model, cost: liveCost, premiumMultiplier } : { ...model, premiumMultiplier };
   });
 
   const seenModelIds = new Set<string>(merged.map((model) => model.id));

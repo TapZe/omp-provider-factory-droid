@@ -32,10 +32,10 @@ export type FactoryModelInput = {
   premiumMultiplier?: number;
 };
 
-// A model Droid 1.3.0 ships: reasoning, limits, and image input come from its
-// Droid row. `contextWindow` is set only where the upstream window is smaller
+// For a model that Droid 1.3.0 ships, the reasoning, limits, image input, and multiplier
+// come from its Droid row. `contextWindow` is set only where the upstream window is smaller
 // than Droid's input plus output limits.
-type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost" | "premiumMultiplier"> & {
+type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost"> & {
   contextWindow?: number;
 };
 
@@ -286,6 +286,22 @@ export function factoryModel(config: FactoryModelInput): ProviderModelConfig {
   };
 }
 
+// Droid 1.3.0: fn(e,o) keeps a promotion with a discount where startsAt <= o
+// and o < expiresAt; Ce takes the first; mn = Number((m*(1-d)).toFixed(4)).
+export function droidMultiplierFor(modelId: string, now: Date = new Date()): number | undefined {
+  const droid = DROID_MODELS[modelId];
+  if (!droid) return undefined;
+  const at = now.getTime();
+  const promotion = droid.promotions?.find(
+    (entry) =>
+      entry.discount > 0 &&
+      at >= Date.parse(entry.startsAt) &&
+      (entry.expiresAt === undefined || at < Date.parse(entry.expiresAt)),
+  );
+  const multiplier = promotion ? droid.tokenMultiplier * (1 - promotion.discount) : droid.tokenMultiplier;
+  return Number(multiplier.toFixed(4));
+}
+
 function droidModel(config: CuratedModelInput): ProviderModelConfig {
   const droid = DROID_MODELS[config.id];
   if (!droid) throw new Error(`${config.id} has no Droid 1.3.0 registry row`);
@@ -298,6 +314,7 @@ function droidModel(config: CuratedModelInput): ProviderModelConfig {
     input: droid.images ? ["text", "image"] : ["text"],
     contextWindow: config.contextWindow ?? droid.maxInputTokens + droid.maxOutputTokens,
     maxTokens: droid.maxOutputTokens,
+    premiumMultiplier: droidMultiplierFor(config.id),
   });
 }
 
@@ -308,449 +325,362 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   droidModel({
     id: "claude-fable-5.1",
     name: "Claude Fable 5.1 (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "claude-fable-5",
     name: "Claude Fable 5 (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "claude-opus-5-5",
     name: "Claude Opus 5.5 (Factory)",
-    premiumMultiplier: 1.6,
   }),
   droidModel({
     id: "claude-opus-5-5-fast",
     name: "Claude Opus 5.5 Fast (Factory)",
-    premiumMultiplier: 3.2,
   }),
   droidModel({
     id: "claude-opus-5",
     name: "Claude Opus 5 (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "claude-opus-5-fast",
     name: "Claude Opus 5 Fast (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "claude-opus-4-8",
     name: "Claude Opus 4.8 (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "claude-opus-4-8-fast",
     name: "Claude Opus 4.8 Fast (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "claude-opus-4-7",
     name: "Claude Opus 4.7 (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "claude-opus-4-7-fast",
     name: "Claude Opus 4.7 Fast [Deprecated] (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "claude-opus-4-6",
     name: "Claude Opus 4.6 (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "claude-opus-4-6-fast",
     name: "Claude Opus 4.6 Fast [Deprecated] (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "claude-opus-4-5-20251101",
     name: "Claude Opus 4.5 (Factory)",
     contextWindow: 200000,
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "claude-sonnet-5-5",
     name: "Claude Sonnet 5.5 (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "claude-sonnet-5",
     name: "Claude Sonnet 5 (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "claude-sonnet-4-6",
     name: "Claude Sonnet 4.6 (Factory)",
-    premiumMultiplier: 1.2,
   }),
   droidModel({
     id: "claude-sonnet-4-5-20250929",
     name: "Claude Sonnet 4.5 (Factory)",
     contextWindow: 200_000,
-    premiumMultiplier: 1.2,
   }),
   droidModel({
     id: "claude-haiku-5-5",
     name: "Claude Haiku 5.5 (Factory)",
-    premiumMultiplier: 0.04,
   }),
   droidModel({
     id: "claude-haiku-4-5-20251001",
     name: "Claude Haiku 4.5 (Factory)",
     contextWindow: 200000,
-    premiumMultiplier: 0.4,
   }),
   droidModel({
     id: "atlas-07-21",
     name: "Atlas 07/21 Preview (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "aster-07-15",
     name: "Aster 07/15 Preview (Factory)",
-    premiumMultiplier: 2,
   }),
   // GPT and Codex models
   droidModel({
     id: "gpt-6-astra",
     name: "GPT-6 Astra (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "gpt-6-sol",
     name: "GPT-6 Sol (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "gpt-6-sol-fast",
     name: "GPT-6 Sol Fast (Factory)",
-    premiumMultiplier: 1.6,
   }),
   droidModel({
     id: "gpt-6.1-sol",
     name: "GPT-6.1 Sol (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "gpt-6.1-sol-ultrafast",
     name: "GPT-6.1 Sol Ultrafast (Factory)",
-    premiumMultiplier: 4.8,
   }),
   droidModel({
     id: "gpt-6.1-terra",
     name: "GPT-6.1 Terra (Factory)",
-    premiumMultiplier: 0.4,
   }),
   droidModel({
     id: "gpt-6-luna",
     name: "GPT-6 Luna (Factory)",
-    premiumMultiplier: 0.04,
   }),
   droidModel({
     id: "gpt-6-luna-fast",
     name: "GPT-6 Luna Fast (Factory)",
-    premiumMultiplier: 0.08,
   }),
   droidModel({
     id: "gpt-5.6-sol",
     name: "GPT-5.6 Sol (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "gpt-5.6-sol-fast",
     name: "GPT-5.6 Sol Fast (Factory)",
-    premiumMultiplier: 4,
   }),
   droidModel({
     id: "gpt-5.6-terra",
     name: "GPT-5.6 Terra (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "gpt-5.6-luna",
     name: "GPT-5.6 Luna (Factory)",
-    premiumMultiplier: 0.08,
   }),
   droidModel({
     id: "gpt-5.5",
     name: "GPT-5.5 (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "gpt-5.5-fast",
     name: "GPT-5.5 Fast (Factory)",
-    premiumMultiplier: 5,
   }),
   droidModel({
     id: "gpt-5.5-pro",
     name: "GPT-5.5 Pro (Factory)",
-    premiumMultiplier: 12,
   }),
   droidModel({
     id: "gpt-5.4",
     name: "GPT-5.4 (Factory)",
-    premiumMultiplier: 1,
   }),
   droidModel({
     id: "gpt-5.4-fast",
     name: "GPT-5.4 Fast (Factory)",
-    premiumMultiplier: 2,
   }),
   droidModel({
     id: "gpt-5.4-mini",
     name: "GPT-5.4 Mini (Factory)",
-    premiumMultiplier: 0.3,
   }),
   droidModel({
     id: "gpt-5.4-mini-fast",
     name: "GPT-5.4 Mini Fast (Factory)",
-    premiumMultiplier: 0.6,
   }),
   droidModel({
     id: "gpt-5.3-codex",
     name: "GPT-5.3 Codex (Factory)",
-    premiumMultiplier: 0.7,
   }),
   droidModel({
     id: "gpt-5.3-codex-fast",
     name: "GPT-5.3 Codex Fast (Factory)",
-    premiumMultiplier: 1.4,
   }),
   droidModel({
     id: "gpt-5.2",
     name: "GPT-5.2 (Factory)",
-    premiumMultiplier: 0.7,
   }),
   droidModel({
     id: "gpt-5.2-codex",
     name: "GPT-5.2 Codex [Deprecated] (Factory)",
-    premiumMultiplier: 0.7,
   }),
   droidModel({
     id: "gpt-5.1-codex-max",
     name: "GPT-5.1 Codex Max [Deprecated] (Factory)",
-    premiumMultiplier: 0.5,
   }),
 
   // Grok family (routed through OpenAI Responses gateway with x-api-provider: xai)
   droidModel({
     id: "grok-4.7",
     name: "Grok 4.7 (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "grok-4.6",
     name: "Grok 4.6 (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "grok-4.5",
     name: "Grok 4.5 (Factory)",
-    premiumMultiplier: 0.8,
   }),
 
   // Factory Core and open-weight chat models
   droidModel({
     id: "inkling",
     name: "Inkling (Factory Core)",
-    premiumMultiplier: 0.4,
   }),
   droidModel({
     id: "mistral-large-4",
     name: "Mistral Large 4 (Factory Core)",
-    premiumMultiplier: 0.544,
   }),
   droidModel({
     id: "mistral-medium-3.5",
     name: "Mistral Medium 3.5 (Factory Core)",
-    premiumMultiplier: 0.6,
   }),
   droidModel({
     id: "glm-5.3",
     name: "GLM 5.3 (Factory Core)",
-    premiumMultiplier: 0.56,
   }),
   droidModel({
     id: "glm-5.3-flash",
     name: "GLM 5.3 Flash (Factory Core)",
-    premiumMultiplier: 0.06,
   }),
   droidModel({
     id: "glm-5.2",
     name: "GLM 5.2 (Factory Core)",
-    premiumMultiplier: 0.56,
   }),
   droidModel({
     id: "glm-5.2-fast",
     name: "GLM 5.2 Fast (Factory Core)",
-    premiumMultiplier: 0.84,
   }),
   droidModel({
     id: "glm-5.1",
     name: "GLM 5.1 [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.55,
   }),
   droidModel({
     id: "glm-5",
     name: "GLM 5 [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.55,
   }),
   droidModel({
     id: "glm-4.7",
     name: "GLM 4.7 [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.4,
   }),
   droidModel({
     id: "glm-4.6",
     name: "GLM 4.6 (Factory Core)",
-    premiumMultiplier: 0.25,
   }),
   droidModel({
     id: "kimi-k3",
     name: "Kimi K3 (Factory Core)",
-    premiumMultiplier: 1.2,
   }),
   droidModel({
     id: "kimi-k2.7-code",
     name: "Kimi K2.7 Code (Factory Core)",
-    premiumMultiplier: 0.38,
   }),
   droidModel({
     id: "kimi-k2.6",
     name: "Kimi K2.6 (Factory Core)",
-    premiumMultiplier: 0.4,
   }),
   droidModel({
     id: "kimi-k2.5",
     name: "Kimi K2.5 [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.25,
   }),
   // Promoted to the static catalog 2026-09: docs.factory.ai/models now publishes
   // `deepseek-v4.1-flash` and Droid 0.228.1 ships binary-audited limits for it.
   droidModel({
     id: "deepseek-v4.1-flash",
     name: "DeepSeek V4.1 Flash (Factory Core)",
-    premiumMultiplier: 0.12,
   }),
   droidModel({
     id: "deepseek-v4.1-flash-1017",
     name: "DeepSeek V4.1 Flash 1017 (Factory Core)",
-    premiumMultiplier: 0.12,
   }),
   droidModel({
     id: "deepseek-v4-flash-0731",
     name: "DeepSeek V4 Flash [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.176,
   }),
   droidModel({
     id: "deepseek-v4-pro",
     name: "DeepSeek V4 Pro [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.528,
   }),
   droidModel({
     id: "minimax-m3",
     name: "MiniMax M3 (Factory Core)",
-    premiumMultiplier: 0.12,
   }),
   droidModel({
     id: "minimax-m3.1-flash",
     name: "MiniMax M3.1 Flash (Factory Core)",
-    premiumMultiplier: 0.06,
   }),
   droidModel({
     id: "minimax-m2.7",
     name: "MiniMax M2.7 [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.12,
   }),
   droidModel({
     id: "minimax-m2.5",
     name: "MiniMax M2.5 [Deprecated] (Factory Core)",
-    premiumMultiplier: 0.2,
   }),
   droidModel({
     id: "nemotron-3-ultra",
     name: "Nemotron 3 Ultra (Factory Core)",
-    premiumMultiplier: 0.24,
   }),
   droidModel({
     id: "nemotron-3.5-super",
     name: "Nemotron 3.5 Super (Factory Core)",
-    premiumMultiplier: 0.08,
   }),
   droidModel({
     id: "qwen3.8-max",
     name: "Qwen3.8 Max (Factory Core)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "muse-spark-1.2",
     name: "Muse Spark 1.2 (Factory Core)",
-    premiumMultiplier: 0.5,
   }),
   droidModel({
     id: "muse-spark-1.3",
     name: "Muse Spark 1.3 (Factory Core)",
-    premiumMultiplier: 0.5,
   }),
   droidModel({
     id: "muse-spark-open",
     name: "Muse Spark Open (Factory Core)",
-    premiumMultiplier: 0.5,
   }),
   droidModel({
     id: "beam-1.0",
     name: "Beam 1.0 (Factory Core)",
-    premiumMultiplier: 0.52,
   }),
 
   // Google Gemini family
   droidModel({
     id: "gemini-4-argon",
     name: "Gemini 4 Argon (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "gemini-3.8-flash",
     name: "Gemini 3.8 Flash (Factory)",
-    premiumMultiplier: 0.6,
   }),
   droidModel({
     id: "gemini-3.7-flash",
     name: "Gemini 3.7 Flash (Factory)",
-    premiumMultiplier: 0.6,
   }),
   droidModel({
     id: "gemini-3.6-flash",
     name: "Gemini 3.6 Flash (Factory)",
-    premiumMultiplier: 0.6,
   }),
   droidModel({
     id: "gemini-3.5-flash",
     name: "Gemini 3.5 Flash (Factory)",
-    premiumMultiplier: 0.6,
   }),
   droidModel({
     id: "gemini-3-flash-preview",
     name: "Gemini 3 Flash Preview (Factory)",
-    premiumMultiplier: 0.2,
   }),
   droidModel({
     id: "gemini-3.1-pro-preview",
     name: "Gemini 3.1 Pro Preview (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "gemini-3-pro-preview",
     name: "Gemini 3 Pro Preview (Factory)",
-    premiumMultiplier: 0.8,
   }),
   droidModel({
     id: "garnet-07-15",
     name: "Garnet 07/15 Preview (Factory)",
-    premiumMultiplier: 0.6,
   }),
 ];
 

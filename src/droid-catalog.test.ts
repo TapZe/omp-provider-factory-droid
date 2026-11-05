@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { FACTORY_MODELS } from "./catalog";
+import { droidMultiplierFor, FACTORY_MODELS } from "./catalog";
 import { DROID_MODELS } from "./droid-registry";
 
 function curated(id: string) {
@@ -99,5 +99,45 @@ describe("catalog limits and images follow Droid 1.3.0", () => {
     expect(curated("gpt-5.3-codex").input).toEqual(["text", "image"]);
     expect(curated("kimi-k2.6").input).toEqual(["text", "image"]);
     expect(curated("glm-5.3").input).toEqual(["text"]);
+  });
+});
+
+describe("catalog multipliers follow Droid 1.3.0", () => {
+  test("every curated model carries Droid's multiplier for today", () => {
+    for (const model of FACTORY_MODELS) {
+      expect({ id: model.id, premiumMultiplier: model.premiumMultiplier }).toEqual({
+        id: model.id,
+        premiumMultiplier: droidMultiplierFor(model.id),
+      });
+    }
+  });
+
+  test("base multipliers match the binary's cost.tokenMultiplier", () => {
+    const outsidePromotions = new Date("2027-06-01T00:00:00Z");
+    expect(droidMultiplierFor("claude-opus-4-7-fast", outsidePromotions)).toBe(12);
+    expect(droidMultiplierFor("glm-5", outsidePromotions)).toBe(0.4);
+    expect(droidMultiplierFor("glm-4.7", outsidePromotions)).toBe(0.25);
+    expect(droidMultiplierFor("minimax-m2.5", outsidePromotions)).toBe(0.12);
+  });
+
+  // fn(e,o): discount set, o >= startsAt, and o < expiresAt. mn: Number((m*(1-d)).toFixed(4)).
+  test("gemini-4-argon is half price only inside its promotion window", () => {
+    expect(droidMultiplierFor("gemini-4-argon", new Date("2026-10-13T15:59:59Z"))).toBe(1.6);
+    expect(droidMultiplierFor("gemini-4-argon", new Date("2026-10-13T16:00:00Z"))).toBe(0.8);
+    expect(droidMultiplierFor("gemini-4-argon", new Date("2026-11-05T00:00:00Z"))).toBe(0.8);
+    expect(droidMultiplierFor("gemini-4-argon", new Date("2026-12-01T08:00:00Z"))).toBe(1.6);
+  });
+
+  test("the first active promotion wins and expired ones are ignored", () => {
+    // gpt-5.6-sol: 60% from 08-29 to 09-05, 20% from 08-22 to 11-22, base 2.
+    expect(droidMultiplierFor("gpt-5.6-sol", new Date("2026-09-01T00:00:00Z"))).toBe(0.8);
+    expect(droidMultiplierFor("gpt-5.6-sol", new Date("2026-11-05T00:00:00Z"))).toBe(1.6);
+    expect(droidMultiplierFor("gpt-5.6-sol", new Date("2026-11-22T00:00:00Z"))).toBe(2);
+    expect(droidMultiplierFor("gemini-3.8-flash", new Date("2026-11-05T00:00:00Z"))).toBe(0.3);
+    expect(droidMultiplierFor("mistral-large-4", new Date("2026-11-05T00:00:00Z"))).toBe(0.544);
+  });
+
+  test("ids with no Droid row have no Droid multiplier", () => {
+    expect(droidMultiplierFor("not-a-droid-model")).toBeUndefined();
   });
 });

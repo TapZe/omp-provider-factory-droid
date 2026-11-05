@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { Effort } from "@oh-my-pi/pi-ai";
 
 import { fetchFactoryDynamicModels, parseFactoryModelDocs } from "./model-refresh";
-import { FACTORY_MODELS } from "./catalog";
+import { droidMultiplierFor, FACTORY_MODELS } from "./catalog";
 
 // Replicates the live docs.factory.ai/models.md shape: section headings with
 // styled spans, header/separator rows, footnote daggers, and a section
@@ -310,7 +310,8 @@ describe("static catalog gating", () => {
     expect(argon?.input).toEqual(["text", "image"]);
     expect(argon?.contextWindow).toBe(1_000_000);
     expect(argon?.maxTokens).toBe(65_536);
-    expect(argon?.premiumMultiplier).toBe(0.8);
+    // Half of 1.6 only inside the promotion window; droid-catalog.test.ts covers the dates.
+    expect(argon?.premiumMultiplier).toBe(droidMultiplierFor("gemini-4-argon"));
     expect(argon?.reasoning).toBe(true);
     expect(argon?.thinking?.mode).toBe("google-level");
     expect(argon?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high"]);
