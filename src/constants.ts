@@ -96,7 +96,7 @@ export function factoryApiForRegion(region: string | undefined): string {
 
   return `https://api.${lower}.factory.ai`;
 }
-export const FACTORY_CLIENT_VERSION = "1.2.0";
+export const FACTORY_CLIENT_VERSION = "1.3.0";
 export const FACTORY_HEADERS = {
   "X-Factory-Client": factoryUpstreamClientType,
   "X-Client-Version": FACTORY_CLIENT_VERSION,
@@ -104,7 +104,6 @@ export const FACTORY_HEADERS = {
 };
 export const FACTORY_OPENAI_PLATFORM_ORG = "org-bHuLtG1fGmYk5YaOihAAXFBw";
 export const ANTHROPIC_VERSION = "2023-06-01";
-export const ANTHROPIC_BETAS = "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14";
 export const WORKOS_DEVICE_AUTHORIZE = "https://api.workos.com/user_management/authorize/device";
 export const WORKOS_TOKEN = "https://api.workos.com/user_management/authenticate";
 export const WORKOS_CLIENT_ID = "client_01HNM792M5G5G1A2THWPXKFMXB";

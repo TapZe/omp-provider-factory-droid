@@ -2,8 +2,9 @@ import { describe, expect, it } from "bun:test";
 import { Effort, type AssistantMessage, type Context, type ToolCall } from "@oh-my-pi/pi-ai";
 import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
 import { StreamMarkupHealing } from "@oh-my-pi/pi-ai/utils/stream-markup-healing";
-import { ANTHROPIC_BETAS, FACTORY_CLIENT_VERSION, FACTORY_DROID_SYSTEM_PROMPT } from "./constants";
+import { FACTORY_CLIENT_VERSION, FACTORY_DROID_SYSTEM_PROMPT } from "./constants";
 import { familyOf, FACTORY_MODELS } from "./catalog";
+import { DROID_MODELS } from "./droid-registry";
 import { factoryStreamSimple, prepareContextForFactory } from "./router";
 import {
   factoryStreamMarkupHealingPattern,
@@ -267,12 +268,22 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("1.2.0");
+    expect(FACTORY_CLIENT_VERSION).toBe("1.3.0");
   });
 
-  it("includes required Anthropic betas for tool streaming and thinking", () => {
-    expect(ANTHROPIC_BETAS).toContain("fine-grained-tool-streaming-2025-05-14");
-    expect(ANTHROPIC_BETAS).toContain("interleaved-thinking-2025-05-14");
+  it("sends the Anthropic betas Droid sends for each model", async () => {
+    // Droid adds interleaved thinking only for the budget-mode 4.5 models, and
+    // fine-grained tool streaming whenever tools go to Anthropic.
+    const sonnet45 = await captureFactoryAnthropicRequest("claude-sonnet-4-5-20250929", Effort.High);
+    expect(sonnet45.betaHeader?.split(",").sort()).toEqual([
+      "fine-grained-tool-streaming-2025-05-14",
+      "interleaved-thinking-2025-05-14",
+    ]);
+    const opus45 = await captureFactoryAnthropicRequest("claude-opus-4-5-20251101", Effort.High);
+    expect(opus45.betaHeader?.split(",").sort()).toEqual([
+      "effort-2025-11-24",
+      "fine-grained-tool-streaming-2025-05-14",
+    ]);
   });
 
   it("uses Droid-compatible adaptive thinking for current Claude models", async () => {
@@ -283,11 +294,12 @@ describe("Factory Router & Tool Execution Configuration", () => {
 
       expect(body.thinking).toEqual({ type: "adaptive", display: "summarized" });
       expect(body.output_config).toEqual({ effort: "medium" });
-      expect(betaHeader).toContain("effort-2025-11-24");
+      // For these models Droid sends the effort beta only on Vertex.
+      expect(betaHeader).toBe("fine-grained-tool-streaming-2025-05-14");
     }
   });
 
-  it("selects Claude generation-specific thinking without changing MiniMax M2.x", async () => {
+  it("selects Claude generation-specific thinking and MiniMax M2.x budget-effort", async () => {
     const sonnet = await captureFactoryAnthropicRequest("claude-sonnet-4-6", Effort.High);
     expect(sonnet.body.thinking).toEqual({ type: "adaptive" });
     expect(sonnet.body.output_config).toEqual({ effort: "high" });
@@ -299,7 +311,9 @@ describe("Factory Router & Tool Execution Configuration", () => {
 
     const minimax = await captureFactoryAnthropicRequest("minimax-m2.7", Effort.High);
     expect(minimax.body.thinking).toMatchObject({ type: "enabled" });
-    expect(minimax.body.output_config).toBeUndefined();
+    // Droid 1.3.0 GkH sends minimax-m2.7 at high as thinking {enabled, budget_tokens: 24576}
+    // with output_config {effort: "high"}.
+    expect(minimax.body.output_config).toEqual({ effort: "high" });
   });
 
   it("contains the Droid system prompt prefix enforcing tool usage", () => {
@@ -407,6 +421,13 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(familyOf("gemini-4-argon")).toBe("google");
     expect(upstreamProviderFor("gemini-4-argon")).toBe("google");
   });
+  it("routes GLM 5.2, GLM 5.2 Fast, and GLM 4.6 to Baseten, their only Droid 1.3.0 upstream outside the EU", async () => {
+    for (const modelId of ["glm-5.2", "glm-5.2-fast", "glm-4.6"]) {
+      const request = await captureFactoryRequest(modelId);
+      expect(request.apiProvider).toBe("baseten");
+      expect(request.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
+    }
+  });
   it("routes Beam through the Baseten upstream and Muse through Fireworks chat completions", async () => {
     const beam = await captureFactoryRequest("beam-1.0");
     expect(beam.apiProvider).toBe("baseten");
@@ -452,8 +473,9 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(deepseek.body.reasoning_effort).toBe("none");
     const nemotron = await captureFactoryRequest("nemotron-3.5-super", true);
     expect(nemotron.body.reasoning_effort).toBe("none");
+    // Droid 1.3.0 lists low, medium, high, xhigh, and max for muse-spark-open, with no off.
     const muse = await captureFactoryRequest("muse-spark-open", true);
-    expect(muse.body.reasoning_effort).toBe("none");
+    expect(muse.body.reasoning_effort).not.toBe("none");
 
 
     for (const id of ["gpt-6-sol-fast", "gpt-6-luna-fast", "gpt-6.1-terra"]) {
@@ -478,8 +500,14 @@ describe("Factory Router & Tool Execution Configuration", () => {
       const messages = request.messages as Array<Record<string, unknown>>;
       const assistantToolCall = messages.find((message) => Array.isArray(message.tool_calls));
 
-      expect(request.reasoning_history).toBe(modelId.startsWith("deepseek-") ? "interleaved" : "preserved");
-      expect(request.tool_choice).toBe("auto");
+      // With no effort requested Droid sends the off body when the model has
+      // one (kimi-k3 and deepseek send no history then), else its lowest effort.
+      const droid = DROID_MODELS[modelId];
+      const effort = droid.efforts.includes("off") ? "off" : droid.efforts[0];
+      expect(request.reasoning_history).toBe(droid.requests.fireworks[effort]?.body.reasoning_history);
+      // Droid's chat body is {model, tools, stream, stream_options, max_tokens, temperature: 1, ...}
+      // with no tool_choice.
+      expect(request.tool_choice).toBeUndefined();
       expect(request.tools).toHaveLength(1);
       expect(assistantToolCall?.reasoning_content).toBe(reasoningContent);
       const [wireToolCall] = (assistantToolCall?.tool_calls ?? []) as Array<{
@@ -550,8 +578,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
     expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
-    expect(capturedHeaders?.get("x-client-version")).toBe("1.2.0");
-    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.2.0");
+    expect(capturedHeaders?.get("x-client-version")).toBe("1.3.0");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.3.0");
     expect(capturedHeaders?.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
   });
 
@@ -715,7 +743,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
   });
 
   it("supports max thinking effort and attaches identity for all model families", async () => {
-    const { identityFor, FACTORY_EFFORTS, factoryThinkingFor, defaultCostFor, FACTORY_MODELS } = require("./catalog");
+    const { identityFor, factoryThinkingFor, defaultCostFor, FACTORY_MODELS } = require("./catalog");
 
     expect(identityFor("grok-4.5")).toEqual({ class: "xai", family: "grok" });
     expect(identityFor("glm-5.3-flash")).toEqual({ class: "glm", family: "glm" });
@@ -733,7 +761,6 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(identityFor("gpt-6.1-terra")).toEqual({ class: "openai", family: "gpt" });
     expect(identityFor("muse-spark-open")).toEqual({ class: "muse", family: "muse" });
     expect(identityFor("gemini-4-argon")).toEqual({ class: "google", family: "gemini" });
-    expect(FACTORY_EFFORTS).toContain("max");
 
     const { upstreamProviderFor } = require("./catalog");
     expect(upstreamProviderFor("garnet-07-15")).toBe("google");
@@ -742,8 +769,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(upstreamProviderFor("atlas-07-21")).toBe("anthropic");
 
     const gpt6Thinking = factoryThinkingFor("gpt-6-astra", true, undefined);
-    expect(gpt6Thinking?.effortMap?.["max" as any]).toBe("xhigh");
-    expect(gpt6Thinking?.effortMap?.[Effort.XHigh]).toBeUndefined();
+    expect(gpt6Thinking?.efforts.map(String)).toContain("max");
 
     const atlasThinking = factoryThinkingFor("atlas-07-21", true, undefined);
     expect(atlasThinking?.mode).toBe("anthropic-adaptive");
@@ -753,8 +779,9 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(asterThinking?.mode).toBe("anthropic-adaptive");
     expect(asterThinking?.supportsDisplay).toBe(true);
 
+    // Droid 1.3.0 glm-5.3: supported ["low","high","max"], no off.
     const glmThinking = factoryThinkingFor("glm-5.3", true, undefined);
-    expect(glmThinking?.effortMap?.["max" as any]).toBe("xhigh");
+    expect(glmThinking?.efforts.map(String)).toEqual(["low", "high", "max"]);
 
     const nemoCost = defaultCostFor("nemotron-3-ultra");
     expect(nemoCost).toEqual({ input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 });
@@ -916,43 +943,39 @@ describe("Factory Droid tool-call normalization", () => {
   });
 
   describe("Qwen completions reasoning compatibility and sanitization", () => {
-    const { createFactoryCompletionsFetch, factoryStreamSimple } = require("./router");
+    const { factoryStreamSimple } = require("./router");
+    const { createDroidRequestFetch } = require("./droid-request");
     const { FACTORY_MODELS } = require("./catalog");
 
-    it("sanitizes enable_thinking from top-level body and chat_template_kwargs", async () => {
+    it("drops enable_thinking from the top level and from chat_template_kwargs", async () => {
       let interceptedBody: string | undefined;
       const mockBaseFetch = async (_url: unknown, init?: RequestInit) => {
         interceptedBody = typeof init?.body === "string" ? init.body : undefined;
         return new Response("{}", { status: 200 });
       };
+      const droidFetch = createDroidRequestFetch(mockBaseFetch as any, {
+        modelId: "qwen3.8-max",
+        provider: "fireworks",
+        requestedEffort: "xhigh",
+        sessionId: "s",
+      });
 
-      const sanitizedFetch = createFactoryCompletionsFetch(mockBaseFetch as any);
-
-      // Case 1: top-level enable_thinking
-      await sanitizedFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
+      await droidFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
         method: "POST",
         body: JSON.stringify({
           model: "qwen3.8-max",
           enable_thinking: true,
-          messages: [{ role: "user", content: "hi" }],
-        }),
-      });
-      const parsed1 = JSON.parse(interceptedBody!);
-      expect(parsed1.enable_thinking).toBeUndefined();
-      expect(parsed1.model).toBe("qwen3.8-max");
-
-      // Case 2: nested in chat_template_kwargs
-      await sanitizedFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
-        method: "POST",
-        body: JSON.stringify({
-          model: "qwen3.8-max",
           chat_template_kwargs: { enable_thinking: true, other: 123 },
           messages: [{ role: "user", content: "hi" }],
         }),
       });
-      const parsed2 = JSON.parse(interceptedBody!);
-      expect(parsed2.chat_template_kwargs?.enable_thinking).toBeUndefined();
-      expect(parsed2.chat_template_kwargs?.other).toBe(123);
+      const parsed = JSON.parse(interceptedBody!);
+      expect(parsed.enable_thinking).toBeUndefined();
+      expect(parsed.chat_template_kwargs).toEqual({ other: 123 });
+      expect(parsed.model).toBe("qwen3.8-max");
+      // Droid 1.3.0 qwen3.8-max xhigh on fireworks.
+      expect(parsed.reasoning_effort).toBe("xhigh");
+      expect(parsed.reasoning_history).toBe("preserved");
     });
 
     it("never emits enable_thinking in factoryStreamSimple request body for qwen3.8-max", async () => {
@@ -976,7 +999,7 @@ describe("Factory Droid tool-call normalization", () => {
         {
           fetch: mockFetch as any,
           apiKey: "test-token",
-          reasoning: "high",
+          reasoning: "xhigh",
         },
         "https://api.factory.ai",
       );
@@ -991,7 +1014,7 @@ describe("Factory Droid tool-call normalization", () => {
       expect(capturedPayload.enable_thinking).toBeUndefined();
       expect(capturedPayload.chat_template_kwargs?.enable_thinking).toBeUndefined();
       expect(capturedPayload.model).toBe("qwen3.8-max");
-      expect(capturedPayload.reasoning_effort).toBe("high");
+      expect(capturedPayload.reasoning_effort).toBe("xhigh");
     });
   });
 });

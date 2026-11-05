@@ -1,13 +1,17 @@
 import type { ProviderConfig } from "@oh-my-pi/pi-coding-agent";
 import { buildModel } from "@oh-my-pi/pi-catalog/build";
-import { Effort } from "@oh-my-pi/pi-catalog/effort";
 import type { Api, Model, ModelSpec } from "@oh-my-pi/pi-catalog/types";
 import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
-import { streamSimple, type Context, type FetchImpl } from "@oh-my-pi/pi-ai";
+import { streamSimple, type Context, type Effort, type FetchImpl } from "@oh-my-pi/pi-ai";
 
-import { factoryThinkingFor, familyOf, identityFor, upstreamProviderFor } from "./catalog";
 import {
-  ANTHROPIC_BETAS,
+  factoryThinkingFor,
+  familyOf,
+  identityFor,
+  type FactoryUpstreamProvider,
+  upstreamProviderFor,
+} from "./catalog";
+import {
   ANTHROPIC_VERSION,
   FACTORY_CLIENT_VERSION,
   FACTORY_HEADERS,
@@ -18,6 +22,7 @@ import {
   resolveFactoryApiBase,
 } from "./constants";
 import { parseFactoryCredential, type ParsedFactoryCredential } from "./credential";
+import { createDroidRequestFetch } from "./droid-request";
 import { createFactoryErrorStream, routeWithFactoryDiagnostics } from "./router-diagnostics";
 import {
   createQuotaExhaustedStream,
@@ -73,17 +78,21 @@ export function randomTraceparent(): string {
   return `00-${traceId}-${spanId}-01`;
 }
 
-function buildRequestHeaders(options: Parameters<NonNullable<ProviderConfig["streamSimple"]>>[2]): Record<string, string> {
+function buildRequestHeaders(sessionId: string): Record<string, string> {
   return {
     traceparent: randomTraceparent(),
-    "x-session-id": options?.sessionId ?? randomHeaderId("session"),
+    "x-session-id": sessionId,
     "x-assistant-message-id": randomHeaderId("assistant"),
   };
 }
 
-function normalizeReasoningEffort(effort: Effort | undefined): Effort | undefined {
-  const effortName = effort as string | undefined;
-  return !effortName || effortName === "off" || effortName === "none" ? undefined : effort;
+type StreamOptions = Parameters<NonNullable<ProviderConfig["streamSimple"]>>[2];
+
+// The effort the caller asked for, or undefined for off. The Droid request
+// fetch turns this into the fields Droid sends.
+function requestedEffort(options: StreamOptions): string | undefined {
+  const effort = options?.disableReasoning ? undefined : (options?.reasoning as string | undefined);
+  return effort === "off" || effort === "none" ? undefined : effort;
 }
 
 // Factory's gateway requires requests to carry Droid's system prompt prefix
@@ -101,16 +110,19 @@ export function prepareContextForFactory(context: Context): Context {
   };
 }
 
-function buildTargetHeaders(modelId: string, targetApi: FactoryTargetApi, orgId: string | null): Record<string, string> {
+function buildTargetHeaders(
+  provider: FactoryUpstreamProvider,
+  targetApi: FactoryTargetApi,
+  orgId: string | null,
+): Record<string, string> {
   const headers: Record<string, string> = {
     ...FACTORY_HEADERS,
-    "x-api-provider": upstreamProviderFor(modelId),
+    "x-api-provider": provider,
     "x-provider-routing-source": "registry_default",
   };
 
   if (targetApi === "anthropic-messages") {
     headers["anthropic-version"] = ANTHROPIC_VERSION;
-    headers["anthropic-beta"] = ANTHROPIC_BETAS;
   }
 
   if (targetApi === "openai-responses") {
@@ -128,37 +140,19 @@ function buildCompletionCompatibility(
   modelId: string,
   targetApi: FactoryTargetApi,
 ): ModelSpec<FactoryTargetApi>["compat"] {
-  if (targetApi === "openai-responses") {
-    return modelId === "gpt-6-sol-fast" || modelId === "gpt-6-luna-fast" || modelId === "gpt-6.1-terra"
-      ? { reasoningDisableMode: "none-effort" }
-      : undefined;
-  }
   if (targetApi !== "openai-completions") return undefined;
 
+  // Reasoning fields come from the Droid request fetch; this only covers how
+  // pi shapes messages and heals tool-call markup for these open models.
   const isDeepseek = modelId.startsWith("deepseek-");
-  const isQwen = modelId.startsWith("qwen");
   return {
-    extraBody: {
-      reasoning_history: isDeepseek ? "interleaved" : "preserved",
-    },
     streamMarkupHealingPattern: factoryStreamMarkupHealingPattern(modelId),
     stripDeepseekSpecialTokens: isDeepseek,
     requiresToolResultName: modelId.startsWith("kimi-"),
     requiresReasoningContentForToolCalls: true,
     requiresReasoningContentForAllAssistantTurns: isDeepseek,
     allowsSyntheticReasoningContentForToolCalls: !isDeepseek,
-    ...(modelId === "deepseek-v4.1-flash-1017" ||
-    modelId === "nemotron-3.5-super" ||
-    modelId === "muse-spark-open"
-      ? { reasoningDisableMode: "none-effort" as const }
-      : {}),
     requiresAssistantContentForToolCalls: true,
-    ...(isQwen
-      ? {
-          thinkingFormat: "openai",
-          reasoningDisableMode: "lowest-effort",
-        }
-      : {}),
   };
 }
 
@@ -176,14 +170,9 @@ function buildFactoryTargetModel(
   targetApi: FactoryTargetApi,
   orgId: string | null,
   apiEndpoint: string,
-  useClaudeThinkingInference: boolean,
+  provider: FactoryUpstreamProvider,
 ): Model<FactoryTargetApi> {
-  // Claude's Anthropic wire protocol changes by model generation. Leaving the
-  // target unset lets pi-catalog select adaptive, budget-effort, or budget from
-  // the Claude ID instead of reusing the custom provider's generic effort mode.
-  const explicitThinking = useClaudeThinkingInference
-    ? undefined
-    : factoryThinkingFor(model.id, model.reasoning, model.thinking);
+  const explicitThinking = factoryThinkingFor(model.id, model.reasoning, model.thinking);
   const spec: ModelSpec<FactoryTargetApi> = {
     provider: PROVIDER_ID,
     id: model.id,
@@ -199,7 +188,7 @@ function buildFactoryTargetModel(
     premiumMultiplier: model.premiumMultiplier,
     contextWindow: model.contextWindow,
     maxTokens: model.maxTokens,
-    headers: buildTargetHeaders(model.id, targetApi, orgId),
+    headers: buildTargetHeaders(provider, targetApi, orgId),
   };
 
   const target = Object.assign(buildModel(spec), { identity: identityFor(model.id) });
@@ -281,36 +270,6 @@ export function createFactoryGoogleFetch(
   }) as FetchImpl;
 }
 
-export function createFactoryCompletionsFetch(baseFetch: FetchImpl): FetchImpl {
-  return (async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-    let sanitizedInit = init;
-    if (init && typeof init.body === "string" && init.body.includes("enable_thinking")) {
-      try {
-        const bodyObj = JSON.parse(init.body);
-        let modified = false;
-        if ("enable_thinking" in bodyObj) {
-          delete bodyObj.enable_thinking;
-          modified = true;
-        }
-        if (
-          bodyObj.chat_template_kwargs &&
-          typeof bodyObj.chat_template_kwargs === "object" &&
-          "enable_thinking" in bodyObj.chat_template_kwargs
-        ) {
-          delete bodyObj.chat_template_kwargs.enable_thinking;
-          modified = true;
-        }
-        if (modified) {
-          sanitizedInit = { ...init, body: JSON.stringify(bodyObj) };
-        }
-      } catch {
-        // preserve original body if not valid JSON
-      }
-    }
-    return baseFetch(input, sanitizedInit);
-  }) as FetchImpl;
-}
-
 function streamSimpleDirect(
   model: Model<Api>,
   context: Context,
@@ -331,50 +290,41 @@ function streamSimpleDirect(
     );
   }
 
-  const useClaudeThinkingInference = targetApi === "anthropic-messages" && model.id.startsWith("claude-");
-  const target = buildFactoryTargetModel(
-    model,
-    targetApi,
-    effectiveOrgId,
-    apiEndpoint,
-    useClaudeThinkingInference,
-  );
+  const provider = upstreamProviderFor(model.id, credential.inferenceRegion);
+  if (!provider) {
+    return createFactoryErrorStream(
+      model,
+      `factory: model ${model.id} is not available in the ${credential.inferenceRegion} inference region`,
+    );
+  }
+
+  const target = buildFactoryTargetModel(model, targetApi, effectiveOrgId, apiEndpoint, provider);
   const routedContext = prepareContextForFactory(context);
   const hasTools = (routedContext.tools?.length ?? 0) > 0;
   const resolvedToolChoice = options?.toolChoice ?? (hasTools ? "auto" : undefined);
-  const resolvedReasoning = normalizeReasoningEffort(options?.reasoning);
+  const effort = requestedEffort(options);
+  const sessionId = options?.sessionId ?? randomHeaderId("session");
 
   const baseFetch = options?.fetch ?? (globalThis.fetch.bind(globalThis) as FetchImpl);
+  const droidFetch = createDroidRequestFetch(baseFetch, {
+    modelId: model.id,
+    provider,
+    requestedEffort: effort,
+    sessionId,
+  });
   const effectiveFetch =
     targetApi === "google-generative-ai"
-      ? createFactoryGoogleFetch(
-          baseFetch,
-          apiEndpoint,
-          model.id,
-          credential,
-          effectiveOrgId,
-          options?.sessionId,
-        )
-      : targetApi === "openai-completions"
-        ? createFactoryCompletionsFetch(baseFetch)
-        : options?.fetch;
+      ? createFactoryGoogleFetch(droidFetch, apiEndpoint, model.id, credential, effectiveOrgId, sessionId)
+      : droidFetch;
 
   const inner = streamSimple(target, routedContext, {
     ...options,
     fetch: effectiveFetch,
-    ...(useClaudeThinkingInference
-      ? {
-          thinkingBudgets: {
-            [Effort.High]: 24_576,
-            ...(options?.thinkingBudgets ?? {}),
-          },
-        }
-      : {}),
-    reasoning: resolvedReasoning,
+    reasoning: effort as Effort | undefined,
     toolChoice: resolvedToolChoice,
     apiKey: credential.access,
     headers: {
-      ...buildRequestHeaders(options),
+      ...buildRequestHeaders(sessionId),
       ...(options?.headers ?? {}),
     },
   });

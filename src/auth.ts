@@ -16,11 +16,17 @@ import {
   readJsonResponseBody,
   TOKEN_EXPIRY_SKEW_MS,
   type DeviceAuthorization,
+  type FactoryIdentity,
   type ParsedTokenResponse,
 } from "./auth-parsing";
 import { FACTORY_API, WORKOS_CLIENT_ID, WORKOS_DEVICE_AUTHORIZE, WORKOS_TOKEN } from "./constants";
 import { decodeJwtPayload, organizationIdFromAccessToken } from "./credential";
 import { loadDroidCliCredentials, saveDroidCliCredentials } from "./droid-auth";
+import type { DroidRegion } from "./droid-registry";
+
+// pi stores whatever fields the provider returns, so the inference region
+// rides along with the token.
+export type FactoryOAuthCredentials = OAuthCredentials & { inferenceRegion?: DroidRegion };
 
 type Fetcher = NonNullable<OAuthLoginCallbacks["fetch"]>;
 
@@ -69,7 +75,7 @@ async function resolveWhoami(
   fetchImpl: Fetcher,
   organizationId?: string,
   signal?: AbortSignal,
-): Promise<{ accountId?: string; region?: string; apiEndpoint?: string }> {
+): Promise<FactoryIdentity> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
@@ -264,7 +270,7 @@ async function postRefreshToken(
   throw lastError ?? new Error("Factory OAuth refresh token failed after retry attempts");
 }
 
-function toCredentials(parsed: ParsedTokenResponse, prior?: OAuthCredentials): OAuthCredentials {
+function toCredentials(parsed: ParsedTokenResponse, prior?: FactoryOAuthCredentials): FactoryOAuthCredentials {
   const accountId = organizationIdFromAccessToken(parsed.accessToken);
   const email = parsed.email ?? emailFromAccessToken(parsed.accessToken) ?? prior?.email;
   const expires = parsed.expiresInSeconds
@@ -278,11 +284,12 @@ function toCredentials(parsed: ParsedTokenResponse, prior?: OAuthCredentials): O
     accountId,
     email,
     apiEndpoint: parsed.apiEndpoint ?? prior?.apiEndpoint,
+    inferenceRegion: prior?.inferenceRegion,
     projectId: prior?.projectId,
   };
 }
 
-function requireOrgScopedCredential(credentials: OAuthCredentials, requestedOrganizationId: string): string {
+function requireOrgScopedCredential(credentials: FactoryOAuthCredentials, requestedOrganizationId: string): string {
   const payload = decodeJwtPayload(credentials.access);
   const externalOrgId = typeof payload?.external_org_id === "string" ? payload.external_org_id : undefined;
   const workosOrgId = typeof payload?.org_id === "string" ? payload.org_id : undefined;
@@ -313,7 +320,7 @@ function requireMatchingWhoamiOrganization(accountId: string | undefined, expect
   }
 }
 
-async function loginWithBrowser(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials> {
+async function loginWithBrowser(callbacks: OAuthLoginCallbacks): Promise<FactoryOAuthCredentials> {
   const fetchImpl = callbacks.fetch ?? fetch;
   const callerSignal = callbacks.signal;
 
@@ -337,6 +344,7 @@ async function loginWithBrowser(callbacks: OAuthLoginCallbacks): Promise<OAuthCr
         ...credentials,
         accountId: initialFactoryOrgId,
         apiEndpoint: identity.apiEndpoint ?? credentials.apiEndpoint,
+        inferenceRegion: identity.inferenceRegion ?? credentials.inferenceRegion,
         projectId: initialFactoryOrgId,
       };
     }
@@ -369,6 +377,7 @@ async function loginWithBrowser(callbacks: OAuthLoginCallbacks): Promise<OAuthCr
       ...credentialsWithOrg,
       accountId: selectedOrganizationId,
       apiEndpoint: identity.apiEndpoint ?? credentialsWithOrg.apiEndpoint,
+      inferenceRegion: identity.inferenceRegion ?? credentialsWithOrg.inferenceRegion,
     };
   } catch (error) {
     throw new Error(`Factory OAuth device login failed: ${formatErrorDetails(error)}`);
@@ -379,7 +388,7 @@ async function loginWithBrowser(callbacks: OAuthLoginCallbacks): Promise<OAuthCr
 // omp share one Factory session. Returns null when local credentials are
 // absent, declined, expired without a refresh token, or fail validation —
 // the caller then falls through to browser device login.
-async function tryReuseDroidCliCredentials(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials | null> {
+async function tryReuseDroidCliCredentials(callbacks: OAuthLoginCallbacks): Promise<FactoryOAuthCredentials | null> {
   try {
     const fetchImpl = callbacks.fetch ?? fetch;
     const callerSignal = callbacks.signal;
@@ -418,6 +427,7 @@ async function tryReuseDroidCliCredentials(callbacks: OAuthLoginCallbacks): Prom
         projectId: tokenOrgId,
         email,
         apiEndpoint: identity.apiEndpoint,
+        inferenceRegion: identity.inferenceRegion,
       };
     }
 
@@ -441,7 +451,7 @@ async function tryReuseDroidCliCredentials(callbacks: OAuthLoginCallbacks): Prom
   }
 }
 
-export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials> {
+export async function login(callbacks: OAuthLoginCallbacks): Promise<FactoryOAuthCredentials> {
   // When a custom test fetch is provided (e.g. in mock-driven unit tests), skip local CLI
   // discovery unless explicitly forced, preserving isolated test fixtures.
   const allowLocalCliAuth =
@@ -456,7 +466,7 @@ export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCreden
   return loginWithBrowser(callbacks);
 }
 
-const inFlightRefreshes = new Map<string, Promise<OAuthCredentials>>();
+const inFlightRefreshes = new Map<string, Promise<FactoryOAuthCredentials>>();
 
 export function resetInFlightRefreshesForTests(): void {
   inFlightRefreshes.clear();
@@ -464,9 +474,9 @@ export function resetInFlightRefreshesForTests(): void {
 // Aborted callers reject with the signal's reason; the shared in-flight
 // refresh keeps running for every other waiter.
 function waitForRefreshPromise(
-  promise: Promise<OAuthCredentials>,
+  promise: Promise<FactoryOAuthCredentials>,
   signal: AbortSignal | undefined,
-): Promise<OAuthCredentials> {
+): Promise<FactoryOAuthCredentials> {
   return waitForSharedPromise(promise, signal, () => {
     throw signal?.reason ?? new Error("Aborted");
   });
@@ -478,10 +488,10 @@ function waitForRefreshPromise(
 // copy is absent, stale, or unusable — the caller re-throws the original
 // refresh error.
 async function adoptLocalCliCredentialsIfNewer(
-  credentials: OAuthCredentials,
+  credentials: FactoryOAuthCredentials,
   fetchImpl: Fetcher,
   signal?: AbortSignal,
-): Promise<OAuthCredentials | null> {
+): Promise<FactoryOAuthCredentials | null> {
   try {
     const localCreds = loadDroidCliCredentials();
     if (!localCreds?.accessToken || localCreds.accessToken === credentials.access) return null;
@@ -504,6 +514,7 @@ async function adoptLocalCliCredentialsIfNewer(
       projectId: orgId,
       email: emailFromAccessToken(localCreds.accessToken) ?? credentials.email,
       apiEndpoint: identity.apiEndpoint ?? credentials.apiEndpoint,
+      inferenceRegion: identity.inferenceRegion ?? credentials.inferenceRegion,
     };
   } catch {
     // Local CLI storage absent or unreadable; fall back to the original refresh error
@@ -516,12 +527,12 @@ async function adoptLocalCliCredentialsIfNewer(
 // against it so LLM calls never 403.
 async function resolveOrgScopedRefresh(
   parsed: ParsedTokenResponse,
-  credentials: OAuthCredentials,
+  credentials: FactoryOAuthCredentials,
   workosOrganizationId: string | undefined,
   fetchImpl: Fetcher,
   signal?: AbortSignal,
-): Promise<{ refreshed: OAuthCredentials; tokenOrganizationId: string; workosOrganizationId: string | undefined }> {
-  let refreshed: OAuthCredentials = {
+): Promise<{ refreshed: FactoryOAuthCredentials; tokenOrganizationId: string; workosOrganizationId: string | undefined }> {
+  let refreshed: FactoryOAuthCredentials = {
     ...toCredentials(parsed, credentials),
     projectId: workosOrganizationId ?? credentials.projectId,
   };
@@ -574,10 +585,10 @@ async function resolveOrgScopedRefresh(
 }
 
 async function executeRefreshToken(
-  credentials: OAuthCredentials,
+  credentials: FactoryOAuthCredentials,
   signal?: AbortSignal,
   fetchImpl: Fetcher = fetch,
-): Promise<OAuthCredentials> {
+): Promise<FactoryOAuthCredentials> {
   try {
     let parsed: ParsedTokenResponse;
     try {
@@ -621,6 +632,7 @@ async function executeRefreshToken(
       accountId: tokenOrganizationId,
       projectId: workosOrganizationId ?? tokenOrganizationId,
       apiEndpoint: identity.apiEndpoint ?? refreshed.apiEndpoint,
+      inferenceRegion: identity.inferenceRegion ?? refreshed.inferenceRegion,
     };
   } catch (error) {
     throw new Error(`Factory OAuth token refresh failed: ${formatErrorDetails(error)}`);
@@ -628,17 +640,17 @@ async function executeRefreshToken(
 }
 
 export async function refreshToken(
-  credentials: OAuthCredentials,
+  credentials: FactoryOAuthCredentials,
   signal?: AbortSignal,
   fetchImpl: Fetcher = fetch,
-): Promise<OAuthCredentials> {
+): Promise<FactoryOAuthCredentials> {
   const refreshKey = `${credentials.accountId ?? ""}:${credentials.refresh}`;
   const existing = inFlightRefreshes.get(refreshKey);
   if (existing) {
     return waitForRefreshPromise(existing, signal);
   }
 
-  let refreshPromise!: Promise<OAuthCredentials>;
+  let refreshPromise!: Promise<FactoryOAuthCredentials>;
   refreshPromise = (async () => {
     try {
       return await executeRefreshToken(credentials, signal, fetchImpl);
@@ -653,10 +665,11 @@ export async function refreshToken(
   return waitForRefreshPromise(refreshPromise, signal);
 }
 
-export function getApiKey(credentials: OAuthCredentials): string {
+export function getApiKey(credentials: FactoryOAuthCredentials): string {
   return JSON.stringify({
     token: credentials.access,
     orgId: credentials.accountId ?? null,
     apiEndpoint: credentials.apiEndpoint ?? null,
+    inferenceRegion: credentials.inferenceRegion ?? null,
   });
 }
