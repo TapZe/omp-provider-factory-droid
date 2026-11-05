@@ -2,8 +2,9 @@ import { describe, expect, it } from "bun:test";
 import { Effort, type AssistantMessage, type Context, type ToolCall } from "@oh-my-pi/pi-ai";
 import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream";
 import { StreamMarkupHealing } from "@oh-my-pi/pi-ai/utils/stream-markup-healing";
-import { ANTHROPIC_BETAS, FACTORY_CLIENT_VERSION, FACTORY_DROID_SYSTEM_PROMPT } from "./constants";
+import { FACTORY_CLIENT_VERSION, FACTORY_DROID_SYSTEM_PROMPT } from "./constants";
 import { familyOf, FACTORY_MODELS } from "./catalog";
+import { DROID_MODELS } from "./droid-registry";
 import { factoryStreamSimple, prepareContextForFactory } from "./router";
 import {
   factoryStreamMarkupHealingPattern,
@@ -270,9 +271,19 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(FACTORY_CLIENT_VERSION).toBe("1.3.0");
   });
 
-  it("includes required Anthropic betas for tool streaming and thinking", () => {
-    expect(ANTHROPIC_BETAS).toContain("fine-grained-tool-streaming-2025-05-14");
-    expect(ANTHROPIC_BETAS).toContain("interleaved-thinking-2025-05-14");
+  it("sends the Anthropic betas Droid sends for each model", async () => {
+    // Droid adds interleaved thinking only for the budget-mode 4.5 models, and
+    // fine-grained tool streaming whenever tools go to Anthropic.
+    const sonnet45 = await captureFactoryAnthropicRequest("claude-sonnet-4-5-20250929", Effort.High);
+    expect(sonnet45.betaHeader?.split(",").sort()).toEqual([
+      "fine-grained-tool-streaming-2025-05-14",
+      "interleaved-thinking-2025-05-14",
+    ]);
+    const opus45 = await captureFactoryAnthropicRequest("claude-opus-4-5-20251101", Effort.High);
+    expect(opus45.betaHeader?.split(",").sort()).toEqual([
+      "effort-2025-11-24",
+      "fine-grained-tool-streaming-2025-05-14",
+    ]);
   });
 
   it("uses Droid-compatible adaptive thinking for current Claude models", async () => {
@@ -283,7 +294,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
 
       expect(body.thinking).toEqual({ type: "adaptive", display: "summarized" });
       expect(body.output_config).toEqual({ effort: "medium" });
-      expect(betaHeader).toContain("effort-2025-11-24");
+      // For these models Droid sends the effort beta only on Vertex.
+      expect(betaHeader).toBe("fine-grained-tool-streaming-2025-05-14");
     }
   });
 
@@ -488,8 +500,14 @@ describe("Factory Router & Tool Execution Configuration", () => {
       const messages = request.messages as Array<Record<string, unknown>>;
       const assistantToolCall = messages.find((message) => Array.isArray(message.tool_calls));
 
-      expect(request.reasoning_history).toBe(modelId.startsWith("deepseek-") ? "interleaved" : "preserved");
-      expect(request.tool_choice).toBe("auto");
+      // With no effort requested Droid sends the off body when the model has
+      // one (kimi-k3 and deepseek send no history then), else its lowest effort.
+      const droid = DROID_MODELS[modelId];
+      const effort = droid.efforts.includes("off") ? "off" : droid.efforts[0];
+      expect(request.reasoning_history).toBe(droid.requests.fireworks[effort]?.body.reasoning_history);
+      // Droid's chat body is {model, tools, stream, stream_options, max_tokens, temperature: 1, ...}
+      // with no tool_choice.
+      expect(request.tool_choice).toBeUndefined();
       expect(request.tools).toHaveLength(1);
       expect(assistantToolCall?.reasoning_content).toBe(reasoningContent);
       const [wireToolCall] = (assistantToolCall?.tool_calls ?? []) as Array<{
@@ -925,43 +943,39 @@ describe("Factory Droid tool-call normalization", () => {
   });
 
   describe("Qwen completions reasoning compatibility and sanitization", () => {
-    const { createFactoryCompletionsFetch, factoryStreamSimple } = require("./router");
+    const { factoryStreamSimple } = require("./router");
+    const { createDroidRequestFetch } = require("./droid-request");
     const { FACTORY_MODELS } = require("./catalog");
 
-    it("sanitizes enable_thinking from top-level body and chat_template_kwargs", async () => {
+    it("drops enable_thinking from the top level and from chat_template_kwargs", async () => {
       let interceptedBody: string | undefined;
       const mockBaseFetch = async (_url: unknown, init?: RequestInit) => {
         interceptedBody = typeof init?.body === "string" ? init.body : undefined;
         return new Response("{}", { status: 200 });
       };
+      const droidFetch = createDroidRequestFetch(mockBaseFetch as any, {
+        modelId: "qwen3.8-max",
+        provider: "fireworks",
+        requestedEffort: "xhigh",
+        sessionId: "s",
+      });
 
-      const sanitizedFetch = createFactoryCompletionsFetch(mockBaseFetch as any);
-
-      // Case 1: top-level enable_thinking
-      await sanitizedFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
+      await droidFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
         method: "POST",
         body: JSON.stringify({
           model: "qwen3.8-max",
           enable_thinking: true,
-          messages: [{ role: "user", content: "hi" }],
-        }),
-      });
-      const parsed1 = JSON.parse(interceptedBody!);
-      expect(parsed1.enable_thinking).toBeUndefined();
-      expect(parsed1.model).toBe("qwen3.8-max");
-
-      // Case 2: nested in chat_template_kwargs
-      await sanitizedFetch("https://api.factory.ai/api/llm/o/v1/chat/completions", {
-        method: "POST",
-        body: JSON.stringify({
-          model: "qwen3.8-max",
           chat_template_kwargs: { enable_thinking: true, other: 123 },
           messages: [{ role: "user", content: "hi" }],
         }),
       });
-      const parsed2 = JSON.parse(interceptedBody!);
-      expect(parsed2.chat_template_kwargs?.enable_thinking).toBeUndefined();
-      expect(parsed2.chat_template_kwargs?.other).toBe(123);
+      const parsed = JSON.parse(interceptedBody!);
+      expect(parsed.enable_thinking).toBeUndefined();
+      expect(parsed.chat_template_kwargs).toEqual({ other: 123 });
+      expect(parsed.model).toBe("qwen3.8-max");
+      // Droid 1.3.0 qwen3.8-max xhigh on fireworks.
+      expect(parsed.reasoning_effort).toBe("xhigh");
+      expect(parsed.reasoning_history).toBe("preserved");
     });
 
     it("never emits enable_thinking in factoryStreamSimple request body for qwen3.8-max", async () => {
