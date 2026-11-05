@@ -2,6 +2,7 @@ import { Effort } from "@oh-my-pi/pi-ai";
 import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
 import { CUSTOM_API } from "./constants";
+import { DROID_MODELS, type DroidModel } from "./droid-registry";
 
 export type FactoryModelFamily =
   | "anthropic"
@@ -9,17 +10,6 @@ export type FactoryModelFamily =
   | "openai-completions"
   | "google"
   | "unsupported";
-
-const FACTORY_MAX_EFFORT = "max" as Effort;
-
-export const FACTORY_EFFORTS = [
-  Effort.Minimal,
-  Effort.Low,
-  Effort.Medium,
-  Effort.High,
-  Effort.XHigh,
-  FACTORY_MAX_EFFORT,
-] as const;
 
 export interface ModelIdentity {
   class: string;
@@ -41,6 +31,9 @@ export type FactoryModelInput = {
   cost?: ProviderModelConfig["cost"];
   premiumMultiplier?: number;
 };
+
+// A model Droid 1.3.0 ships: its reasoning settings come from the Droid row.
+type CuratedModelInput = Omit<FactoryModelInput, "reasoning" | "thinking">;
 
 export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   // Claude family
@@ -223,69 +216,64 @@ export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   return { input: 1.0, output: 3.0, cacheRead: 0.1, cacheWrite: 0 };
 }
 
+type FactoryThinking = NonNullable<ProviderModelConfig["thinking"]>;
+
+function droidEfforts(droid: DroidModel): Effort[] {
+  return droid.efforts.filter((effort) => effort !== "off") as Effort[];
+}
+
+// The thinking mode is the request shape Droid builds at a reasoning effort:
+// adaptive thinking, a token budget with an effort, or a bare token budget.
+function droidThinkingShape(droid: DroidModel): Pick<FactoryThinking, "mode" | "supportsDisplay"> {
+  if (droid.api === "google") return { mode: "google-level" };
+  if (droid.api !== "anthropic") return { mode: "effort" };
+  const [firstEffort] = droidEfforts(droid);
+  const body = Object.values(droid.requests)[0]?.[firstEffort]?.body ?? {};
+  const thinking = body.thinking as { type?: string; display?: string } | undefined;
+  if (thinking?.type === "adaptive") {
+    return thinking.display ? { mode: "anthropic-adaptive", supportsDisplay: true } : { mode: "anthropic-adaptive" };
+  }
+  return { mode: "output_config" in body ? "anthropic-budget-effort" : "budget" };
+}
+
+function droidThinking(droid: DroidModel): ProviderModelConfig["thinking"] {
+  const efforts = droidEfforts(droid);
+  if (efforts.length === 0) return undefined;
+  return {
+    ...droidThinkingShape(droid),
+    efforts,
+    ...(droid.defaultEffort === "off" ? {} : { defaultLevel: droid.defaultEffort as Effort }),
+    ...(droid.efforts.includes("off") ? {} : { requiresEffort: true }),
+  };
+}
+
+// Models found only in Factory's docs have no Droid row, so they get a plain
+// low-to-high ladder until a Droid release ships them.
+function discoveredThinking(modelId: string): FactoryThinking {
+  const efforts = [Effort.Low, Effort.Medium, Effort.High];
+  return familyOf(modelId) === "google"
+    ? { mode: "google-level", efforts, defaultLevel: Effort.High }
+    : { mode: "effort", efforts, defaultLevel: Effort.High };
+}
+
 export function factoryThinkingFor(
   modelId: string,
   reasoning: boolean,
   configuredThinking: ProviderModelConfig["thinking"] | undefined,
 ): ProviderModelConfig["thinking"] {
-  if (configuredThinking) {
-    return configuredThinking;
-  }
-
-  if (!reasoning) {
-    return undefined;
-  }
-
-  if (familyOf(modelId) === "google") {
-    const supportsMinimal = modelId === "gemini-3-flash-preview" || modelId === "gemini-3.5-flash";
-    return {
-      mode: "google-level",
-      efforts: supportsMinimal
-        ? [Effort.Minimal, Effort.Low, Effort.Medium, Effort.High]
-        : [Effort.Low, Effort.Medium, Effort.High],
-      defaultLevel: modelId === "gemini-4-argon" ? Effort.Medium : Effort.High,
-    };
-  }
-
-  if (modelId.startsWith("atlas-") || modelId.startsWith("aster-")) {
-    return {
-      mode: "anthropic-adaptive",
-      efforts: [Effort.Minimal, Effort.Low, Effort.Medium, Effort.High, Effort.XHigh],
-      supportsDisplay: true,
-    };
-  }
-
-  const supportsExtraHighEffort =
-    modelId === "grok-4.6" ||
-    modelId === "grok-4.7" ||
-    modelId.startsWith("gpt-6") ||
-    modelId.startsWith("gpt-5.6") ||
-    modelId.startsWith("glm-5.3") ||
-    modelId.startsWith("claude-opus-5") ||
-    modelId.startsWith("claude-sonnet-5") ||
-    modelId.startsWith("claude-fable-5") ||
-    modelId.startsWith("claude-haiku-5") ||
-    modelId.startsWith("qwen");
-
-  return {
-    mode: "effort",
-    efforts: FACTORY_EFFORTS,
-    defaultLevel: Effort.High,
-    effortMap: supportsExtraHighEffort
-      ? { [Effort.Minimal]: "low", [FACTORY_MAX_EFFORT]: "xhigh" }
-      : { [Effort.Minimal]: "low", [Effort.XHigh]: "high", [FACTORY_MAX_EFFORT]: "high" },
-  };
+  if (configuredThinking) return configuredThinking;
+  const droid = DROID_MODELS[modelId];
+  if (droid) return droidThinking(droid);
+  return reasoning ? discoveredThinking(modelId) : undefined;
 }
 
 export function factoryModel(config: FactoryModelInput): ProviderModelConfig {
-  const thinking = factoryThinkingFor(config.id, config.reasoning, config.thinking);
-
   return {
     id: config.id,
     name: config.name,
     api: CUSTOM_API,
     reasoning: config.reasoning,
-    thinking,
+    thinking: factoryThinkingFor(config.id, config.reasoning, config.thinking),
     input: config.input,
     cost: config.cost ?? defaultCostFor(config.id),
     premiumMultiplier: config.premiumMultiplier,
@@ -294,447 +282,375 @@ export function factoryModel(config: FactoryModelInput): ProviderModelConfig {
   };
 }
 
+function droidModel(config: CuratedModelInput): ProviderModelConfig {
+  const droid = DROID_MODELS[config.id];
+  if (!droid) throw new Error(`${config.id} has no Droid 1.3.0 registry row`);
+  const thinking = droidThinking(droid);
+  return factoryModel({ ...config, reasoning: thinking !== undefined, thinking });
+}
+
 // `contextWindow` is the total context exposed to OMP, not Droid's smaller
 // `maxInputTokens` compaction threshold. Prefer the upstream total window; use
 // Droid's lower hosted-route cap when Factory deliberately constrains a model.
 // `maxTokens` mirrors Droid's synchronous request ceiling for that route.
 export const FACTORY_MODELS: ProviderModelConfig[] = [
   // Claude and Anthropic-family models
-  factoryModel({
+  droidModel({
     id: "claude-fable-5.1",
     name: "Claude Fable 5.1 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-fable-5",
     name: "Claude Fable 5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-5-5",
     name: "Claude Opus 5.5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 128_000,
     premiumMultiplier: 1.6,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-5-5-fast",
     name: "Claude Opus 5.5 Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 128_000,
     premiumMultiplier: 3.2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-5",
     name: "Claude Opus 5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-5-fast",
     name: "Claude Opus 5 Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-4-8",
     name: "Claude Opus 4.8 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-4-8-fast",
     name: "Claude Opus 4.8 Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-4-7",
     name: "Claude Opus 4.7 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-4-7-fast",
     name: "Claude Opus 4.7 Fast [Deprecated] (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-4-6",
     name: "Claude Opus 4.6 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-4-6-fast",
     name: "Claude Opus 4.6 Fast [Deprecated] (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-opus-4-5-20251101",
     name: "Claude Opus 4.5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 200000,
     maxTokens: 64000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-sonnet-5-5",
     name: "Claude Sonnet 5.5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-sonnet-5",
     name: "Claude Sonnet 5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-sonnet-4-6",
     name: "Claude Sonnet 4.6 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 64000,
     premiumMultiplier: 1.2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-sonnet-4-5-20250929",
     name: "Claude Sonnet 4.5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 200_000,
     maxTokens: 32_000,
     premiumMultiplier: 1.2,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-haiku-5-5",
     name: "Claude Haiku 5.5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.04,
   }),
-  factoryModel({
+  droidModel({
     id: "claude-haiku-4-5-20251001",
     name: "Claude Haiku 4.5 (Factory)",
-    reasoning: false,
     input: ["text", "image"],
     contextWindow: 200000,
     maxTokens: 32000,
     premiumMultiplier: 0.4,
   }),
-  factoryModel({
+  droidModel({
     id: "atlas-07-21",
     name: "Atlas 07/21 Preview (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "aster-07-15",
     name: "Aster 07/15 Preview (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 995_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
   // GPT and Codex models
-  factoryModel({
+  droidModel({
     id: "gpt-6-astra",
     name: "GPT-6 Astra (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-6-sol",
     name: "GPT-6 Sol (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-6-sol-fast",
     name: "GPT-6 Sol Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 1.6,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.Medium,
-      effortMap: { [Effort.Minimal]: "low" },
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-6.1-sol",
     name: "GPT-6.1 Sol (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.8,
-    // Droid 0.230.0 registry: default medium, ladder low→max. Minimal is not
-    // wire-supported and degrades to low; xhigh/max pass through unchanged.
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.Medium,
-      effortMap: { [Effort.Minimal]: "low" },
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-6.1-sol-ultrafast",
     name: "GPT-6.1 Sol Ultrafast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 4.8,
-    // Factory's high-cost opt-in is an account entitlement, not a catalog setting.
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.Medium,
-      effortMap: { [Effort.Minimal]: "low" },
-      requiresEffort: true,
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-6.1-terra",
     name: "GPT-6.1 Terra (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.4,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.Medium,
-      effortMap: { [Effort.Minimal]: "low" },
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-6-luna",
     name: "GPT-6 Luna (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.04,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-6-luna-fast",
     name: "GPT-6 Luna Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.08,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.Medium,
-      effortMap: { [Effort.Minimal]: "low" },
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.6-sol",
     name: "GPT-5.6 Sol (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.6-sol-fast",
     name: "GPT-5.6 Sol Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 4,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.6-terra",
     name: "GPT-5.6 Terra (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.6-luna",
     name: "GPT-5.6 Luna (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.08,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.5",
     name: "GPT-5.5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.5-fast",
     name: "GPT-5.5 Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 5,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.5-pro",
     name: "GPT-5.5 Pro (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 12,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.4",
     name: "GPT-5.4 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 1,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.4-fast",
     name: "GPT-5.4 Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_050_000,
     maxTokens: 128_000,
     premiumMultiplier: 2,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.4-mini",
     name: "GPT-5.4 Mini (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 128000,
     premiumMultiplier: 0.3,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.4-mini-fast",
     name: "GPT-5.4 Mini Fast (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 128000,
     premiumMultiplier: 0.6,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.3-codex",
     name: "GPT-5.3 Codex (Factory)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 400000,
     maxTokens: 128000,
     premiumMultiplier: 0.7,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.3-codex-fast",
     name: "GPT-5.3 Codex Fast (Factory)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 400000,
     maxTokens: 128000,
     premiumMultiplier: 1.4,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.2",
     name: "GPT-5.2 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 128000,
     premiumMultiplier: 0.7,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.2-codex",
     name: "GPT-5.2 Codex [Deprecated] (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 128000,
     premiumMultiplier: 0.7,
   }),
-  factoryModel({
+  droidModel({
     id: "gpt-5.1-codex-max",
     name: "GPT-5.1 Codex Max [Deprecated] (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 400000,
     maxTokens: 32768,
@@ -742,28 +658,25 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
 
   // Grok family (routed through OpenAI Responses gateway with x-api-provider: xai)
-  factoryModel({
+  droidModel({
     id: "grok-4.7",
     name: "Grok 4.7 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 500_000,
     maxTokens: 63_356,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "grok-4.6",
     name: "Grok 4.6 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 263_356,
     maxTokens: 63356,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "grok-4.5",
     name: "Grok 4.5 (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 263_356,
     maxTokens: 63356,
@@ -771,136 +684,121 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
 
   // Factory Core and open-weight chat models
-  factoryModel({
+  droidModel({
     id: "inkling",
     name: "Inkling (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_040_000,
     maxTokens: 32_768,
     premiumMultiplier: 0.4,
   }),
-  factoryModel({
+  droidModel({
     id: "mistral-large-4",
     name: "Mistral Large 4 (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 588_288,
     maxTokens: 64_000,
     premiumMultiplier: 0.544,
   }),
-  factoryModel({
+  droidModel({
     id: "mistral-medium-3.5",
     name: "Mistral Medium 3.5 (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 256_000,
     maxTokens: 64_000,
     premiumMultiplier: 0.6,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-5.3",
     name: "GLM 5.3 (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 1040000,
     maxTokens: 131072,
     premiumMultiplier: 0.56,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-5.3-flash",
     name: "GLM 5.3 Flash (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_048_576,
     maxTokens: 131_072,
     premiumMultiplier: 0.06,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-5.2",
     name: "GLM 5.2 (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 1040000,
     maxTokens: 131072,
     premiumMultiplier: 0.56,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-5.2-fast",
     name: "GLM 5.2 Fast (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 524_288,
     maxTokens: 131_072,
     premiumMultiplier: 0.84,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-5.1",
     name: "GLM 5.1 [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 200_000,
     maxTokens: 65_536,
     premiumMultiplier: 0.55,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-5",
     name: "GLM 5 [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 222_000,
     maxTokens: 32_000,
     premiumMultiplier: 0.55,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-4.7",
     name: "GLM 4.7 [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 223_344,
     maxTokens: 25_344,
     premiumMultiplier: 0.4,
   }),
-  factoryModel({
+  droidModel({
     id: "glm-4.6",
     name: "GLM 4.6 (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 328_000,
     maxTokens: 128_000,
     premiumMultiplier: 0.25,
   }),
-  factoryModel({
+  droidModel({
     id: "kimi-k3",
     name: "Kimi K3 (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 262144,
     maxTokens: 65536,
     premiumMultiplier: 1.2,
   }),
-  factoryModel({
+  droidModel({
     id: "kimi-k2.7-code",
     name: "Kimi K2.7 Code (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 262144,
     maxTokens: 65536,
     premiumMultiplier: 0.38,
   }),
-  factoryModel({
+  droidModel({
     id: "kimi-k2.6",
     name: "Kimi K2.6 (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 262144,
     maxTokens: 65536,
     premiumMultiplier: 0.4,
   }),
-  factoryModel({
+  droidModel({
     id: "kimi-k2.5",
     name: "Kimi K2.5 [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 288_768,
     maxTokens: 32_768,
@@ -908,269 +806,195 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
   // Promoted to the static catalog 2026-09: docs.factory.ai/models now publishes
   // `deepseek-v4.1-flash` and Droid 0.228.1 ships binary-audited limits for it.
-  factoryModel({
+  droidModel({
     id: "deepseek-v4.1-flash",
     name: "DeepSeek V4.1 Flash (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_040_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.12,
   }),
-  factoryModel({
+  droidModel({
     id: "deepseek-v4.1-flash-1017",
     name: "DeepSeek V4.1 Flash 1017 (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_040_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.12,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.High, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.High,
-      effortMap: { [Effort.Minimal]: "low" },
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "deepseek-v4-flash-0731",
     name: "DeepSeek V4 Flash [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 1_040_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.176,
   }),
-  factoryModel({
+  droidModel({
     id: "deepseek-v4-pro",
     name: "DeepSeek V4 Pro [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 1_040_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.528,
   }),
-  factoryModel({
+  droidModel({
     id: "minimax-m3",
     name: "MiniMax M3 (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 512000,
     maxTokens: 64000,
     premiumMultiplier: 0.12,
   }),
-  factoryModel({
+  droidModel({
     id: "minimax-m3.1-flash",
     name: "MiniMax M3.1 Flash (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.06,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: FACTORY_MAX_EFFORT,
-      effortMap: { [Effort.Minimal]: "low" },
-      requiresEffort: true,
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "minimax-m2.7",
     name: "MiniMax M2.7 [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 260_600,
     maxTokens: 64_000,
     premiumMultiplier: 0.12,
   }),
-  factoryModel({
+  droidModel({
     id: "minimax-m2.5",
     name: "MiniMax M2.5 [Deprecated] (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 268_800,
     maxTokens: 64000,
     premiumMultiplier: 0.2,
   }),
-  factoryModel({
+  droidModel({
     id: "nemotron-3-ultra",
     name: "Nemotron 3 Ultra (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 202_000,
     maxTokens: 65_536,
     premiumMultiplier: 0.24,
   }),
-  factoryModel({
+  droidModel({
     id: "nemotron-3.5-super",
     name: "Nemotron 3.5 Super (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 65_536,
     premiumMultiplier: 0.08,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.High],
-      defaultLevel: Effort.High,
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "qwen3.8-max",
     name: "Qwen3.8 Max (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 262_144,
     maxTokens: 131_072,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "muse-spark-1.2",
     name: "Muse Spark 1.2 (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 1_040_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.5,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh],
-      defaultLevel: Effort.High,
-      effortMap: { [Effort.Minimal]: "low" },
-      requiresEffort: true,
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "muse-spark-1.3",
     name: "Muse Spark 1.3 (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 1_040_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.5,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh],
-      defaultLevel: Effort.High,
-      effortMap: { [Effort.Minimal]: "low" },
-      requiresEffort: true,
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "muse-spark-open",
     name: "Muse Spark Open (Factory Core)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_040_000,
     maxTokens: 131_072,
     premiumMultiplier: 0.5,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.High,
-      effortMap: { [Effort.Minimal]: "low" },
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "beam-1.0",
     name: "Beam 1.0 (Factory Core)",
-    reasoning: true,
     input: ["text"],
     contextWindow: 1_048_576,
     maxTokens: 32_768,
     premiumMultiplier: 0.52,
-    thinking: {
-      mode: "effort",
-      efforts: [Effort.Low, Effort.Medium, Effort.High, Effort.XHigh, FACTORY_MAX_EFFORT],
-      defaultLevel: Effort.High,
-      effortMap: { [Effort.Minimal]: "low" },
-      requiresEffort: true,
-    },
   }),
 
   // Google Gemini family
-  factoryModel({
+  droidModel({
     id: "gemini-4-argon",
     name: "Gemini 4 Argon (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_000_000,
     maxTokens: 65_536,
     premiumMultiplier: 0.8,
-    thinking: {
-      mode: "google-level",
-      efforts: [Effort.Low, Effort.Medium, Effort.High],
-      defaultLevel: Effort.Medium,
-    },
   }),
-  factoryModel({
+  droidModel({
     id: "gemini-3.8-flash",
     name: "Gemini 3.8 Flash (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.6,
   }),
-  factoryModel({
+  droidModel({
     id: "gemini-3.7-flash",
     name: "Gemini 3.7 Flash (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.6,
   }),
-  factoryModel({
+  droidModel({
     id: "gemini-3.6-flash",
     name: "Gemini 3.6 Flash (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.6,
   }),
-  factoryModel({
+  droidModel({
     id: "gemini-3.5-flash",
     name: "Gemini 3.5 Flash (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.6,
   }),
-  factoryModel({
+  droidModel({
     id: "gemini-3-flash-preview",
     name: "Gemini 3 Flash Preview (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.2,
   }),
-  factoryModel({
+  droidModel({
     id: "gemini-3.1-pro-preview",
     name: "Gemini 3.1 Pro Preview (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "gemini-3-pro-preview",
     name: "Gemini 3 Pro Preview (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,
     premiumMultiplier: 0.8,
   }),
-  factoryModel({
+  droidModel({
     id: "garnet-07-15",
     name: "Garnet 07/15 Preview (Factory)",
-    reasoning: true,
     input: ["text", "image"],
     contextWindow: 1_065_536,
     maxTokens: 65_536,

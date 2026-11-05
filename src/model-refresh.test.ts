@@ -183,7 +183,6 @@ describe("static catalog gating", () => {
     expect(sol61?.thinking?.mode).toBe("effort");
     expect(sol61?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
     expect(sol61?.thinking?.defaultLevel).toBe(Effort.Medium);
-    expect(sol61?.thinking?.effortMap?.minimal).toBe("low");
   });
 
   test("curates claude-haiku-5-5 and mistral-large-4 from Droid 0.240.0", () => {
@@ -293,7 +292,6 @@ describe("static catalog gating", () => {
     expect(terra?.cost).toEqual({ input: 1, output: 6, cacheRead: 0.1, cacheWrite: 0 });
     expect(terra?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
     expect(terra?.thinking?.defaultLevel).toBe(Effort.Medium);
-    expect(terra?.thinking?.effortMap?.minimal).toBe("low");
     expect(terra?.thinking?.requiresEffort).toBeUndefined();
 
     const museOpen = FACTORY_MODELS.find((model) => model.id === "muse-spark-open");
@@ -304,8 +302,8 @@ describe("static catalog gating", () => {
     expect(museOpen?.premiumMultiplier).toBe(0.5);
     expect(museOpen?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
     expect(museOpen?.thinking?.defaultLevel).toBe(Effort.High);
-    expect(museOpen?.thinking?.effortMap?.minimal).toBe("low");
-    expect(museOpen?.thinking?.requiresEffort).toBeUndefined();
+    // Droid 1.3.0 muse-spark-open has no off effort, so an effort is always sent.
+    expect(museOpen?.thinking?.requiresEffort).toBe(true);
 
     const argon = FACTORY_MODELS.find((model) => model.id === "gemini-4-argon");
     expect(argon).toBeDefined();
