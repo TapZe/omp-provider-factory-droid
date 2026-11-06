@@ -108,7 +108,8 @@ const EXPECTED_LIMIT_GROUPS = [
   [262_144, 131_072, ["qwen3.8-max"]],
   [1_040_000, 131_072, ["deepseek-v4.1-flash", "deepseek-v4.1-flash-1017", "deepseek-v4-flash-0731", "deepseek-v4-pro", "muse-spark-1.2", "muse-spark-1.3", "muse-spark-open"]],
   [512_000, 64_000, ["minimax-m3"]],
-  [1_000_000, 131_072, ["minimax-m3.1-flash"]],
+  // Droid 1.5.0 kimi-k3.1-pro contextLimits E(1e6, 131072).
+  [1_000_000, 131_072, ["minimax-m3.1-flash", "kimi-k3.1-pro"]],
   // Droid binary limits for beam-1.0: 1_048_576 total window / 32_768 output.
   [1_048_576, 32_768, ["beam-1.0"]],
   [260_600, 64_000, ["minimax-m2.7"]],

@@ -147,3 +147,44 @@ describe("request fields follow Droid 1.3.0 for every model, effort, and region"
     }
   }
 });
+
+// Values read from the Droid 1.5.0 binary. kimi-k3.1-pro uses the chat
+// builder kimi-k3 uses. Its region lists are global [fireworks, baseten,
+// databricks], eu [], and us [baseten].
+describe("Kimi K3.1 Pro follows Droid 1.5.0", () => {
+  test("the catalog lists it with Droid's efforts, default, limits, images, and multiplier", () => {
+    const model = FACTORY_MODELS.find((entry) => entry.id === "kimi-k3.1-pro");
+    expect(model).toMatchObject({
+      name: "Kimi K3.1 Pro (Factory Core)",
+      input: ["text", "image"],
+      contextWindow: 1_000_000,
+      maxTokens: 131_072,
+      premiumMultiplier: 0.8,
+    });
+    expect(model?.thinking?.efforts as readonly string[] | undefined).toEqual(["low", "high", "max"]);
+    expect(model?.thinking?.defaultLevel as string | undefined).toBe("max");
+  });
+
+  test("global sends each effort to Fireworks with reasoning history", async () => {
+    for (const effort of ["low", "high", "max"] as const) {
+      const request = await capture("kimi-k3.1-pro", effort, "global");
+      expect(request.provider).toBe("fireworks");
+      expect(request.body).toMatchObject({ model: "kimi-k3.1-pro", temperature: 1, reasoning_effort: effort, reasoning_history: "preserved" });
+    }
+  });
+
+  test("us sends each effort to Baseten without reasoning history", async () => {
+    for (const effort of ["low", "high", "max"] as const) {
+      const request = await capture("kimi-k3.1-pro", effort, "us");
+      expect(request.provider).toBe("baseten");
+      expect(request.body).toMatchObject({ temperature: 1, reasoning_effort: effort });
+      expect(request.body.reasoning_history).toBeUndefined();
+    }
+  });
+
+  test("eu has no provider, so the turn stops before any request", async () => {
+    const { captured, result } = await send("kimi-k3.1-pro", "max", "eu");
+    expect(captured).toBeUndefined();
+    expect(result.errorMessage).toContain("not available in the eu inference region");
+  });
+});

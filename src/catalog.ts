@@ -567,6 +567,10 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     name: "GLM 4.6 (Factory Core)",
   }),
   droidModel({
+    id: "kimi-k3.1-pro",
+    name: "Kimi K3.1 Pro (Factory Core)",
+  }),
+  droidModel({
     id: "kimi-k3",
     name: "Kimi K3 (Factory Core)",
   }),
