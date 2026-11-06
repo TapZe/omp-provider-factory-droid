@@ -1,15 +1,15 @@
 # OMP Provider Factory Droid
 
-`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It lets `omp` use the models that Factory Droid 1.3.0 offers, such as Claude Opus 5, Gemini 3.8 Flash, GPT-6 Astra, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
+`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It lets `omp` use the models that Factory Droid 1.5.0 offers, such as Claude Opus 5, Gemini 3.8 Flash, GPT-6 Astra, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.6.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.3.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
+> **Actively Maintained Fork (`v1.6.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.5.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
 
 ---
 
 ## Key Features
 
-- **Droid 1.3.0 models.** The 87 models in the Droid 1.3.0 registry, with the same reasoning efforts, defaults, image input, limits, and multipliers.
+- **Droid 1.5.0 models.** The 88 models in the Droid 1.5.0 registry, with the same reasoning efforts, defaults, image input, limits, and multipliers.
 - **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint with W3C `traceparent` telemetry injection:
   - Anthropic Messages (`/api/llm/a`)
   - OpenAI Responses (`/api/llm/o/v1/responses`)
@@ -26,8 +26,8 @@
 
 ## Supported models
 
-The static catalog holds the 87 models in the Droid CLI 1.3.0 registry. Each
-model sends the request fields that Droid 1.3.0 sends for that model, effort,
+The static catalog holds the 88 models in the Droid CLI 1.5.0 registry. Each
+model sends the request fields that Droid 1.5.0 sends for that model, effort,
 and upstream provider. Feature-gated models need access on the selected
 Factory organization.
 
@@ -121,6 +121,7 @@ Endpoint `POST /api/llm/o/v1/chat/completions`.
 | `glm-5` | fireworks | none | none | text | off | off |
 | `glm-4.7` | fireworks | none | none | text | off | off |
 | `glm-4.6` | baseten | none | baseten | text | off | off |
+| `kimi-k3.1-pro` | fireworks | none | baseten | text, image | low, high, max | max |
 | `kimi-k3` | fireworks | none | baseten | text, image | low, high, max, off | high |
 | `kimi-k2.7-code` | fireworks | none | baseten | text, image | high, off | high |
 | `kimi-k2.6` | fireworks | none | baseten | text, image | high, off | high |
@@ -272,7 +273,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v1.3.0.
+All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v1.5.0.
 
 | API | Gateway URL | Upstream header | Other headers |
 | :--- | :--- | :--- | :--- |
