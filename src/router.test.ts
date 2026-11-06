@@ -1016,5 +1016,35 @@ describe("Factory Droid tool-call normalization", () => {
       expect(capturedPayload.model).toBe("qwen3.8-max");
       expect(capturedPayload.reasoning_effort).toBe("xhigh");
     });
+
+    // Droid 1.5.0 sets systemMessageOnlyAtBeginning for qwen3.8-max and turns
+    // any later system message into a user message. pi-ai already sends a
+    // later developer note as a user message, so the body has no later system
+    // message for that rule to change.
+    it("sends a system message only at the start, which Droid 1.5.0 requires for qwen3.8-max", async () => {
+      const qwenModel = FACTORY_MODELS.find((m: any) => m.id === "qwen3.8-max");
+      let capturedPayload: any = null;
+      const mockFetch = async (_input: unknown, init?: RequestInit) => {
+        if (typeof init?.body === "string") capturedPayload = JSON.parse(init.body);
+        return new Response("{}", { status: 400 });
+      };
+      await factoryStreamSimple(
+        qwenModel,
+        {
+          systemPrompt: ["first", "second"],
+          messages: [
+            { role: "user", content: "hi", timestamp: 0 },
+            { role: "developer", content: "later note", timestamp: 0 },
+            { role: "user", content: "go", timestamp: 0 },
+          ],
+        },
+        { fetch: mockFetch as any, apiKey: "test-token" },
+        "https://api.factory.ai",
+      ).result();
+      const roles = capturedPayload.messages.map((message: { role: string }) => message.role);
+      expect(roles[0]).toBe("system");
+      expect(roles.slice(1)).not.toContain("system");
+      expect(capturedPayload.messages[2]).toEqual({ role: "user", content: "later note" });
+    });
   });
 });
