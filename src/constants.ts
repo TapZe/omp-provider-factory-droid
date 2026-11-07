@@ -96,7 +96,7 @@ export function factoryApiForRegion(region: string | undefined): string {
 
   return `https://api.${lower}.factory.ai`;
 }
-export const FACTORY_CLIENT_VERSION = "1.3.0";
+export const FACTORY_CLIENT_VERSION = "1.5.0";
 export const FACTORY_HEADERS = {
   "X-Factory-Client": factoryUpstreamClientType,
   "X-Client-Version": FACTORY_CLIENT_VERSION,

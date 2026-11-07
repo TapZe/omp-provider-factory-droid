@@ -1,6 +1,6 @@
-// Generated from the Factory Droid 1.3.0 binary (~/.local/bin/droid). Do not edit by hand.
+// Generated from the Factory Droid 1.5.0 binary (@factory/cli-linux-x64 1.5.0). Do not edit by hand.
 //
-// Each row holds what Droid 1.3.0 computes for one model. It lists the
+// Each row holds what Droid 1.5.0 computes for one model. It lists the
 // reasoning efforts and default, the limits at that default, image support,
 // the credit multiplier and promotions, the API provider Droid picks in each
 // inference region, and the request fields Droid's builders send for each
@@ -1314,6 +1314,28 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     requests: {
       baseten: {
         off: { body: {"temperature": 1} },
+      },
+    },
+  },
+  "kimi-k3.1-pro": {
+    api: "completions",
+    efforts: ["low", "high", "max"],
+    defaultEffort: "max",
+    images: true,
+    maxInputTokens: 868928,
+    maxOutputTokens: 131072,
+    tokenMultiplier: 0.8,
+    providers: { global: "fireworks", us: "baseten" },
+    requests: {
+      fireworks: {
+        low: { body: {"temperature": 1, "reasoning_effort": "low", "reasoning_history": "preserved"} },
+        high: { body: {"temperature": 1, "reasoning_effort": "high", "reasoning_history": "preserved"} },
+        max: { body: {"temperature": 1, "reasoning_effort": "max", "reasoning_history": "preserved"} },
+      },
+      baseten: {
+        low: { body: {"temperature": 1, "reasoning_effort": "low"} },
+        high: { body: {"temperature": 1, "reasoning_effort": "high"} },
+        max: { body: {"temperature": 1, "reasoning_effort": "max"} },
       },
     },
   },
