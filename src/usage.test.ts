@@ -242,6 +242,33 @@ describe("parseFactoryUsagePayload", () => {
     expect(requireLimit(invalidEnd!, "factory:standard:5h").window?.resetsAt).toBe(FETCHED_AT + 3600 * 1000);
   });
 
+  // Droid 1.10.0 drops a bucket that the payload marks unlimited before it
+  // shows the usage windows: [fiveHour, weekly, monthly].filter((b) => !b.data.unlimited).
+  test("leaves out buckets the payload marks unlimited, as Droid 1.10.0 does", () => {
+    const parsed = parseFactoryUsagePayload(
+      {
+        ...FIXTURE,
+        limits: {
+          standard: { ...FIXTURE.limits.standard, weekly: { ...FIXTURE.limits.standard.weekly, unlimited: true } },
+          core: { ...FIXTURE.limits.core, monthly: { ...FIXTURE.limits.core.monthly, unlimited: true } },
+        },
+      },
+      CONTEXT,
+    );
+    expect(parsed?.limits.map((limit) => limit.id)).toEqual([
+      "factory:standard:5h",
+      "factory:standard:monthly",
+      "factory:core:5h",
+      "factory:core:weekly",
+      "factory:extra-usage-balance",
+    ]);
+    const limited = parseFactoryUsagePayload(
+      { ...FIXTURE, limits: { ...FIXTURE.limits, standard: { ...FIXTURE.limits.standard, fiveHour: { ...FIXTURE.limits.standard.fiveHour, unlimited: false } } } },
+      CONTEXT,
+    );
+    expect(limited?.limits.map((limit) => limit.id)).toContain("factory:standard:5h");
+  });
+
   test("returns an empty report for a recognized legacy/unlimited payload", () => {
     const legacy = parseFactoryUsagePayload({ planType: "enterprise" }, CONTEXT);
     expect(legacy).not.toBeNull();

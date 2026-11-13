@@ -8,6 +8,7 @@ import {
   familyOf,
   type FactoryModelInput,
 } from "./catalog";
+import { MAKER_LISTED_COSTS } from "./openrouter-costs";
 
 const FACTORY_MODEL_DOCS_URL = "https://docs.factory.ai/models.md";
 const FACTORY_MODEL_DOCS_TIMEOUT_MS = 10_000;
@@ -22,6 +23,29 @@ const DISCOVERED_MODEL_LIMITS = {
   "openai-completions": { contextWindow: 200_000, maxTokens: 32_000 },
   google: { contextWindow: 1_000_000, maxTokens: 65_536 },
 } as const;
+
+// Factory ids whose OpenRouter id is spelled differently. Only clear one-to-one
+// equivalents are listed; a model with none (fast variants, qwen3.8-max,
+// nemotron-3.5-super, Atlas, Aster, Garnet) keeps its static estimate.
+export const OPENROUTER_IDS: Readonly<Record<string, string>> = {
+  "claude-opus-5-5": "anthropic/claude-opus-5.5",
+  "claude-opus-4-8": "anthropic/claude-opus-4.8",
+  "claude-opus-4-7": "anthropic/claude-opus-4.7",
+  "claude-opus-4-6": "anthropic/claude-opus-4.6",
+  "claude-opus-4-5-20251101": "anthropic/claude-opus-4.5",
+  "claude-sonnet-5-5": "anthropic/claude-sonnet-5.5",
+  "claude-sonnet-4-6": "anthropic/claude-sonnet-4.6",
+  "claude-sonnet-4-5-20250929": "anthropic/claude-sonnet-4.5",
+  "claude-haiku-5-5": "anthropic/claude-haiku-5.5",
+  "claude-haiku-4-5-20251001": "anthropic/claude-haiku-4.5",
+  // Droid's baseten model is NVIDIA-Nemotron-3-Ultra-550B-A55B.
+  "nemotron-3-ultra": "nvidia/nemotron-3-ultra-550b-a55b",
+  // Droid's baseten model is reflection/Beam-1.0.
+  "beam-1.0": "reflection/beam-1.0-501b-a23b",
+  "mistral-large-4": "mistralai/mistral-large-4-0",
+  // Droid's mistral model id is mistral-medium-3-5.
+  "mistral-medium-3.5": "mistralai/mistral-medium-3-5",
+};
 
 const PROVIDER_PREFIXES = [
   "anthropic/",
@@ -86,7 +110,7 @@ export async function fetchOpenRouterPrices(): Promise<Map<string, LiveTokenCost
     const payload = (await response.json()) as {
       data?: Array<{
         id: string;
-        pricing?: { prompt?: string; completion?: string; input_cache_read?: string };
+        pricing?: { prompt?: string; completion?: string; input_cache_read?: string; input_cache_write?: string };
       }>;
     };
     if (!Array.isArray(payload.data)) return priceMap;
@@ -96,8 +120,9 @@ export async function fetchOpenRouterPrices(): Promise<Map<string, LiveTokenCost
         const input = parsePerMillionCost(model.pricing.prompt);
         const output = parsePerMillionCost(model.pricing.completion);
         const cacheRead = parsePerMillionCost(model.pricing.input_cache_read);
+        const cacheWrite = parsePerMillionCost(model.pricing.input_cache_write);
         if (input > 0 || output > 0) {
-          priceMap.set(model.id.toLowerCase(), { input, output, cacheRead, cacheWrite: 0 });
+          priceMap.set(model.id.toLowerCase(), { input, output, cacheRead, cacheWrite });
         }
       }
     }
@@ -110,6 +135,10 @@ export async function fetchOpenRouterPrices(): Promise<Map<string, LiveTokenCost
 export function matchLivePrice(id: string, priceMap: Map<string, LiveTokenCost>): LiveTokenCost | undefined {
   if (priceMap.size === 0) return undefined;
   const normalizedId = id.toLowerCase();
+  // These keep the maker's published price; OpenRouter's listing is far off it.
+  if (MAKER_LISTED_COSTS[normalizedId]) return undefined;
+  const mapped = OPENROUTER_IDS[normalizedId];
+  if (mapped) return priceMap.get(mapped);
   const directMatch = priceMap.get(normalizedId);
   if (directMatch) return directMatch;
 

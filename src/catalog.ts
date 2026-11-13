@@ -3,6 +3,7 @@ import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
 import { CUSTOM_API } from "./constants";
 import { DROID_MODELS, type DroidModel, type DroidRegion } from "./droid-registry";
+import { MAKER_LISTED_COSTS, OPENROUTER_LISTED_COSTS } from "./openrouter-costs";
 
 export type FactoryModelFamily =
   | "anthropic"
@@ -40,6 +41,10 @@ type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost"> & {
 };
 
 export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
+  // Listed prices first (openrouter-costs.ts); the estimates below cover only
+  // models with no OpenRouter equivalent and ids discovered later.
+  const listed = MAKER_LISTED_COSTS[id] ?? OPENROUTER_LISTED_COSTS[id];
+  if (listed) return { ...listed };
   // Claude family
   if (id.startsWith("claude-fable-")) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 12.5 };
@@ -322,6 +327,10 @@ function droidModel(config: CuratedModelInput): ProviderModelConfig {
 // context Droid lets a request use. `maxTokens` is Droid's maxOutputTokens.
 export const FACTORY_MODELS: ProviderModelConfig[] = [
   // Claude and Anthropic-family models
+  droidModel({
+    id: "claude-fable-5.2",
+    name: "Claude Fable 5.2 (Factory)",
+  }),
   droidModel({
     id: "claude-fable-5.1",
     name: "Claude Fable 5.1 (Factory)",
@@ -634,15 +643,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
   droidModel({
     id: "muse-spark-1.2",
-    name: "Muse Spark 1.2 (Factory Core)",
+    name: "Muse Spark 1.2 (Factory)",
   }),
   droidModel({
     id: "muse-spark-1.3",
-    name: "Muse Spark 1.3 (Factory Core)",
+    name: "Muse Spark 1.3 (Factory)",
   }),
   droidModel({
     id: "muse-spark-open",
-    name: "Muse Spark Open (Factory Core)",
+    name: "Muse Spark Open (Factory)",
   }),
   droidModel({
     id: "beam-1.0",
@@ -650,6 +659,14 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
 
   // Google Gemini family
+  droidModel({
+    id: "gemini-4-hydrogen",
+    name: "Gemini 4 Hydrogen (Factory)",
+  }),
+  droidModel({
+    id: "gemini-4-carbon",
+    name: "Gemini 4 Carbon (Factory)",
+  }),
   droidModel({
     id: "gemini-4-argon",
     name: "Gemini 4 Argon (Factory)",
@@ -825,7 +842,12 @@ export function identityFor(id: string): ModelIdentity {
 
 export type FactoryQuotaTier = "standard" | "core";
 
+// A model Droid 1.10.0 ships uses the pool Droid bills it from. Muse Spark is
+// in the Standard pool although it runs on open-model hosts. The prefix rule
+// below covers models Droid no longer lists and ones found in the docs.
 export function factoryQuotaTierFor(id: string): FactoryQuotaTier {
+  const pool = DROID_MODELS[id]?.billingPool;
+  if (pool) return pool;
   if (
     id.startsWith("claude-") ||
     id.startsWith("atlas-") ||

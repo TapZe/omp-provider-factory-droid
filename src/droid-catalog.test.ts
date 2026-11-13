@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { droidMultiplierFor, FACTORY_MODELS, upstreamProviderFor } from "./catalog";
+import { droidMultiplierFor, FACTORY_MODELS, factoryQuotaTierFor, upstreamProviderFor } from "./catalog";
 import { DROID_MODELS } from "./droid-registry";
 
 function curated(id: string) {
@@ -156,5 +156,35 @@ describe("upstream providers follow Droid 1.3.0", () => {
   test("nemotron-3-ultra goes to Baseten", () => {
     // apiProviders:["baseten"], apiProviderConfig:{baseten:{modelId:"nvidia/Nemotron-120B-A12B"}}
     expect(upstreamProviderFor("nemotron-3-ultra")).toBe("baseten");
+  });
+});
+
+// Droid 1.10.0 bills each model from one pool: "standard" or "core". Muse Spark
+// models are in the Standard pool even though they run on open-model hosts.
+const NOT_IN_DROID_1_10 = ["gemini-3-pro-preview", "glm-4.6", "kimi-k2.6", "kimi-k2.7-code", "minimax-m2.5"];
+
+describe("quota tiers follow Droid 1.10.0 billing pools", () => {
+  test("every Droid 1.10.0 row carries its billing pool", () => {
+    const missing = Object.entries(DROID_MODELS).filter(([, droid]) => !droid.billingPool).map(([id]) => id);
+    expect(missing.sort()).toEqual([...NOT_IN_DROID_1_10].sort());
+  });
+
+  test("the quota tier is the model's Droid billing pool", () => {
+    for (const [id, droid] of Object.entries(DROID_MODELS)) {
+      if (!droid.billingPool) continue;
+      expect({ id, tier: factoryQuotaTierFor(id) }).toEqual({ id, tier: droid.billingPool });
+    }
+    for (const id of ["muse-spark-1.2", "muse-spark-1.3", "muse-spark-open"]) {
+      expect({ id, tier: factoryQuotaTierFor(id) }).toEqual({ id, tier: "standard" });
+    }
+  });
+
+  test("a model is labelled Factory Core exactly when it uses the Core pool", () => {
+    for (const model of FACTORY_MODELS) {
+      expect({ id: model.id, core: model.name.endsWith("(Factory Core)") }).toEqual({
+        id: model.id,
+        core: factoryQuotaTierFor(model.id) === "core",
+      });
+    }
   });
 });

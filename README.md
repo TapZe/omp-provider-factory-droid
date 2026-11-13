@@ -1,15 +1,15 @@
 # OMP Provider Factory Droid
 
-`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It lets `omp` use the models that Factory Droid 1.5.0 offers, such as Claude Opus 5, Gemini 3.8 Flash, GPT-6 Astra, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
+`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It lets `omp` use the models that Factory Droid 1.10.0 offers, such as Claude Opus 5, Gemini 3.8 Flash, GPT-6 Astra, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.6.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.5.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
+> **Actively Maintained Fork (`v1.6.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.10.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
 
 ---
 
 ## Key Features
 
-- **Droid 1.5.0 models.** The 88 models in the Droid 1.5.0 registry, with the same reasoning efforts, defaults, image input, limits, and multipliers.
+- **Droid 1.10.0 models.** The 91 models in the Droid 1.10.0 registry, with the same reasoning efforts, defaults, image input, limits, and multipliers.
 - **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint with W3C `traceparent` telemetry injection:
   - Anthropic Messages (`/api/llm/a`)
   - OpenAI Responses (`/api/llm/o/v1/responses`)
@@ -26,8 +26,8 @@
 
 ## Supported models
 
-The static catalog holds the 88 models in the Droid CLI 1.5.0 registry. Each
-model sends the request fields that Droid 1.5.0 sends for that model, effort,
+The static catalog holds the 91 models in the Droid CLI 1.10.0 registry. Each
+model sends the request fields that Droid 1.10.0 sends for that model, effort,
 and upstream provider. Feature-gated models need access on the selected
 Factory organization.
 
@@ -45,6 +45,7 @@ Endpoint `POST /api/llm/a/v1/messages`.
 
 | Model | Global | EU | US | Input | Efforts | Default |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `claude-fable-5.2` | anthropic | none | anthropic | text, image | low, medium, high, xhigh, max | high |
 | `claude-fable-5.1` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
 | `claude-fable-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
 | `claude-opus-5-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max | medium |
@@ -102,7 +103,7 @@ Endpoint `POST /api/llm/o/v1/responses`.
 | `grok-4.7` | xai | none | xai | text, image | low, medium, high, xhigh | high |
 | `grok-4.6` | xai | none | xai | text, image | low, medium, high, xhigh | high |
 | `grok-4.5` | xai | none | none | text, image | low, medium, high | high |
-| `muse-spark-1.3` | google | none | none | text | low, medium, high, xhigh | high |
+| `muse-spark-1.3` | google | none | none | text, image | low, medium, high, xhigh | high |
 
 ### 3. Chat completions
 
@@ -135,7 +136,7 @@ Endpoint `POST /api/llm/o/v1/chat/completions`.
 | `nemotron-3-ultra` | baseten | none | baseten | text | high, off | high |
 | `nemotron-3.5-super` | baseten | none | baseten | text, image | high, off | high |
 | `qwen3.8-max` | fireworks | none | none | text | low, medium, xhigh | xhigh |
-| `muse-spark-1.2` | fireworks | none | none | text | low, medium, high, xhigh | high |
+| `muse-spark-1.2` | fireworks | none | none | text, image | low, medium, high, xhigh | high |
 | `muse-spark-open` | baseten | none | baseten | text, image | low, medium, high, xhigh, max | high |
 | `beam-1.0` | baseten | none | baseten | text | low, medium, high, xhigh, max | high |
 
@@ -145,6 +146,8 @@ Endpoint `POST /api/llm/g/v1/generate`.
 
 | Model | Global | EU | US | Input | Efforts | Default |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `gemini-4-hydrogen` | google | google | google | text, image | low, medium, high | high |
+| `gemini-4-carbon` | google | none | none | text, image | low, medium, high | medium |
 | `gemini-4-argon` | google | none | none | text, image | low, medium, high | medium |
 | `gemini-3.8-flash` | google | google | google | text, image | low, medium, high | high |
 | `gemini-3.7-flash` | google | google | google | text, image | low, medium, high | high |
@@ -161,6 +164,22 @@ At session start the extension also reads Factory's model docs
 (`https://docs.factory.ai/models.md`) and OpenRouter prices, at most every 15
 minutes. A model that appears there but not in the Droid registry is listed
 too. It gets low, medium, and high efforts and no Droid request fields.
+
+### Costs
+
+Model costs come from OpenRouter's public model list, read at session start
+with the docs. A Factory id matches its OpenRouter id by name, or through a short
+explicit list where OpenRouter spells it differently (Claude versions with dots,
+Nemotron 3 Ultra, Beam 1.0, Mistral Large 4 and Medium 3.5). Models with no clear
+OpenRouter equivalent (fast variants, Qwen3.8 Max, Nemotron 3.5 Super, Atlas,
+Aster, Garnet) keep estimates. Without network, a model with an OpenRouter
+equivalent falls back to OpenRouter's listed price from 2026-11-13
+(`src/openrouter-costs.ts`).
+
+OpenRouter's listings for Kimi K3, GLM 5.2, GLM 5.3 and DeepSeek V4 Pro are far
+off their makers' prices, so those four always use the maker's published API
+price (Moonshot, Z.ai, DeepSeek peak rate), and a live OpenRouter price never
+replaces it.
 
 ---
 
@@ -273,7 +292,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v1.5.0.
+All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v1.10.0.
 
 | API | Gateway URL | Upstream header | Other headers |
 | :--- | :--- | :--- | :--- |
@@ -304,8 +323,9 @@ Check remaining usage quotas at any time:
 ```
 
 Displays:
-- **Standard Quota**: 5-hour, weekly, and monthly limits (Claude, GPT, Grok, Gemini).
+- **Standard Quota**: 5-hour, weekly, and monthly limits (Claude, GPT, Grok, Gemini, and Muse Spark, which Droid 1.10.0 bills from the Standard pool).
 - **Droid Core Quota**: 5-hour, weekly, and monthly limits (GLM, Kimi, DeepSeek, MiniMax, Nemotron, Inkling).
+  As in Droid 1.10.0, a window that the billing reply marks `unlimited` is left out of both quotas and of the preflight gate.
 - **Extra Usage Balance**: Remaining balance in USD, overage preferences, and billing rate notes.
 
 ### Optional Quota Preflight Gate

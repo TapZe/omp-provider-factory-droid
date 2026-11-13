@@ -268,7 +268,7 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("1.5.0");
+    expect(FACTORY_CLIENT_VERSION).toBe("1.10.0");
   });
 
   it("sends the Anthropic betas Droid sends for each model", async () => {
@@ -287,7 +287,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
   });
 
   it("uses Droid-compatible adaptive thinking for current Claude models", async () => {
-    const adaptiveModels = ["claude-fable-5.1", "claude-fable-5", "claude-opus-5", "claude-opus-4-8"];
+    // Fable 5.1 also binds thinking blocks since Droid 1.10.0; droid-wire.test.ts covers it.
+    const adaptiveModels = ["claude-fable-5", "claude-opus-5", "claude-opus-4-8"];
 
     for (const modelId of adaptiveModels) {
       const { body, betaHeader } = await captureFactoryAnthropicRequest(modelId, Effort.Medium);
@@ -578,8 +579,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
     expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
-    expect(capturedHeaders?.get("x-client-version")).toBe("1.5.0");
-    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.5.0");
+    expect(capturedHeaders?.get("x-client-version")).toBe("1.10.0");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.10.0");
     expect(capturedHeaders?.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
   });
 
@@ -784,18 +785,18 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(glmThinking?.efforts.map(String)).toEqual(["low", "high", "max"]);
 
     const nemoCost = defaultCostFor("nemotron-3-ultra");
-    expect(nemoCost).toEqual({ input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 });
+    expect(nemoCost).toEqual({ input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: 0 });
     const nemoModel = FACTORY_MODELS.find((m: any) => m.id === "nemotron-3-ultra");
     expect(nemoModel?.premiumMultiplier).toBe(0.24);
     expect(nemoModel?.contextWindow).toBe(202_000);
     expect(nemoModel?.maxTokens).toBe(65_536);
 
     const flashCost = defaultCostFor("glm-5.3-flash");
-    expect(flashCost).toEqual({ input: 0.15, output: 0.5, cacheRead: 0.03, cacheWrite: 0 });
+    expect(flashCost).toEqual({ input: 0.0399, output: 0.0784, cacheRead: 0.03, cacheWrite: 0 });
     const geminiFlashCost = defaultCostFor("gemini-3.8-flash");
-    expect(geminiFlashCost).toEqual({ input: 0.3, output: 1.5, cacheRead: 0.075, cacheWrite: 0 });
+    expect(geminiFlashCost).toEqual({ input: 0.825, output: 4.125, cacheRead: 0.0825, cacheWrite: 0.041667 });
     const geminiProCost = defaultCostFor("gemini-3.1-pro-preview");
-    expect(geminiProCost).toEqual({ input: 2.0, output: 8.0, cacheRead: 0.5, cacheWrite: 0 });
+    expect(geminiProCost).toEqual({ input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0.375 });
     const flashModel = FACTORY_MODELS.find((m: any) => m.id === "glm-5.3-flash");
     expect(flashModel?.premiumMultiplier).toBe(0.06);
 
