@@ -39,7 +39,32 @@ type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost"> & {
   contextWindow?: number;
 };
 
+// Droid 1.10.0 writes provider rates per million tokens in its credit unit:
+// rates.input equals cost.tokenMultiplier, and one unit is 2.5 USD (Sonnet 4.6's
+// 1.2/6 is Anthropic's $3/$15, GPT-5.3 Codex's 0.7/5.6 is OpenAI's $1.75/$14).
+const DROID_RATE_USD = 2.5;
+
+// The USD cost per million tokens from the rate card of the provider Droid
+// routes the model to in the global region, or undefined when Droid has none.
+// A field Droid leaves out keeps the estimate's value.
+export function droidCostFor(id: string): ProviderModelConfig["cost"] | undefined {
+  const pricing = DROID_MODELS[id]?.pricing;
+  if (!pricing) return undefined;
+  const usd = (rate: number) => Number((rate * DROID_RATE_USD).toFixed(6));
+  const estimate = estimatedCostFor(id);
+  return {
+    input: usd(pricing.input),
+    output: usd(pricing.output),
+    cacheRead: pricing.cacheRead === undefined ? estimate.cacheRead : usd(pricing.cacheRead),
+    cacheWrite: pricing.cacheWrite === undefined ? estimate.cacheWrite : usd(pricing.cacheWrite),
+  };
+}
+
 export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
+  return droidCostFor(id) ?? estimatedCostFor(id);
+}
+
+function estimatedCostFor(id: string): ProviderModelConfig["cost"] {
   // Claude family
   if (id.startsWith("claude-fable-")) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 12.5 };

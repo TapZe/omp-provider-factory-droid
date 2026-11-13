@@ -165,6 +165,17 @@ At session start the extension also reads Factory's model docs
 minutes. A model that appears there but not in the Droid registry is listed
 too. It gets low, medium, and high efforts and no Droid request fields.
 
+### Costs
+
+Droid 1.10.0 ships a rate card for many models. A model that has one costs what
+the provider Droid routes it to in the global region charges: Droid's rates are
+per million tokens in its credit unit, which is 2.5 USD, so Sonnet 4.6's 1.2/6
+becomes $3/$15. Anthropic cache writes use the 5-minute rate, and long-context
+tiers are not modelled. These models keep Droid's cost even when OpenRouter has
+a price. Models without a usable Droid rate card (most GPT, Grok, and Gemini
+Flash models, Mistral Large 4, DeepSeek V4 Pro, DeepSeek V4 Flash 0731) keep the
+estimate or the OpenRouter price.
+
 ---
 
 ## Model selection and reasoning

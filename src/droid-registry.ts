@@ -6,6 +6,9 @@
 // inference region, and the request fields Droid's builders send for each
 // effort and provider. "off" stands for the model's off or none effort.
 // billingPool is the quota pool ("standard" or "core") Droid bills the model from.
+// pricing is the rate card of the provider Droid routes to in the global region,
+// per million tokens in Droid's own units (rates.input equals the credit
+// multiplier); cacheWrite is the 5-minute write. No pricing: no usable rates.
 // "$session" marks a value Droid fills from the session at request time.
 
 export const DROID_EFFORTS = ["minimal", "low", "medium", "high", "xhigh", "max", "off"] as const;
@@ -24,6 +27,14 @@ export interface DroidPromotion {
   expiresAt?: string;
 }
 
+export interface DroidPricing {
+  provider: string;
+  input: number;
+  output: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+}
+
 export interface DroidModel {
   api: DroidApi;
   efforts: readonly DroidEffort[];
@@ -36,6 +47,7 @@ export interface DroidModel {
   providers: Partial<Record<DroidRegion, string>>;
   requests: Record<string, Partial<Record<DroidEffort, DroidRequest>>>;
   billingPool?: "standard" | "core";
+  pricing?: DroidPricing;
 }
 
 export const DROID_MODELS: Record<string, DroidModel> = {
@@ -58,6 +70,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 3.2, output: 16.0, cacheRead: 0.08, cacheWrite: 4.0 },
   },
   "claude-fable-5.1": {
     api: "anthropic",
@@ -87,6 +100,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 4.0, output: 20.0, cacheRead: 0.1, cacheWrite: 5.0 },
   },
   "claude-fable-5": {
     api: "anthropic",
@@ -116,6 +130,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 4.0, output: 20.0, cacheRead: 0.4, cacheWrite: 5.0 },
   },
   "claude-opus-5-5": {
     api: "anthropic",
@@ -143,6 +158,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 1.6, output: 8.0, cacheRead: 0.08, cacheWrite: 2.0 },
   },
   "claude-opus-5-5-fast": {
     api: "anthropic",
@@ -163,6 +179,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 3.2, output: 16.0, cacheRead: 0.16, cacheWrite: 4.0 },
   },
   "claude-opus-5": {
     api: "anthropic",
@@ -192,6 +209,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 2.0, output: 10.0, cacheRead: 0.2, cacheWrite: 2.5 },
   },
   "claude-opus-5-fast": {
     api: "anthropic",
@@ -213,6 +231,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 4.0, output: 20.0, cacheRead: 0.4, cacheWrite: 5.0 },
   },
   "claude-opus-4-8": {
     api: "anthropic",
@@ -242,6 +261,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 2.0, output: 10.0, cacheRead: 0.2, cacheWrite: 2.5 },
   },
   "claude-opus-4-8-fast": {
     api: "anthropic",
@@ -263,6 +283,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 4.0, output: 20.0, cacheRead: 0.4, cacheWrite: 5.0 },
   },
   "claude-opus-4-7": {
     api: "anthropic",
@@ -292,6 +313,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 2.0, output: 10.0, cacheRead: 0.2, cacheWrite: 2.5 },
   },
   "claude-opus-4-7-fast": {
     api: "anthropic",
@@ -340,6 +362,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 2.0, output: 10.0, cacheRead: 0.2, cacheWrite: 2.5 },
   },
   "claude-opus-4-6-fast": {
     api: "anthropic",
@@ -414,6 +437,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 0.8, output: 4.0, cacheRead: 0.04, cacheWrite: 1.0 },
   },
   "claude-sonnet-5": {
     api: "anthropic",
@@ -443,6 +467,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 0.8, output: 4.0, cacheRead: 0.08, cacheWrite: 1.0 },
   },
   "claude-sonnet-4-6": {
     api: "anthropic",
@@ -470,6 +495,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 1.2, output: 6.0, cacheRead: 0.12, cacheWrite: 1.5 },
   },
   "claude-sonnet-4-5-20250929": {
     api: "anthropic",
@@ -524,6 +550,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "anthropic", input: 0.04, output: 0.2, cacheRead: 0.004, cacheWrite: 0.05 },
   },
   "claude-haiku-4-5-20251001": {
     api: "anthropic",
@@ -1032,6 +1059,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "openai", input: 0.7, output: 5.6, cacheRead: 0.07 },
   },
   "gpt-5.3-codex-fast": {
     api: "responses",
@@ -1054,6 +1082,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "openai", input: 1.4, output: 11.2, cacheRead: 0.14 },
   },
   "gpt-5.2": {
     api: "responses",
@@ -1264,6 +1293,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 0.56, output: 1.76, cacheRead: 0.104 },
   },
   "glm-5.3-flash": {
     api: "completions",
@@ -1287,6 +1317,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 0.06, output: 0.2, cacheRead: 0.012 },
   },
   "glm-5.2": {
     api: "completions",
@@ -1310,6 +1341,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "baseten", input: 0.56, output: 1.76, cacheRead: 0.056 },
   },
   "glm-5.2-fast": {
     api: "completions",
@@ -1328,6 +1360,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "baseten", input: 0.84, output: 2.64, cacheRead: 0.084 },
   },
   "glm-5.1": {
     api: "completions",
@@ -1444,6 +1477,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 1.2, output: 6.0, cacheRead: 0.12 },
   },
   "kimi-k2.7-code": {
     api: "completions",
@@ -1530,6 +1564,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 0.12, output: 0.48, cacheRead: 0.0024 },
   },
   "deepseek-v4.1-flash-1017": {
     api: "completions",
@@ -1555,6 +1590,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 0.12, output: 0.48, cacheRead: 0.0024 },
   },
   "deepseek-v4-flash-0731": {
     api: "completions",
@@ -1621,6 +1657,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 0.12, output: 0.48, cacheRead: 0.024 },
   },
   "minimax-m3.1-flash": {
     api: "completions",
@@ -1657,6 +1694,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 0.12, output: 0.48, cacheRead: 0.024 },
   },
   "minimax-m2.5": {
     api: "anthropic",
@@ -1691,6 +1729,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "baseten", input: 0.24, output: 0.96, cacheRead: 0.048 },
   },
   "nemotron-3.5-super": {
     api: "completions",
@@ -1726,6 +1765,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
+    pricing: { provider: "fireworks", input: 0.8, output: 2.4, cacheRead: 0.1 },
   },
   "muse-spark-1.2": {
     api: "completions",
@@ -1784,6 +1824,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "baseten", input: 0.5, output: 1.7, cacheRead: 0.06 },
   },
   "beam-1.0": {
     api: "completions",
@@ -1822,6 +1863,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "google", input: 0.6, output: 3.0, cacheRead: 0.03 },
   },
   "gemini-4-carbon": {
     api: "google",
@@ -1843,6 +1885,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "google", input: 1.6, output: 8.0, cacheRead: 0.08 },
   },
   "gemini-4-argon": {
     api: "google",
@@ -1943,6 +1986,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "google", input: 0.6, output: 3.6, cacheRead: 0.06 },
   },
   "gemini-3-flash-preview": {
     api: "google",
@@ -1980,6 +2024,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "standard",
+    pricing: { provider: "google", input: 0.8, output: 4.8, cacheRead: 0.08 },
   },
   "gemini-3-pro-preview": {
     api: "google",
