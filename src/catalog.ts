@@ -323,6 +323,10 @@ function droidModel(config: CuratedModelInput): ProviderModelConfig {
 export const FACTORY_MODELS: ProviderModelConfig[] = [
   // Claude and Anthropic-family models
   droidModel({
+    id: "claude-fable-5.2",
+    name: "Claude Fable 5.2 (Factory)",
+  }),
+  droidModel({
     id: "claude-fable-5.1",
     name: "Claude Fable 5.1 (Factory)",
   }),
@@ -650,6 +654,14 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
 
   // Google Gemini family
+  droidModel({
+    id: "gemini-4-hydrogen",
+    name: "Gemini 4 Hydrogen (Factory)",
+  }),
+  droidModel({
+    id: "gemini-4-carbon",
+    name: "Gemini 4 Carbon (Factory)",
+  }),
   droidModel({
     id: "gemini-4-argon",
     name: "Gemini 4 Argon (Factory)",

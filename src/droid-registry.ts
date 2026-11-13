@@ -37,6 +37,25 @@ export interface DroidModel {
 }
 
 export const DROID_MODELS: Record<string, DroidModel> = {
+  "claude-fable-5.2": {
+    api: "anthropic",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "high",
+    images: true,
+    maxInputTokens: 867000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 3.2,
+    providers: { global: "anthropic", us: "anthropic" },
+    requests: {
+      anthropic: {
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+      },
+    },
+  },
   "claude-fable-5.1": {
     api: "anthropic",
     efforts: ["low", "medium", "high", "xhigh", "max", "off"],
@@ -1705,6 +1724,43 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"temperature": 1, "reasoning_effort": "high", "allow_missing_thinking": true} },
         xhigh: { body: {"temperature": 1, "reasoning_effort": "xhigh", "allow_missing_thinking": true} },
         max: { body: {"temperature": 1, "reasoning_effort": "max", "allow_missing_thinking": true} },
+      },
+    },
+  },
+  "gemini-4-hydrogen": {
+    api: "google",
+    efforts: ["low", "medium", "high"],
+    defaultEffort: "high",
+    images: true,
+    maxInputTokens: 1000000,
+    maxOutputTokens: 65536,
+    tokenMultiplier: 0.6,
+    providers: { global: "google", eu: "google", us: "google" },
+    requests: {
+      google: {
+        low: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "LOW"}}} },
+        medium: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "MEDIUM"}}} },
+        high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
+      },
+    },
+  },
+  "gemini-4-carbon": {
+    api: "google",
+    efforts: ["low", "medium", "high"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 934464,
+    maxOutputTokens: 65536,
+    tokenMultiplier: 1.6,
+    promotions: [
+      { discount: 0.5, startsAt: "2026-11-10T16:00:00.000Z", expiresAt: "2026-12-01T08:00:00.000Z" },
+    ],
+    providers: { global: "google" },
+    requests: {
+      google: {
+        low: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "LOW"}}} },
+        medium: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "MEDIUM"}}} },
+        high: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
   },

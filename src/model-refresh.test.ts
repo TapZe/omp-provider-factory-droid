@@ -45,6 +45,7 @@ const EXPECTED_LIMIT_GROUPS = [
     995_000,
     128_000,
     [
+      "claude-fable-5.2",
       "claude-fable-5.1",
       "claude-fable-5",
       "claude-opus-5",
@@ -123,6 +124,7 @@ const EXPECTED_LIMIT_GROUPS = [
     1_065_536,
     65_536,
     [
+      "gemini-4-hydrogen",
       "gemini-3.8-flash",
       "gemini-3.7-flash",
       "gemini-3.6-flash",
@@ -133,7 +135,8 @@ const EXPECTED_LIMIT_GROUPS = [
       "garnet-07-15",
     ],
   ],
-  [1_000_000, 65_536, ["gemini-4-argon"]],
+  // Droid 1.10.0 gemini-4-carbon contextLimits c(1e6, 65536), the same as argon.
+  [1_000_000, 65_536, ["gemini-4-argon", "gemini-4-carbon"]],
 ] as const;
 
 describe("Factory model token limits", () => {

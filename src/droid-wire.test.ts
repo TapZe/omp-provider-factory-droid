@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Context } from "@oh-my-pi/pi-ai";
 
-import { FACTORY_MODELS } from "./catalog";
+import { droidMultiplierFor, FACTORY_MODELS } from "./catalog";
 import { DROID_MODELS, type DroidApi, type DroidEffort, type DroidRegion } from "./droid-registry";
 import { factoryStreamSimple } from "./router";
 
@@ -227,6 +227,96 @@ describe("Anthropic thinking block binding follows Droid 1.10.0", () => {
       const request = await capture(id, "high", region);
       expect({ id, binding: (request.body.thinking as Record<string, unknown>).block_binding }).toEqual({ id, binding: undefined });
       expect({ id, beta: request.beta?.split(",").includes(BETA) ?? false }).toEqual({ id, beta: false });
+    }
+  });
+});
+
+// Values read from the Droid 1.10.0 binary. Its selectable list adds
+// claude-fable-5.2, gemini-4-hydrogen and gemini-4-carbon and removes nothing.
+// All three are behind default-off feature flags, as gemini-4-argon and
+// kimi-k3.1-pro already are; Carbon is also marked unreleased, like Argon.
+describe("models added in Droid 1.10.0", () => {
+  const BOUND_THINKING = { type: "adaptive", display: "summarized", block_binding: { prefix_mismatch_behavior: "drop_block" } };
+
+  test("the catalog lists them with Droid's efforts, defaults, limits, images, and multipliers", () => {
+    const byId = (id: string) => FACTORY_MODELS.find((entry) => entry.id === id);
+    expect(byId("claude-fable-5.2")).toMatchObject({
+      name: "Claude Fable 5.2 (Factory)",
+      input: ["text", "image"],
+      contextWindow: 995_000,
+      maxTokens: 128_000,
+      premiumMultiplier: 3.2,
+    });
+    expect(byId("claude-fable-5.2")?.thinking).toMatchObject({ mode: "anthropic-adaptive", supportsDisplay: true, requiresEffort: true });
+    expect(byId("claude-fable-5.2")?.thinking?.efforts as readonly string[] | undefined).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(byId("claude-fable-5.2")?.thinking?.defaultLevel as string | undefined).toBe("high");
+
+    expect(byId("gemini-4-hydrogen")).toMatchObject({
+      name: "Gemini 4 Hydrogen (Factory)",
+      input: ["text", "image"],
+      contextWindow: 1_065_536,
+      maxTokens: 65_536,
+      premiumMultiplier: 0.6,
+    });
+    expect(byId("gemini-4-hydrogen")?.thinking?.efforts as readonly string[] | undefined).toEqual(["low", "medium", "high"]);
+    expect(byId("gemini-4-hydrogen")?.thinking?.defaultLevel as string | undefined).toBe("high");
+
+    expect(byId("gemini-4-carbon")).toMatchObject({
+      name: "Gemini 4 Carbon (Factory)",
+      input: ["text", "image"],
+      contextWindow: 1_000_000,
+      maxTokens: 65_536,
+    });
+    expect(byId("gemini-4-carbon")?.thinking?.efforts as readonly string[] | undefined).toEqual(["low", "medium", "high"]);
+    expect(byId("gemini-4-carbon")?.thinking?.defaultLevel as string | undefined).toBe("medium");
+  });
+
+  test("Gemini 4 Carbon is 1.6x with half off from 2026-11-10T16:00Z until 2026-12-01T08:00Z", () => {
+    expect(droidMultiplierFor("gemini-4-carbon", new Date("2026-11-10T15:59:59Z"))).toBe(1.6);
+    expect(droidMultiplierFor("gemini-4-carbon", new Date("2026-11-10T16:00:00Z"))).toBe(0.8);
+    expect(droidMultiplierFor("gemini-4-carbon", new Date("2026-12-01T08:00:00Z"))).toBe(1.6);
+  });
+
+  test("Fable 5.2 sends bound adaptive thinking to Anthropic in global and us, and is not offered in eu", async () => {
+    for (const region of ["global", "us"] as const) {
+      for (const effort of ["low", "medium", "high", "xhigh", "max"] as const) {
+        const request = await capture("claude-fable-5.2", effort, region);
+        expect(request.provider).toBe("anthropic");
+        expect(request.body.thinking).toEqual(BOUND_THINKING);
+        expect(request.body.output_config).toEqual({ effort });
+        expect(request.beta?.split(",").sort()).toEqual(["fine-grained-tool-streaming-2025-05-14", "thinking-binding-controls-2026-08-01"]);
+      }
+    }
+    const { captured, result } = await send("claude-fable-5.2", "high", "eu");
+    expect(captured).toBeUndefined();
+    expect(result.errorMessage).toContain("not available in the eu inference region");
+  });
+
+  test("Gemini 4 Hydrogen sends Google sampling and thinking level in every region", async () => {
+    for (const region of ["global", "eu", "us"] as const) {
+      const request = await capture("gemini-4-hydrogen", "medium", region);
+      expect(request.provider).toBe("google");
+      expect(request.body.generationConfig).toMatchObject({
+        temperature: 1,
+        topP: 0.95,
+        topK: 64,
+        thinkingConfig: { includeThoughts: true, thinkingLevel: "MEDIUM" },
+      });
+    }
+  });
+
+  test("Gemini 4 Carbon sends its output cap and thinking level in global only", async () => {
+    const request = await capture("gemini-4-carbon", "high", "global");
+    expect(request.provider).toBe("google");
+    expect(request.body.generationConfig).toMatchObject({
+      maxOutputTokens: 65_536,
+      thinkingConfig: { includeThoughts: true, thinkingLevel: "HIGH" },
+    });
+    expect((request.body.generationConfig as Record<string, unknown>).temperature).toBeUndefined();
+    for (const region of ["eu", "us"] as const) {
+      const { captured, result } = await send("gemini-4-carbon", "high", region);
+      expect(captured).toBeUndefined();
+      expect(result.errorMessage).toContain(`not available in the ${region} inference region`);
     }
   });
 });
