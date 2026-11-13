@@ -8,6 +8,7 @@ import {
   familyOf,
   type FactoryModelInput,
 } from "./catalog";
+import { MAKER_LISTED_COSTS } from "./openrouter-costs";
 
 const FACTORY_MODEL_DOCS_URL = "https://docs.factory.ai/models.md";
 const FACTORY_MODEL_DOCS_TIMEOUT_MS = 10_000;
@@ -134,6 +135,8 @@ export async function fetchOpenRouterPrices(): Promise<Map<string, LiveTokenCost
 export function matchLivePrice(id: string, priceMap: Map<string, LiveTokenCost>): LiveTokenCost | undefined {
   if (priceMap.size === 0) return undefined;
   const normalizedId = id.toLowerCase();
+  // These keep the maker's published price; OpenRouter's listing is far off it.
+  if (MAKER_LISTED_COSTS[normalizedId]) return undefined;
   const mapped = OPENROUTER_IDS[normalizedId];
   if (mapped) return priceMap.get(mapped);
   const directMatch = priceMap.get(normalizedId);

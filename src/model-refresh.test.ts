@@ -178,9 +178,8 @@ describe("static catalog gating", () => {
     const sol61 = FACTORY_MODELS.find((model) => model.id === "gpt-6.1-sol");
     expect(sol61).toBeDefined();
     expect(sol61?.input).toEqual(["text", "image"]);
-    // No live $/M pricing yet: cost must come from the gpt-6-sol family
-    // branch, never the generic defaultCostFor fallback.
-    expect(sol61?.cost).toEqual({ input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0 });
+    // Static cost: OpenRouter's listed price for openai/gpt-6.1-sol.
+    expect(sol61?.cost).toEqual({ input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5 });
     expect(sol61?.premiumMultiplier).toBe(0.8);
     // Droid 0.230.0 registry: default medium, ladder low→max, minimal
     // degraded to low on the wire.
@@ -241,20 +240,19 @@ describe("static catalog gating", () => {
     const deepseek = byId("deepseek-v4.1-flash-1017");
     expect(deepseek?.input).toEqual(["text", "image"]);
     expect(deepseek?.premiumMultiplier).toBe(0.12);
-    expect(deepseek?.cost).toEqual({ input: 0.1, output: 0.27, cacheRead: 0.01, cacheWrite: 0 });
+    expect(deepseek?.cost).toEqual({ input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 });
     expect(deepseek?.thinking?.efforts.map(String)).toEqual(["low", "high", "max"]);
     expect(deepseek?.thinking?.requiresEffort).toBeUndefined();
     expect(deepseek?.thinking?.defaultLevel).toBe(Effort.High);
 
-    // MiniMax M3.1 has no published price; it reuses the minimax-m3 estimate branch.
+    // Static cost: OpenRouter's listed price for minimax/minimax-m3.1-flash.
     const minimax = byId("minimax-m3.1-flash");
     expect(minimax?.input).toEqual(["text", "image"]);
     expect(minimax?.premiumMultiplier).toBe(0.06);
-    expect(minimax?.cost).toEqual({ input: 0.12, output: 0.48, cacheRead: 0.012, cacheWrite: 0 });
+    expect(minimax?.cost).toEqual({ input: 0.15, output: 0.6, cacheRead: 0.015, cacheWrite: 0 });
     expect(minimax?.thinking?.requiresEffort).toBe(true);
     expect(minimax?.thinking?.defaultLevel).toBe(Effort.Max);
 
-    // Factory does not publish per-token prices for Muse or Beam.
     const muse = byId("muse-spark-1.2");
     // Droid 1.10.0 turns images on for Muse Spark 1.2 and 1.3 (images:!0).
     expect(muse?.input).toEqual(["text", "image"]);
@@ -294,7 +292,7 @@ describe("static catalog gating", () => {
     expect(terra?.contextWindow).toBe(1_050_000);
     expect(terra?.maxTokens).toBe(128_000);
     expect(terra?.premiumMultiplier).toBe(0.4);
-    expect(terra?.cost).toEqual({ input: 1, output: 6, cacheRead: 0.1, cacheWrite: 0 });
+    expect(terra?.cost).toEqual({ input: 1, output: 5, cacheRead: 0.05, cacheWrite: 1.25 });
     expect(terra?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh", "max"]);
     expect(terra?.thinking?.defaultLevel).toBe(Effort.Medium);
     expect(terra?.thinking?.requiresEffort).toBeUndefined();
@@ -487,7 +485,7 @@ describe("fetchFactoryDynamicModels", () => {
     expect(v41[0]?.contextWindow).toBe(1_040_000);
     expect(v41[0]?.maxTokens).toBe(131_072);
     expect(v41[0]?.input).toEqual(["text", "image"]);
-    expect(v41[0]?.cost).toEqual({ input: 0.1, output: 0.27, cacheRead: 0.01, cacheWrite: 0 });
+    expect(v41[0]?.cost).toEqual({ input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 });
   });
 });
 
@@ -496,7 +494,7 @@ describe("matchLivePrice", () => {
   const liveMap = new Map([
     ["anthropic/claude-opus-5", { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 0 }],
     ["openai/gpt-6-astra", { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 0 }],
-    ["moonshotai/kimi-k3", { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 0 }],
+    ["moonshotai/kimi-k2.6", { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 0 }],
   ]);
 
   test("matches direct and prefixed model IDs from live OpenRouter map", () => {
@@ -510,7 +508,7 @@ describe("matchLivePrice", () => {
     expect(astra.input).toBe(10);
     expect(astra.output).toBe(50);
 
-    const kimi = matchLivePrice("kimi-k3", liveMap);
+    const kimi = matchLivePrice("kimi-k2.6", liveMap);
     expect(kimi).toBeDefined();
     expect(kimi.input).toBe(3);
     expect(kimi.output).toBe(15);
@@ -579,5 +577,51 @@ describe("static costs of the Droid 1.10.0 models", () => {
     expect(defaultCostFor("claude-fable-5.2")).toEqual({ input: 8, output: 40, cacheRead: 0.2, cacheWrite: 10 });
     expect(defaultCostFor("gemini-4-hydrogen")).toEqual({ input: 1.5, output: 7.5, cacheRead: 0.075, cacheWrite: 0.083333 });
     expect(defaultCostFor("gemini-4-carbon")).toEqual({ input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875 });
+  });
+});
+
+// OpenRouter's listings for these four are far off the makers' own prices
+// (e.g. kimi-k3 at $0.192 in / $16 out), so the owner chose the makers'
+// published API prices instead, and a live OpenRouter price must not replace them.
+describe("models priced from their makers' published prices", () => {
+  const { matchLivePrice } = require("./model-refresh");
+  const { defaultCostFor } = require("./catalog");
+  const odd = { input: 0.192, output: 16, cacheRead: 0.182, cacheWrite: 0 };
+  const liveMap = new Map([
+    ["moonshotai/kimi-k3", odd],
+    ["z-ai/glm-5.2", odd],
+    ["z-ai/glm-5.3", odd],
+    ["deepseek/deepseek-v4-pro", odd],
+  ]);
+
+  test("ignore OpenRouter's live listing", () => {
+    for (const id of ["kimi-k3", "glm-5.2", "glm-5.3", "deepseek-v4-pro"]) {
+      expect(matchLivePrice(id, liveMap)).toBeUndefined();
+    }
+  });
+
+  test("use the maker's price", () => {
+    expect(defaultCostFor("kimi-k3")).toEqual({ input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3 });
+    expect(defaultCostFor("glm-5.2")).toEqual({ input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 });
+    expect(defaultCostFor("glm-5.3")).toEqual({ input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 });
+    expect(defaultCostFor("deepseek-v4-pro")).toEqual({ input: 1.32, output: 3.96, cacheRead: 0.044, cacheWrite: 0 });
+  });
+});
+
+// Every other model with an OpenRouter equivalent falls back to OpenRouter's
+// listed price (2026-11-13) when no live price is fetched.
+describe("static costs from OpenRouter's listed prices", () => {
+  const { defaultCostFor } = require("./catalog");
+  test("cover the models OpenRouter lists", () => {
+    expect(defaultCostFor("muse-spark-1.2")).toEqual({ input: 1.25, output: 4.25, cacheRead: 0.15, cacheWrite: 0 });
+    expect(defaultCostFor("claude-opus-5-5")).toEqual({ input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 });
+    expect(defaultCostFor("gpt-5.6-sol")).toEqual({ input: 4.4, output: 22, cacheRead: 0.44, cacheWrite: 5.5 });
+    expect(defaultCostFor("nemotron-3-ultra")).toEqual({ input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: 0 });
+    expect(defaultCostFor("glm-5.3-flash")).toEqual({ input: 0.0399, output: 0.0784, cacheRead: 0.03, cacheWrite: 0 });
+    expect(defaultCostFor("mistral-medium-3.5")).toEqual({ input: 1.5, output: 7.5, cacheRead: 0, cacheWrite: 0 });
+  });
+
+  test("leave models without an OpenRouter equivalent on their estimates", () => {
+    expect(defaultCostFor("qwen3.8-max")).toEqual({ input: 0.8, output: 2.4, cacheRead: 0.08, cacheWrite: 0 });
   });
 });

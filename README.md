@@ -172,7 +172,14 @@ with the docs. A Factory id matches its OpenRouter id by name, or through a shor
 explicit list where OpenRouter spells it differently (Claude versions with dots,
 Nemotron 3 Ultra, Beam 1.0, Mistral Large 4 and Medium 3.5). Models with no clear
 OpenRouter equivalent (fast variants, Qwen3.8 Max, Nemotron 3.5 Super, Atlas,
-Aster, Garnet) and sessions without network use the static costs in the catalog.
+Aster, Garnet) keep estimates. Without network, a model with an OpenRouter
+equivalent falls back to OpenRouter's listed price from 2026-11-13
+(`src/openrouter-costs.ts`).
+
+OpenRouter's listings for Kimi K3, GLM 5.2, GLM 5.3 and DeepSeek V4 Pro are far
+off their makers' prices, so those four always use the maker's published API
+price (Moonshot, Z.ai, DeepSeek peak rate), and a live OpenRouter price never
+replaces it.
 
 ---
 

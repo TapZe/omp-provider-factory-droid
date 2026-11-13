@@ -3,6 +3,7 @@ import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
 import { CUSTOM_API } from "./constants";
 import { DROID_MODELS, type DroidModel, type DroidRegion } from "./droid-registry";
+import { MAKER_LISTED_COSTS, OPENROUTER_LISTED_COSTS } from "./openrouter-costs";
 
 export type FactoryModelFamily =
   | "anthropic"
@@ -40,17 +41,11 @@ type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost"> & {
 };
 
 export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
+  // Listed prices first (openrouter-costs.ts); the estimates below cover only
+  // models with no OpenRouter equivalent and ids discovered later.
+  const listed = MAKER_LISTED_COSTS[id] ?? OPENROUTER_LISTED_COSTS[id];
+  if (listed) return { ...listed };
   // Claude family
-  // Droid 1.10.0 models: OpenRouter's listed prices on 2026-11-13.
-  if (id === "claude-fable-5.2") {
-    return { input: 8, output: 40, cacheRead: 0.2, cacheWrite: 10 };
-  }
-  if (id === "gemini-4-hydrogen") {
-    return { input: 1.5, output: 7.5, cacheRead: 0.075, cacheWrite: 0.083333 };
-  }
-  if (id === "gemini-4-carbon") {
-    return { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875 };
-  }
   if (id.startsWith("claude-fable-")) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 12.5 };
   }
