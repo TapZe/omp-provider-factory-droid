@@ -188,3 +188,45 @@ describe("Kimi K3.1 Pro follows Droid 1.5.0", () => {
     expect(result.errorMessage).toContain("not available in the eu inference region");
   });
 });
+
+// Values read from the Droid 1.10.0 binary. Its Anthropic builder now adds
+// thinking.block_binding and the thinking-binding-controls beta on the direct
+// anthropic provider too, not only on azure_anthropic, for models with
+// compactThroughLatestSignedThinking whose thinking is adaptive
+// (registry.js: `(a==="azure_anthropic"||a==="anthropic")&&o?.compactThroughLatestSignedThinking`).
+describe("Anthropic thinking block binding follows Droid 1.10.0", () => {
+  const BINDING = { prefix_mismatch_behavior: "drop_block" };
+  const BETA = "thinking-binding-controls-2026-08-01";
+  const BOUND: Record<string, readonly DroidEffort[]> = {
+    "claude-fable-5.1": ["off", "low", "medium", "high", "xhigh", "max"],
+    "claude-opus-5-5": ["low", "medium", "high", "xhigh", "max"],
+    "claude-opus-5-5-fast": ["low", "medium", "high", "xhigh", "max"],
+    "claude-sonnet-5-5": ["low", "medium", "high", "xhigh", "max"],
+    "claude-haiku-5-5": ["low", "medium", "high", "xhigh", "max"],
+  };
+
+  test("global sends the binding and its beta on Anthropic at every adaptive effort", async () => {
+    for (const [id, efforts] of Object.entries(BOUND)) {
+      for (const effort of efforts) {
+        const request = await capture(id, effort, "global");
+        expect({ id, effort, provider: request.provider }).toEqual({ id, effort, provider: "anthropic" });
+        expect({ id, effort, binding: (request.body.thinking as Record<string, unknown>).block_binding }).toEqual({ id, effort, binding: BINDING });
+        expect({ id, effort, beta: request.beta?.split(",").includes(BETA) }).toEqual({ id, effort, beta: true });
+      }
+    }
+  });
+
+  test("Sonnet 5.5 off keeps between_tools thinking with no binding", async () => {
+    const request = await capture("claude-sonnet-5-5", "off", "global");
+    expect(request.body.thinking).toEqual({ type: "between_tools" });
+    expect(request.beta?.split(",").includes(BETA)).toBe(false);
+  });
+
+  test("eu on Vertex and models without the compaction flag get no binding", async () => {
+    for (const [id, region] of [["claude-opus-5-5", "eu"], ["claude-opus-5", "global"]] as const) {
+      const request = await capture(id, "high", region);
+      expect({ id, binding: (request.body.thinking as Record<string, unknown>).block_binding }).toEqual({ id, binding: undefined });
+      expect({ id, beta: request.beta?.split(",").includes(BETA) ?? false }).toEqual({ id, beta: false });
+    }
+  });
+});

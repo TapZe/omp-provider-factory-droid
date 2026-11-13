@@ -287,7 +287,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
   });
 
   it("uses Droid-compatible adaptive thinking for current Claude models", async () => {
-    const adaptiveModels = ["claude-fable-5.1", "claude-fable-5", "claude-opus-5", "claude-opus-4-8"];
+    // Fable 5.1 also binds thinking blocks since Droid 1.10.0; droid-wire.test.ts covers it.
+    const adaptiveModels = ["claude-fable-5", "claude-opus-5", "claude-opus-4-8"];
 
     for (const modelId of adaptiveModels) {
       const { body, betaHeader } = await captureFactoryAnthropicRequest(modelId, Effort.Medium);

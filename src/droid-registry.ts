@@ -1,6 +1,6 @@
-// Generated from the Factory Droid 1.5.0 binary (@factory/cli-linux-x64 1.5.0). Do not edit by hand.
+// Generated from the Factory Droid 1.10.0 binary (@factory/cli-linux-x64 1.10.0). Do not edit by hand.
 //
-// Each row holds what Droid 1.5.0 computes for one model. It lists the
+// Each row holds what Droid 1.10.0 computes for one model. It lists the
 // reasoning efforts and default, the limits at that default, image support,
 // the credit multiplier and promotions, the API provider Droid picks in each
 // inference region, and the request fields Droid's builders send for each
@@ -48,12 +48,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}} },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}} },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}} },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}} },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}} },
-        off: { body: {"thinking": {"type": "adaptive", "display": "summarized"}} },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        off: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}}, betas: ["thinking-binding-controls-2026-08-01"] },
       },
       vertex_anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
@@ -104,11 +104,11 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}} },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}} },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}} },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}} },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}} },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
       },
       vertex_anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
@@ -130,11 +130,11 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}, "speed": "fast"}, betas: ["thinking-binding-controls-2026-08-01", "fast-mode-2026-02-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}, "speed": "fast"}, betas: ["thinking-binding-controls-2026-08-01", "fast-mode-2026-02-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}, "speed": "fast"}, betas: ["thinking-binding-controls-2026-08-01", "fast-mode-2026-02-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}, "speed": "fast"}, betas: ["thinking-binding-controls-2026-08-01", "fast-mode-2026-02-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}, "speed": "fast"}, betas: ["thinking-binding-controls-2026-08-01", "fast-mode-2026-02-01"] },
       },
     },
   },
@@ -362,11 +362,11 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}} },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}} },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}} },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}} },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}} },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
         off: { body: {"thinking": {"type": "between_tools"}, "output_config": {"effort": "high"}} },
       },
       vertex_anthropic: {
@@ -468,11 +468,11 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}} },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}} },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}} },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}} },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}} },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
         off: { body: {"thinking": {"type": "disabled"}} },
       },
       vertex_anthropic: {
