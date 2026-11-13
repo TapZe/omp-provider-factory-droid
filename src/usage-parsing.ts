@@ -148,6 +148,8 @@ function parseTierBucket(
 ): UsageLimit | undefined {
   if (!isRecord(bucket)) return undefined;
   const record = bucket;
+  // Droid 1.10.0 leaves out a bucket whose `unlimited` is truthy.
+  if (record.unlimited) return undefined;
   const usedPercent = record.usedPercent;
   if (typeof usedPercent !== "number" || !Number.isFinite(usedPercent)) return undefined;
 
