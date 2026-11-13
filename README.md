@@ -307,7 +307,7 @@ Check remaining usage quotas at any time:
 ```
 
 Displays:
-- **Standard Quota**: 5-hour, weekly, and monthly limits (Claude, GPT, Grok, Gemini).
+- **Standard Quota**: 5-hour, weekly, and monthly limits (Claude, GPT, Grok, Gemini, and Muse Spark, which Droid 1.10.0 bills from the Standard pool).
 - **Droid Core Quota**: 5-hour, weekly, and monthly limits (GLM, Kimi, DeepSeek, MiniMax, Nemotron, Inkling).
   As in Droid 1.10.0, a window that the billing reply marks `unlimited` is left out of both quotas and of the preflight gate.
 - **Extra Usage Balance**: Remaining balance in USD, overage preferences, and billing rate notes.

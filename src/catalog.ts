@@ -638,15 +638,15 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
   droidModel({
     id: "muse-spark-1.2",
-    name: "Muse Spark 1.2 (Factory Core)",
+    name: "Muse Spark 1.2 (Factory)",
   }),
   droidModel({
     id: "muse-spark-1.3",
-    name: "Muse Spark 1.3 (Factory Core)",
+    name: "Muse Spark 1.3 (Factory)",
   }),
   droidModel({
     id: "muse-spark-open",
-    name: "Muse Spark Open (Factory Core)",
+    name: "Muse Spark Open (Factory)",
   }),
   droidModel({
     id: "beam-1.0",
@@ -837,7 +837,12 @@ export function identityFor(id: string): ModelIdentity {
 
 export type FactoryQuotaTier = "standard" | "core";
 
+// A model Droid 1.10.0 ships uses the pool Droid bills it from. Muse Spark is
+// in the Standard pool although it runs on open-model hosts. The prefix rule
+// below covers models Droid no longer lists and ones found in the docs.
 export function factoryQuotaTierFor(id: string): FactoryQuotaTier {
+  const pool = DROID_MODELS[id]?.billingPool;
+  if (pool) return pool;
   if (
     id.startsWith("claude-") ||
     id.startsWith("atlas-") ||

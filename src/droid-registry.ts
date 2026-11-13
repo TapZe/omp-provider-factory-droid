@@ -5,6 +5,7 @@
 // the credit multiplier and promotions, the API provider Droid picks in each
 // inference region, and the request fields Droid's builders send for each
 // effort and provider. "off" stands for the model's off or none effort.
+// billingPool is the quota pool ("standard" or "core") Droid bills the model from.
 // "$session" marks a value Droid fills from the session at request time.
 
 export const DROID_EFFORTS = ["minimal", "low", "medium", "high", "xhigh", "max", "off"] as const;
@@ -34,6 +35,7 @@ export interface DroidModel {
   promotions?: readonly DroidPromotion[];
   providers: Partial<Record<DroidRegion, string>>;
   requests: Record<string, Partial<Record<DroidEffort, DroidRequest>>>;
+  billingPool?: "standard" | "core";
 }
 
 export const DROID_MODELS: Record<string, DroidModel> = {
@@ -55,6 +57,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-fable-5.1": {
     api: "anthropic",
@@ -83,6 +86,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "adaptive", "display": "summarized"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-fable-5": {
     api: "anthropic",
@@ -111,6 +115,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {} },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-5-5": {
     api: "anthropic",
@@ -137,6 +142,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}}, betas: ["effort-2025-11-24"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-5-5-fast": {
     api: "anthropic",
@@ -156,6 +162,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}, "speed": "fast"}, betas: ["thinking-binding-controls-2026-08-01", "fast-mode-2026-02-01"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-5": {
     api: "anthropic",
@@ -184,6 +191,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-5-fast": {
     api: "anthropic",
@@ -204,6 +212,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-4-8": {
     api: "anthropic",
@@ -232,6 +241,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-4-8-fast": {
     api: "anthropic",
@@ -252,6 +262,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-4-7": {
     api: "anthropic",
@@ -280,6 +291,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-4-7-fast": {
     api: "anthropic",
@@ -300,6 +312,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-4-6": {
     api: "anthropic",
@@ -326,6 +339,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-4-6-fast": {
     api: "anthropic",
@@ -345,6 +359,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}, "speed": "fast"}, betas: ["fast-mode-2026-02-01"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-opus-4-5-20251101": {
     api: "anthropic",
@@ -369,6 +384,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {} },
       },
     },
+    billingPool: "standard",
   },
   "claude-sonnet-5-5": {
     api: "anthropic",
@@ -397,6 +413,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "between_tools"}, "output_config": {"effort": "high"}}, betas: ["effort-2025-11-24"] },
       },
     },
+    billingPool: "standard",
   },
   "claude-sonnet-5": {
     api: "anthropic",
@@ -425,6 +442,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-sonnet-4-6": {
     api: "anthropic",
@@ -451,6 +469,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-sonnet-4-5-20250929": {
     api: "anthropic",
@@ -475,6 +494,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {} },
       },
     },
+    billingPool: "standard",
   },
   "claude-haiku-5-5": {
     api: "anthropic",
@@ -503,6 +523,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
     },
+    billingPool: "standard",
   },
   "claude-haiku-4-5-20251001": {
     api: "anthropic",
@@ -527,6 +548,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {} },
       },
     },
+    billingPool: "standard",
   },
   "atlas-07-21": {
     api: "anthropic",
@@ -547,6 +569,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {} },
       },
     },
+    billingPool: "standard",
   },
   "aster-07-15": {
     api: "anthropic",
@@ -567,6 +590,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6-astra": {
     api: "responses",
@@ -589,6 +613,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6-sol": {
     api: "responses",
@@ -609,6 +634,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6-sol-fast": {
     api: "responses",
@@ -629,6 +655,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6.1-sol": {
     api: "responses",
@@ -648,6 +675,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6.1-sol-ultrafast": {
     api: "responses",
@@ -667,6 +695,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6.1-terra": {
     api: "responses",
@@ -687,6 +716,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6-luna": {
     api: "responses",
@@ -707,6 +737,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-6-luna-fast": {
     api: "responses",
@@ -727,6 +758,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.6-sol": {
     api: "responses",
@@ -751,6 +783,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.6-sol-fast": {
     api: "responses",
@@ -775,6 +808,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.6-terra": {
     api: "responses",
@@ -798,6 +832,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.6-luna": {
     api: "responses",
@@ -821,6 +856,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.5": {
     api: "responses",
@@ -842,6 +878,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.5-fast": {
     api: "responses",
@@ -863,6 +900,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.5-pro": {
     api: "responses",
@@ -883,6 +921,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.4": {
     api: "responses",
@@ -904,6 +943,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.4-fast": {
     api: "responses",
@@ -925,6 +965,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.4-mini": {
     api: "responses",
@@ -946,6 +987,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.4-mini-fast": {
     api: "responses",
@@ -967,6 +1009,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.3-codex": {
     api: "responses",
@@ -988,6 +1031,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.3-codex-fast": {
     api: "responses",
@@ -1009,6 +1053,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.2": {
     api: "responses",
@@ -1031,6 +1076,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "text": {"verbosity": "low"}} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.2-codex": {
     api: "responses",
@@ -1049,6 +1095,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
       },
     },
+    billingPool: "standard",
   },
   "gpt-5.1-codex-max": {
     api: "responses",
@@ -1067,6 +1114,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h"} },
       },
     },
+    billingPool: "standard",
   },
   "grok-4.7": {
     api: "responses",
@@ -1085,6 +1133,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh"}} },
       },
     },
+    billingPool: "standard",
   },
   "grok-4.6": {
     api: "responses",
@@ -1106,6 +1155,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh"}} },
       },
     },
+    billingPool: "standard",
   },
   "grok-4.5": {
     api: "responses",
@@ -1126,6 +1176,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high"}} },
       },
     },
+    billingPool: "standard",
   },
   "inkling": {
     api: "completions",
@@ -1147,6 +1198,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "mistral-large-4": {
     api: "completions",
@@ -1166,6 +1218,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "mistral-medium-3.5": {
     api: "completions",
@@ -1182,6 +1235,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "glm-5.3": {
     api: "completions",
@@ -1209,6 +1263,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"temperature": 1, "reasoning_effort": "max"} },
       },
     },
+    billingPool: "core",
   },
   "glm-5.3-flash": {
     api: "completions",
@@ -1231,6 +1286,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"temperature": 1, "reasoning_effort": "max"} },
       },
     },
+    billingPool: "core",
   },
   "glm-5.2": {
     api: "completions",
@@ -1253,6 +1309,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "glm-5.2-fast": {
     api: "completions",
@@ -1270,6 +1327,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "glm-5.1": {
     api: "completions",
@@ -1290,6 +1348,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "chat_template_args": {"enable_thinking": false}} },
       },
     },
+    billingPool: "core",
   },
   "glm-5": {
     api: "completions",
@@ -1305,6 +1364,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1} },
       },
     },
+    billingPool: "core",
   },
   "glm-4.7": {
     api: "completions",
@@ -1320,6 +1380,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1} },
       },
     },
+    billingPool: "core",
   },
   "glm-4.6": {
     api: "completions",
@@ -1357,6 +1418,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"temperature": 1, "reasoning_effort": "max"} },
       },
     },
+    billingPool: "core",
   },
   "kimi-k3": {
     api: "completions",
@@ -1381,6 +1443,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "kimi-k2.7-code": {
     api: "completions",
@@ -1441,6 +1504,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "chat_template_args": {"enable_thinking": false}} },
       },
     },
+    billingPool: "core",
   },
   "deepseek-v4.1-flash": {
     api: "completions",
@@ -1465,6 +1529,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "low"} },
       },
     },
+    billingPool: "core",
   },
   "deepseek-v4.1-flash-1017": {
     api: "completions",
@@ -1489,6 +1554,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "deepseek-v4-flash-0731": {
     api: "completions",
@@ -1513,6 +1579,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "low"} },
       },
     },
+    billingPool: "core",
   },
   "deepseek-v4-pro": {
     api: "completions",
@@ -1537,6 +1604,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "low"} },
       },
     },
+    billingPool: "core",
   },
   "minimax-m3": {
     api: "completions",
@@ -1552,6 +1620,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"temperature": 1, "reasoning_effort": "high"} },
       },
     },
+    billingPool: "core",
   },
   "minimax-m3.1-flash": {
     api: "completions",
@@ -1571,6 +1640,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"temperature": 1, "reasoning_effort": "max"} },
       },
     },
+    billingPool: "core",
   },
   "minimax-m2.7": {
     api: "anthropic",
@@ -1586,6 +1656,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"thinking": {"type": "enabled", "budget_tokens": 24576}, "output_config": {"effort": "high"}} },
       },
     },
+    billingPool: "core",
   },
   "minimax-m2.5": {
     api: "anthropic",
@@ -1619,6 +1690,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "chat_template_args": {"enable_thinking": false}} },
       },
     },
+    billingPool: "core",
   },
   "nemotron-3.5-super": {
     api: "completions",
@@ -1635,6 +1707,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"temperature": 1, "reasoning_effort": "none"} },
       },
     },
+    billingPool: "core",
   },
   "qwen3.8-max": {
     api: "completions",
@@ -1652,6 +1725,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"temperature": 1, "reasoning_effort": "xhigh", "reasoning_history": "preserved"} },
       },
     },
+    billingPool: "core",
   },
   "muse-spark-1.2": {
     api: "completions",
@@ -1670,6 +1744,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"temperature": 1, "reasoning_effort": "xhigh", "reasoning_history": "preserved"} },
       },
     },
+    billingPool: "standard",
   },
   "muse-spark-1.3": {
     api: "responses",
@@ -1688,6 +1763,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}} },
       },
     },
+    billingPool: "standard",
   },
   "muse-spark-open": {
     api: "completions",
@@ -1707,6 +1783,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"temperature": 1, "reasoning_effort": "max"} },
       },
     },
+    billingPool: "standard",
   },
   "beam-1.0": {
     api: "completions",
@@ -1726,6 +1803,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         max: { body: {"temperature": 1, "reasoning_effort": "max", "allow_missing_thinking": true} },
       },
     },
+    billingPool: "core",
   },
   "gemini-4-hydrogen": {
     api: "google",
@@ -1743,6 +1821,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-4-carbon": {
     api: "google",
@@ -1763,6 +1842,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-4-argon": {
     api: "google",
@@ -1783,6 +1863,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-3.8-flash": {
     api: "google",
@@ -1803,6 +1884,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-3.7-flash": {
     api: "google",
@@ -1823,6 +1905,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-3.6-flash": {
     api: "google",
@@ -1840,6 +1923,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-3.5-flash": {
     api: "google",
@@ -1858,6 +1942,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-3-flash-preview": {
     api: "google",
@@ -1876,6 +1961,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-3.1-pro-preview": {
     api: "google",
@@ -1893,6 +1979,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
   "gemini-3-pro-preview": {
     api: "google",
@@ -1927,5 +2014,6 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
       },
     },
+    billingPool: "standard",
   },
 };
