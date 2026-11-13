@@ -785,8 +785,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(glmThinking?.efforts.map(String)).toEqual(["low", "high", "max"]);
 
     const nemoCost = defaultCostFor("nemotron-3-ultra");
-    // Droid 1.10.0 prices it on baseten, its global provider.
-    expect(nemoCost).toEqual({ input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: 0 });
+    expect(nemoCost).toEqual({ input: 0.4, output: 1.0, cacheRead: 0.04, cacheWrite: 0 });
     const nemoModel = FACTORY_MODELS.find((m: any) => m.id === "nemotron-3-ultra");
     expect(nemoModel?.premiumMultiplier).toBe(0.24);
     expect(nemoModel?.contextWindow).toBe(202_000);
@@ -797,7 +796,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
     const geminiFlashCost = defaultCostFor("gemini-3.8-flash");
     expect(geminiFlashCost).toEqual({ input: 0.3, output: 1.5, cacheRead: 0.075, cacheWrite: 0 });
     const geminiProCost = defaultCostFor("gemini-3.1-pro-preview");
-    expect(geminiProCost).toEqual({ input: 2.0, output: 12.0, cacheRead: 0.2, cacheWrite: 0 });
+    expect(geminiProCost).toEqual({ input: 2.0, output: 8.0, cacheRead: 0.5, cacheWrite: 0 });
     const flashModel = FACTORY_MODELS.find((m: any) => m.id === "glm-5.3-flash");
     expect(flashModel?.premiumMultiplier).toBe(0.06);
 

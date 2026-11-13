@@ -2,7 +2,6 @@ import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
 import {
   defaultCostFor,
-  droidCostFor,
   droidMultiplierFor,
   FACTORY_MODELS,
   factoryModel,
@@ -226,8 +225,7 @@ function mergeDocsModels(
 ): ProviderModelConfig[] {
   // Promotions start and end by date, so each refresh recomputes the multiplier.
   const merged: ProviderModelConfig[] = FACTORY_MODELS.map((model) => {
-    // Droid's own rate card beats a live price matched by model id.
-    const liveCost = droidCostFor(model.id) ? undefined : matchLivePrice(model.id, livePrices);
+    const liveCost = matchLivePrice(model.id, livePrices);
     const premiumMultiplier = droidMultiplierFor(model.id) ?? model.premiumMultiplier;
     return liveCost ? { ...model, cost: liveCost, premiumMultiplier } : { ...model, premiumMultiplier };
   });

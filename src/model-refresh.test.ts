@@ -241,8 +241,7 @@ describe("static catalog gating", () => {
     const deepseek = byId("deepseek-v4.1-flash-1017");
     expect(deepseek?.input).toEqual(["text", "image"]);
     expect(deepseek?.premiumMultiplier).toBe(0.12);
-    // Droid 1.10.0 prices it on fireworks at 0.12/0.48/0.0024 credit units.
-    expect(deepseek?.cost).toEqual({ input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 });
+    expect(deepseek?.cost).toEqual({ input: 0.1, output: 0.27, cacheRead: 0.01, cacheWrite: 0 });
     expect(deepseek?.thinking?.efforts.map(String)).toEqual(["low", "high", "max"]);
     expect(deepseek?.thinking?.requiresEffort).toBeUndefined();
     expect(deepseek?.thinking?.defaultLevel).toBe(Effort.High);
@@ -488,7 +487,7 @@ describe("fetchFactoryDynamicModels", () => {
     expect(v41[0]?.contextWindow).toBe(1_040_000);
     expect(v41[0]?.maxTokens).toBe(131_072);
     expect(v41[0]?.input).toEqual(["text", "image"]);
-    expect(v41[0]?.cost).toEqual({ input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 });
+    expect(v41[0]?.cost).toEqual({ input: 0.1, output: 0.27, cacheRead: 0.01, cacheWrite: 0 });
   });
 });
 
@@ -519,32 +518,5 @@ describe("matchLivePrice", () => {
 
   test("returns undefined when no match found in live map", () => {
     expect(matchLivePrice("unknown-model", liveMap)).toBeUndefined();
-  });
-});
-
-describe("Droid pricing and OpenRouter prices", () => {
-  const originalFetch = globalThis.fetch;
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
-
-  test("a model Droid 1.10.0 prices keeps Droid's cost; an unpriced one takes the live price", async () => {
-    globalThis.fetch = (async (input: string | URL | Request) => {
-      const url = String(input);
-      if (url.includes("docs.factory.ai")) {
-        return new Response("| Model | Model ID | Multiplier | Reasoning |\n| --- | --- | --- | --- |\n| Opus 5.5 | `claude-opus-5-5` | 1.6× | Standard |\n", { status: 200 });
-      }
-      return Response.json({
-        data: [
-          { id: "anthropic/claude-opus-5-5", pricing: { prompt: "0.000009", completion: "0.000045", input_cache_read: "0.0000009" } },
-          { id: "openai/gpt-5.5", pricing: { prompt: "0.000006", completion: "0.000036", input_cache_read: "0.0000006" } },
-        ],
-      });
-    }) as typeof fetch;
-
-    const models = await fetchFactoryDynamicModels();
-    const costOf = (id: string) => models.find((model) => model.id === id)?.cost;
-    expect(costOf("claude-opus-5-5")).toEqual({ input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 });
-    expect(costOf("gpt-5.5")).toMatchObject({ input: 6, output: 36, cacheRead: 0.6 });
   });
 });
