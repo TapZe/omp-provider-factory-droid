@@ -41,6 +41,16 @@ type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost"> & {
 
 export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   // Claude family
+  // Droid 1.10.0 models: OpenRouter's listed prices on 2026-11-13.
+  if (id === "claude-fable-5.2") {
+    return { input: 8, output: 40, cacheRead: 0.2, cacheWrite: 10 };
+  }
+  if (id === "gemini-4-hydrogen") {
+    return { input: 1.5, output: 7.5, cacheRead: 0.075, cacheWrite: 0.083333 };
+  }
+  if (id === "gemini-4-carbon") {
+    return { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875 };
+  }
   if (id.startsWith("claude-fable-")) {
     return { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 12.5 };
   }

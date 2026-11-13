@@ -165,6 +165,15 @@ At session start the extension also reads Factory's model docs
 minutes. A model that appears there but not in the Droid registry is listed
 too. It gets low, medium, and high efforts and no Droid request fields.
 
+### Costs
+
+Model costs come from OpenRouter's public model list, read at session start
+with the docs. A Factory id matches its OpenRouter id by name, or through a short
+explicit list where OpenRouter spells it differently (Claude versions with dots,
+Nemotron 3 Ultra, Beam 1.0, Mistral Large 4 and Medium 3.5). Models with no clear
+OpenRouter equivalent (fast variants, Qwen3.8 Max, Nemotron 3.5 Super, Atlas,
+Aster, Garnet) and sessions without network use the static costs in the catalog.
+
 ---
 
 ## Model selection and reasoning

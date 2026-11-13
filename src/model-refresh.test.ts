@@ -520,3 +520,64 @@ describe("matchLivePrice", () => {
     expect(matchLivePrice("unknown-model", liveMap)).toBeUndefined();
   });
 });
+
+// OpenRouter names some Factory models differently (dots for Claude versions,
+// parameter-count suffixes). Only clear one-to-one equivalents are mapped.
+describe("OpenRouter prices for Factory ids", () => {
+  const { matchLivePrice } = require("./model-refresh");
+  const price = (input: number) => ({ input, output: input * 5, cacheRead: input / 10, cacheWrite: 0 });
+  const liveMap = new Map([
+    ["anthropic/claude-opus-5.5", price(4)],
+    ["anthropic/claude-opus-5.5:batch", price(2)],
+    ["anthropic/claude-haiku-4.5", price(1)],
+    ["nvidia/nemotron-3-ultra-550b-a55b", price(0.6)],
+    ["reflection/beam-1.0-501b-a23b", price(0.3)],
+    ["mistralai/mistral-large-4-0", price(0.7)],
+    ["mistralai/mistral-medium-3-5", price(1.5)],
+    ["meta/muse-spark-1.2", price(1.25)],
+    ["qwen/qwen3.8-max-0902", price(2)],
+    ["nvidia/nemotron-3.5-super-vl", price(0.15)],
+  ]);
+
+  test("maps Factory ids whose OpenRouter id is spelled differently", () => {
+    expect(matchLivePrice("claude-opus-5-5", liveMap)).toEqual(price(4));
+    expect(matchLivePrice("claude-haiku-4-5-20251001", liveMap)).toEqual(price(1));
+    expect(matchLivePrice("nemotron-3-ultra", liveMap)).toEqual(price(0.6));
+    expect(matchLivePrice("beam-1.0", liveMap)).toEqual(price(0.3));
+    expect(matchLivePrice("mistral-large-4", liveMap)).toEqual(price(0.7));
+    expect(matchLivePrice("mistral-medium-3.5", liveMap)).toEqual(price(1.5));
+    expect(matchLivePrice("muse-spark-1.2", liveMap)).toEqual(price(1.25));
+  });
+
+  test("leaves models without a clear OpenRouter equivalent unpriced", () => {
+    expect(matchLivePrice("qwen3.8-max", liveMap)).toBeUndefined();
+    expect(matchLivePrice("nemotron-3.5-super", liveMap)).toBeUndefined();
+    expect(matchLivePrice("claude-opus-5-5-fast", liveMap)).toBeUndefined();
+  });
+
+  test("keeps OpenRouter's cache write price", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      Response.json({
+        data: [{ id: "anthropic/claude-fable-5.2", pricing: { prompt: "0.000008", completion: "0.00004", input_cache_read: "0.0000002", input_cache_write: "0.00001" } }],
+      })) as unknown as typeof fetch;
+    try {
+      const { fetchOpenRouterPrices } = require("./model-refresh");
+      const prices = await fetchOpenRouterPrices();
+      expect(prices.get("anthropic/claude-fable-5.2")).toEqual({ input: 8, output: 40, cacheRead: 0.2, cacheWrite: 10 });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+// Static fallbacks for the Droid 1.10.0 models, from OpenRouter's listed prices
+// on 2026-11-13, used until a live OpenRouter price is fetched.
+describe("static costs of the Droid 1.10.0 models", () => {
+  const { defaultCostFor } = require("./catalog");
+  test("match OpenRouter's listed prices", () => {
+    expect(defaultCostFor("claude-fable-5.2")).toEqual({ input: 8, output: 40, cacheRead: 0.2, cacheWrite: 10 });
+    expect(defaultCostFor("gemini-4-hydrogen")).toEqual({ input: 1.5, output: 7.5, cacheRead: 0.075, cacheWrite: 0.083333 });
+    expect(defaultCostFor("gemini-4-carbon")).toEqual({ input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0.1875 });
+  });
+});
