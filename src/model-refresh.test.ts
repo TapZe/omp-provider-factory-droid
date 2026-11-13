@@ -253,7 +253,8 @@ describe("static catalog gating", () => {
 
     // Factory does not publish per-token prices for Muse or Beam.
     const muse = byId("muse-spark-1.2");
-    expect(muse?.input).toEqual(["text"]);
+    // Droid 1.10.0 turns images on for Muse Spark 1.2 and 1.3 (images:!0).
+    expect(muse?.input).toEqual(["text", "image"]);
     expect(muse?.premiumMultiplier).toBe(0.5);
     expect(muse?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh"]);
     expect(muse?.thinking?.requiresEffort).toBe(true);
@@ -268,7 +269,7 @@ describe("static catalog gating", () => {
 
   test("curates the two Factory Droid 1.2.0 models with binary inputs, multipliers, and thinking ladders", () => {
     const muse = FACTORY_MODELS.find((model) => model.id === "muse-spark-1.3");
-    expect(muse?.input).toEqual(["text"]);
+    expect(muse?.input).toEqual(["text", "image"]);
     expect(muse?.premiumMultiplier).toBe(0.5);
     expect(muse?.thinking?.efforts.map(String)).toEqual(["low", "medium", "high", "xhigh"]);
     expect(muse?.thinking?.requiresEffort).toBe(true);
