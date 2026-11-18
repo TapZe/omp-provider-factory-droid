@@ -113,6 +113,7 @@ export interface DroidRequestTarget {
   provider: string;
   requestedEffort: string | undefined;
   sessionId: string;
+  preserveToolChoice?: boolean;
 }
 
 // Rewrites each outgoing request so the Droid-owned fields carry what Droid
@@ -134,6 +135,11 @@ export function createDroidRequestFetch(baseFetch: FetchImpl, target: DroidReque
     if (!isObject(body)) return baseFetch(input, init);
 
     const next = applyDroidRequest(droid.api, body, request, target.sessionId);
+    // Registry defaults must not override a caller's explicit tool restriction.
+    // Keep the provider serializer's choice shape and leave implicit defaults alone.
+    if (target.preserveToolChoice && body.tool_choice !== undefined) {
+      next.tool_choice = body.tool_choice;
+    }
     const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
     if (droid.api === "anthropic") {
       const hasTools = Array.isArray(next.tools) && next.tools.length > 0;

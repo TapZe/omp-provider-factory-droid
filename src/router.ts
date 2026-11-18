@@ -24,6 +24,7 @@ import {
 import { parseFactoryCredential, type ParsedFactoryCredential } from "./credential";
 import { createDroidRequestFetch } from "./droid-request";
 import { createFactoryErrorStream, routeWithFactoryDiagnostics } from "./router-diagnostics";
+import { createFactoryToolAliases } from "./factory-tool-aliases";
 import {
   createQuotaExhaustedStream,
   isQuotaPreflightEnabled,
@@ -95,14 +96,23 @@ function requestedEffort(options: StreamOptions): string | undefined {
   return effort === "off" || effort === "none" ? undefined : effort;
 }
 
+const OMP_GREETING_PREAMBLE = "You are omp's trusted coding assistant.\n\n";
+
 // Factory's gateway requires requests to carry Droid's system prompt prefix
 // ("You are Droid, an AI software engineering agent built by Factory.")
 // Requests missing this prefix or with system stripped return 403 Forbidden.
 export function prepareContextForFactory(context: Context): Context {
+  // Only this exact preamble was isolated as a gateway rejector. Never reduce
+  // an unfamiliar prompt or rewrite instruction text to work around a 403.
   const existingPrompts = context.systemPrompt?.filter((part) => part.length > 0) ?? [];
-  const alreadyHasDroidPrefix = existingPrompts.some((prompt) =>
-    prompt.includes("You are Droid, an AI software engineering agent built by Factory"),
-  );
+  const mainIndex = existingPrompts[0] === FACTORY_DROID_SYSTEM_PROMPT ? 1 : 0;
+  const main = existingPrompts[mainIndex];
+  if (main?.startsWith(OMP_GREETING_PREAMBLE)) {
+    const remainder = main.slice(OMP_GREETING_PREAMBLE.length);
+    if (remainder.length > 0) existingPrompts[mainIndex] = remainder;
+    else existingPrompts.splice(mainIndex, 1);
+  }
+  const alreadyHasDroidPrefix = existingPrompts.includes(FACTORY_DROID_SYSTEM_PROMPT);
 
   return {
     ...context,
@@ -299,9 +309,10 @@ function streamSimpleDirect(
   }
 
   const target = buildFactoryTargetModel(model, targetApi, effectiveOrgId, apiEndpoint, provider);
-  const routedContext = prepareContextForFactory(context);
+  const aliases = createFactoryToolAliases(prepareContextForFactory(context));
+  const routedContext = aliases.context;
   const hasTools = (routedContext.tools?.length ?? 0) > 0;
-  const resolvedToolChoice = options?.toolChoice ?? (hasTools ? "auto" : undefined);
+  const resolvedToolChoice = aliases.toolChoice(options?.toolChoice ?? (hasTools ? "auto" : undefined));
   const effort = requestedEffort(options);
   const sessionId = options?.sessionId ?? randomHeaderId("session");
 
@@ -311,6 +322,7 @@ function streamSimpleDirect(
     provider,
     requestedEffort: effort,
     sessionId,
+    preserveToolChoice: options?.toolChoice !== undefined,
   });
   const effectiveFetch =
     targetApi === "google-generative-ai"
@@ -332,6 +344,7 @@ function streamSimpleDirect(
     inner,
     routedContext.tools,
     targetApi === "openai-completions",
+    aliases,
   );
 
   return routeWithFactoryDiagnostics(normalized, { model, targetApi, credential, apiEndpoint });

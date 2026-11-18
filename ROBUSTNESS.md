@@ -126,6 +126,27 @@ Factory gateway diagnostics include enough routing context to identify configura
 
 Bearer tokens, refresh tokens, complete organization IDs, and serialized credentials are redacted. Original HTTP status classification is preserved so OMP can still distinguish refresh, sibling rotation, quota exhaustion, and transient backoff.
 
+## Prompt and tool compatibility
+
+Factory requests omit the exact initial `You are omp's trusted coding assistant.\n\n` preamble from the first OMP system block. All text after it and all later system blocks stay unchanged. Custom prompts that do not start with that exact preamble are not rewritten. This adaptation does not modify OMP's installed template or stored rules. The existing Droid identity prefix remains in the request.
+
+The provider uses these wire names without changing OMP's local tool names:
+
+| OMP tool | Factory wire name |
+| --- | --- |
+| `read` | `inspect_file` |
+| `write` | `write_file` |
+| `edit` | `edit_file` |
+| `bash` | `omp_bash` |
+| `glob` | `omp_glob` |
+| `grep` | `omp_grep` |
+| `task` | `omp_task` |
+| `web_search` | `omp_web_search` |
+
+The adapter translates declarations, explicit named tool choices, assistant calls, tool-result history, and supported native replay payloads. Returned calls use their original local names. Arguments, schemas, permissions, call IDs, and unrelated metadata are not rewritten. A request fails before model generation if an original name and its alias would identify different local tools. Other providers are unaffected.
+
+The adapter does not retry policy rejections with fewer instructions. Acceptance was diagnosed on `factory/deepseek-v4.1-flash-1017`; other account and model entitlements remain gateway-controlled.
+
 ## Verification
 
 Automated coverage includes:

@@ -3,9 +3,19 @@
 `omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It lets `omp` use the models that Factory Droid 1.10.0 offers, such as Claude Opus 5, Gemini 3.8 Flash, GPT-6 Astra, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.6.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.10.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
+> **Actively Maintained Fork (`v1.6.1`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.10.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
 
 ---
+
+## Release notes
+
+### 1.6.1
+
+- Adds eight Factory-only tool aliases with collision checks and bidirectional translation of declarations, calls, and history.
+- Removes only the exact initial OMP greeting preamble while preserving subsequent instructions and later system blocks.
+- Preserves explicit tool choices, custom-tool dispatch, and opaque history formats from newer supported OMP peers.
+
+See [prompt and tool compatibility](ROBUSTNESS.md#prompt-and-tool-compatibility) for the mappings and scope.
 
 ## Key Features
 

@@ -520,7 +520,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
       );
 
       expect(wireToolCall?.id).toBe("call_factory_1");
-      expect(wireToolCall?.function.name).toBe("read");
+      expect(wireToolCall?.function.name).toBe("inspect_file");
       expect(JSON.parse(wireToolCall?.function.arguments ?? "{}")).toEqual({
         path: "src/index.ts",
       });
@@ -529,7 +529,7 @@ describe("Factory Router & Tool Execution Configuration", () => {
         tool_call_id: "call_factory_1",
         content: "source",
       });
-      expect(toolResult?.name).toBe(modelId.startsWith("kimi-") ? "read" : undefined);
+      expect(toolResult?.name).toBe(modelId.startsWith("kimi-") ? "inspect_file" : undefined);
     }
   });
 

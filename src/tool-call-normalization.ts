@@ -3,6 +3,7 @@ import { AssistantMessageEventStream } from "@oh-my-pi/pi-ai/utils/event-stream"
 import type { AssistantMessage, Context, ToolCall } from "@oh-my-pi/pi-ai";
 
 import { isRecord } from "./object-fields";
+import type { FactoryToolAliases } from "./factory-tool-aliases";
 
 function embeddedToolCallFromName(name: string): { name: string; arguments: Record<string, unknown> } | null {
   if (!name.trimStart().startsWith("{")) {
@@ -56,20 +57,32 @@ function normalizeFactoryToolCalls(message: AssistantMessage): void {
   }
 }
 
-function normalizeFactoryToolCallEvents(inner: AssistantMessageEventStream): AssistantMessageEventStream {
+function normalizeFactoryToolCallEvents(
+  inner: AssistantMessageEventStream,
+  aliases?: FactoryToolAliases,
+): AssistantMessageEventStream {
   const outer = new AssistantMessageEventStream();
 
   void (async () => {
     try {
-      for await (const event of inner) {
+      for await (let event of inner) {
         if (event.type === "done") {
           normalizeFactoryToolCalls(event.message);
+          if (aliases) event = { ...event, message: aliases.fromMessage(event.message) };
         } else if (event.type === "error") {
           normalizeFactoryToolCalls(event.error);
+          if (aliases) event = { ...event, error: aliases.fromMessage(event.error) };
         } else {
           normalizeFactoryToolCalls(event.partial);
           if (event.type === "toolcall_end") {
             normalizeFactoryToolCall(event.toolCall);
+          }
+          if (aliases) {
+            // Leave the provider's mutable partial intact while it assembles
+            // split name chunks. OMP receives a canonical copy of each event.
+            event = event.type === "toolcall_end"
+              ? { ...event, partial: aliases.fromMessage(event.partial), toolCall: aliases.fromToolCall(event.toolCall) }
+              : { ...event, partial: aliases.fromMessage(event.partial) };
           }
         }
 
@@ -82,7 +95,7 @@ function normalizeFactoryToolCallEvents(inner: AssistantMessageEventStream): Ass
       if (!outer.done) {
         const result = await inner.result();
         normalizeFactoryToolCalls(result);
-        outer.end(result);
+        outer.end(aliases ? aliases.fromMessage(result) : result);
       }
     } catch (error) {
       outer.fail(error);
@@ -101,10 +114,11 @@ export function normalizeFactoryToolCallStream(
   inner: AssistantMessageEventStream,
   tools: Context["tools"],
   healTextMarkup: boolean,
+  aliases?: FactoryToolAliases,
 ): AssistantMessageEventStream {
   const healed = healTextMarkup && tools?.length
     ? wrapInbandToolStream(inner, tools, "hermes", undefined, false)
     : inner;
 
-  return normalizeFactoryToolCallEvents(healed);
+  return normalizeFactoryToolCallEvents(healed, aliases);
 }
