@@ -79,6 +79,8 @@ async function resolveWhoami(
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
+    // Droid 1.14.0 asks for the full identity, which carries inferenceRegion.
+    "X-Factory-Whoami-Extended": "true",
   };
 
   if (organizationId) {

@@ -8,7 +8,7 @@ import {
   familyOf,
   type FactoryModelInput,
 } from "./catalog";
-import { MAKER_LISTED_COSTS } from "./openrouter-costs";
+import { DROID_REGISTRY_COSTS, MAKER_LISTED_COSTS } from "./openrouter-costs";
 
 const FACTORY_MODEL_DOCS_URL = "https://docs.factory.ai/models.md";
 const FACTORY_MODEL_DOCS_TIMEOUT_MS = 10_000;
@@ -23,6 +23,17 @@ const DISCOVERED_MODEL_LIMITS = {
   "openai-completions": { contextWindow: 200_000, maxTokens: 32_000 },
   google: { contextWindow: 1_000_000, maxTokens: 65_536 },
 } as const;
+
+// Droid 1.14.0 marks these availableInCLI:false, so its CLI no longer offers
+// them. docs.factory.ai keeps advertising a model after the CLI drops it, so a
+// refresh must not add one back to the catalog.
+const UPSTREAM_HIDDEN_MODELS: Readonly<Record<string, true>> = {
+  "gemini-3-pro-preview": true,
+  "glm-4.6": true,
+  "kimi-k2.6": true,
+  "kimi-k2.7-code": true,
+  "minimax-m2.5": true,
+};
 
 // Factory ids whose OpenRouter id is spelled differently. Only clear one-to-one
 // equivalents are listed; a model with none (fast variants, qwen3.8-max,
@@ -137,6 +148,9 @@ export function matchLivePrice(id: string, priceMap: Map<string, LiveTokenCost>)
   const normalizedId = id.toLowerCase();
   // These keep the maker's published price; OpenRouter's listing is far off it.
   if (MAKER_LISTED_COSTS[normalizedId]) return undefined;
+  // Droid ships provisional rates for these ids, so keep them rather than
+  // replace them with a live OpenRouter price.
+  if (DROID_REGISTRY_COSTS[normalizedId]) return undefined;
   const mapped = OPENROUTER_IDS[normalizedId];
   if (mapped) return priceMap.get(mapped);
   const directMatch = priceMap.get(normalizedId);
@@ -262,6 +276,10 @@ function mergeDocsModels(
   const seenModelIds = new Set<string>(merged.map((model) => model.id));
 
   for (const entry of entries) {
+    if (UPSTREAM_HIDDEN_MODELS[entry.id]) {
+      continue;
+    }
+
     if (seenModelIds.has(entry.id)) {
       continue;
     }

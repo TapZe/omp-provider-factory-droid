@@ -2,15 +2,16 @@ import type { FetchImpl } from "@oh-my-pi/pi-ai";
 
 import { DROID_MODELS, type DroidApi, type DroidEffort, type DroidModel, type DroidRequest } from "./droid-registry";
 
-// Fields Droid 1.3.0 decides per model, effort, and provider. Our request
+// Fields Droid decides per model, effort, and provider. Our request
 // drops each of them and takes Droid's value, so a field Droid leaves out is
 // left out here too.
 const DROID_OWNED_FIELDS: Record<DroidApi, readonly string[]> = {
-  anthropic: ["thinking", "output_config.effort", "speed", "context_management"],
+  anthropic: ["thinking", "output_config.effort", "speed", "context_management", "fallbacks"],
   responses: [
     "reasoning",
     "include",
     "parallel_tool_calls",
+    "prompt_cache_key",
     "prompt_cache_retention",
     "text.verbosity",
     "service_tier",
@@ -117,7 +118,7 @@ export interface DroidRequestTarget {
 }
 
 // Rewrites each outgoing request so the Droid-owned fields carry what Droid
-// 1.3.0 sends for this model, effort, and provider. Models without a Droid row
+// sends for this model, effort, and provider. Models without a Droid row
 // pass through unchanged.
 export function createDroidRequestFetch(baseFetch: FetchImpl, target: DroidRequestTarget): FetchImpl {
   const droid = DROID_MODELS[target.modelId];

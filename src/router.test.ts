@@ -268,7 +268,7 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("1.10.0");
+    expect(FACTORY_CLIENT_VERSION).toBe("1.14.0");
   });
 
   it("sends the Anthropic betas Droid sends for each model", async () => {
@@ -288,15 +288,24 @@ describe("Factory Router & Tool Execution Configuration", () => {
 
   it("uses Droid-compatible adaptive thinking for current Claude models", async () => {
     // Fable 5.1 also binds thinking blocks since Droid 1.10.0; droid-wire.test.ts covers it.
-    const adaptiveModels = ["claude-fable-5", "claude-opus-5", "claude-opus-4-8"];
+    // The effort beta only goes to Vertex, so hosted Anthropic carries fine-grained
+    // tool streaming alone. Droid 1.14.0 adds server-side fallback betas for Fable 5.
+    const expectedBetas: Record<string, string[]> = {
+      "claude-fable-5": [
+        "fallback-credit-2026-06-01",
+        "fine-grained-tool-streaming-2025-05-14",
+        "server-side-fallback-2026-06-01",
+      ],
+      "claude-opus-5": ["fine-grained-tool-streaming-2025-05-14"],
+      "claude-opus-4-8": ["fine-grained-tool-streaming-2025-05-14"],
+    };
 
-    for (const modelId of adaptiveModels) {
+    for (const [modelId, betas] of Object.entries(expectedBetas)) {
       const { body, betaHeader } = await captureFactoryAnthropicRequest(modelId, Effort.Medium);
 
       expect(body.thinking).toEqual({ type: "adaptive", display: "summarized" });
       expect(body.output_config).toEqual({ effort: "medium" });
-      // For these models Droid sends the effort beta only on Vertex.
-      expect(betaHeader).toBe("fine-grained-tool-streaming-2025-05-14");
+      expect(betaHeader?.split(",").sort()).toEqual(betas);
     }
   });
 
@@ -422,8 +431,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(familyOf("gemini-4-argon")).toBe("google");
     expect(upstreamProviderFor("gemini-4-argon")).toBe("google");
   });
-  it("routes GLM 5.2, GLM 5.2 Fast, and GLM 4.6 to Baseten, their only Droid 1.3.0 upstream outside the EU", async () => {
-    for (const modelId of ["glm-5.2", "glm-5.2-fast", "glm-4.6"]) {
+  it("routes GLM 5.2 and GLM 5.2 Fast to Baseten, their only Droid 1.14.0 upstream outside the EU", async () => {
+    for (const modelId of ["glm-5.2", "glm-5.2-fast"]) {
       const request = await captureFactoryRequest(modelId);
       expect(request.apiProvider).toBe("baseten");
       expect(request.url).toBe("https://api.test.factory.ai/api/llm/o/v1/chat/completions");
@@ -579,8 +588,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
     expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
-    expect(capturedHeaders?.get("x-client-version")).toBe("1.10.0");
-    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.10.0");
+    expect(capturedHeaders?.get("x-client-version")).toBe("1.14.0");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.14.0");
     expect(capturedHeaders?.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
   });
 

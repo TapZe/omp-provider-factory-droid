@@ -61,7 +61,7 @@ interface RouteProbe {
 }
 
 const ROUTE_MATRIX: RouteProbe[] = [
-	{ route: "chat", model: "kimi-k2.6", pathFragment: "chat/completions", realUrl: "https://api.factory.ai/api/llm/o/v1/chat/completions" },
+	{ route: "chat", model: "kimi-k2.5", pathFragment: "chat/completions", realUrl: "https://api.factory.ai/api/llm/o/v1/chat/completions" },
 	{ route: "messages", model: "claude-haiku-4-5-20251001", pathFragment: "/api/llm/a/v1/messages", realUrl: "https://api.factory.ai/api/llm/a/v1/messages" },
 	{ route: "responses", model: "gpt-5.4-mini", pathFragment: "/api/llm/o/v1/responses", realUrl: "https://api.factory.ai/api/llm/o/v1/responses" },
 ];

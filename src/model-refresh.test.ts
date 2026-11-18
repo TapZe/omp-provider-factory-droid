@@ -68,7 +68,14 @@ const EXPECTED_LIMIT_GROUPS = [
     1_050_000,
     128_000,
     [
+      "gpt-6.2-astra",
+      "gpt-6.2-astra-fast",
+      "gpt-6.2-astra-ultrafast",
+      "gpt-6.2-sol",
+      "gpt-6.2-sol-fast",
+      "gpt-6.2-sol-ultrafast",
       "gpt-6-astra",
+      "gpt-6-astra-ultrafast",
       "gpt-6-sol",
       "gpt-6.1-sol",
       "gpt-6.1-terra",
@@ -103,8 +110,7 @@ const EXPECTED_LIMIT_GROUPS = [
   [200_000, 65_536, ["glm-5.1"]],
   [222_000, 32_000, ["glm-5"]],
   [223_344, 25_344, ["glm-4.7"]],
-  [328_000, 128_000, ["glm-4.6"]],
-  [262_144, 65_536, ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"]],
+  [262_144, 65_536, ["kimi-k3"]],
   [288_768, 32_768, ["kimi-k2.5"]],
   [262_144, 131_072, ["qwen3.8-max"]],
   [1_040_000, 131_072, ["deepseek-v4.1-flash", "deepseek-v4.1-flash-1017", "deepseek-v4-flash-0731", "deepseek-v4-pro", "muse-spark-1.2", "muse-spark-1.3", "muse-spark-open"]],
@@ -114,7 +120,6 @@ const EXPECTED_LIMIT_GROUPS = [
   // Droid binary limits for beam-1.0: 1_048_576 total window / 32_768 output.
   [1_048_576, 32_768, ["beam-1.0"]],
   [260_600, 64_000, ["minimax-m2.7"]],
-  [268_800, 64_000, ["minimax-m2.5"]],
   [202_000, 65_536, ["nemotron-3-ultra"]],
   [1_000_000, 65_536, ["nemotron-3.5-super"]],
   [256_000, 64_000, ["mistral-medium-3.5"]],
@@ -131,7 +136,6 @@ const EXPECTED_LIMIT_GROUPS = [
       "gemini-3.5-flash",
       "gemini-3-flash-preview",
       "gemini-3.1-pro-preview",
-      "gemini-3-pro-preview",
       "garnet-07-15",
     ],
   ],
@@ -321,10 +325,31 @@ describe("static catalog gating", () => {
     expect(argon?.thinking?.defaultLevel).toBe(Effort.Medium);
   });
 
-  test("excludes unreleased, router, and flex models from the catalog", () => {
-    const uncuratedIds = ["auto", "auto-fast", "gpt-6-sol-flex", "gpt-6-astra-ultrafast"];
+  test("excludes router and flex models from the catalog", () => {
+    const uncuratedIds = ["auto", "auto-fast", "gpt-6-sol-flex"];
     for (const id of uncuratedIds) {
       expect(FACTORY_MODELS.some((model) => model.id === id)).toBe(false);
+    }
+  });
+
+  test("does not resurrect the models Droid 1.14.0 hides from its CLI", async () => {
+    const docs = `
+| Model | Model ID | Multiplier | Reasoning |
+| --- | --- | --- | --- |
+| GLM 4.6 | \`glm-4.6\` | 0.25× | Standard |
+| Kimi K2.6 | \`kimi-k2.6\` | 0.4× | Standard |
+| Gemini 3 Pro Preview | \`gemini-3-pro-preview\` | 1.6× | Standard |
+`;
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = String(input);
+      return url.includes("docs.factory.ai")
+        ? new Response(docs, { status: 200 })
+        : Response.json({ data: [] });
+    }) as typeof fetch;
+
+    const models = await fetchFactoryDynamicModels();
+    for (const id of ["glm-4.6", "kimi-k2.6", "gemini-3-pro-preview"]) {
+      expect(models.some((model) => model.id === id)).toBe(false);
     }
   });
 });
@@ -494,7 +519,7 @@ describe("matchLivePrice", () => {
   const liveMap = new Map([
     ["anthropic/claude-opus-5", { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 0 }],
     ["openai/gpt-6-astra", { input: 10, output: 50, cacheRead: 1.0, cacheWrite: 0 }],
-    ["moonshotai/kimi-k2.6", { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 0 }],
+    ["moonshotai/kimi-k3.1-pro", { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 0 }],
   ]);
 
   test("matches direct and prefixed model IDs from live OpenRouter map", () => {
@@ -508,7 +533,7 @@ describe("matchLivePrice", () => {
     expect(astra.input).toBe(10);
     expect(astra.output).toBe(50);
 
-    const kimi = matchLivePrice("kimi-k2.6", liveMap);
+    const kimi = matchLivePrice("kimi-k3.1-pro", liveMap);
     expect(kimi).toBeDefined();
     expect(kimi.input).toBe(3);
     expect(kimi.output).toBe(15);
@@ -605,6 +630,23 @@ describe("models priced from their makers' published prices", () => {
     expect(defaultCostFor("glm-5.2")).toEqual({ input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 });
     expect(defaultCostFor("glm-5.3")).toEqual({ input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 });
     expect(defaultCostFor("deepseek-v4-pro")).toEqual({ input: 1.32, output: 3.96, cacheRead: 0.044, cacheWrite: 0 });
+  });
+});
+
+// Droid 1.14.0 ships provisional token rates for the GPT-6.2 family, so the
+// refresh keeps them instead of a live OpenRouter price.
+describe("models priced from Droid's own rates", () => {
+  const { matchLivePrice } = require("./model-refresh");
+  const { defaultCostFor } = require("./catalog");
+  const liveMap = new Map([["openai/gpt-6.2-astra", { input: 40, output: 200, cacheRead: 4, cacheWrite: 50 }]]);
+
+  test("ignore OpenRouter's live listing", () => {
+    expect(matchLivePrice("gpt-6.2-astra", liveMap)).toBeUndefined();
+  });
+
+  test("use the rate Droid 1.14.0 carries", () => {
+    expect(defaultCostFor("gpt-6.2-astra")).toEqual({ input: 3.2, output: 16, cacheRead: 0.16, cacheWrite: 4 });
+    expect(defaultCostFor("gpt-6.2-sol-ultrafast")).toEqual({ input: 2.4, output: 12, cacheRead: 0.12, cacheWrite: 3 });
   });
 });
 

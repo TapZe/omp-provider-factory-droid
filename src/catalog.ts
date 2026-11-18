@@ -3,7 +3,7 @@ import type { ProviderModelConfig } from "@oh-my-pi/pi-coding-agent";
 
 import { CUSTOM_API } from "./constants";
 import { DROID_MODELS, type DroidModel, type DroidRegion } from "./droid-registry";
-import { MAKER_LISTED_COSTS, OPENROUTER_LISTED_COSTS } from "./openrouter-costs";
+import { DROID_REGISTRY_COSTS, MAKER_LISTED_COSTS, OPENROUTER_LISTED_COSTS } from "./openrouter-costs";
 
 export type FactoryModelFamily =
   | "anthropic"
@@ -41,9 +41,10 @@ type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost"> & {
 };
 
 export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
-  // Listed prices first (openrouter-costs.ts); the estimates below cover only
-  // models with no OpenRouter equivalent and ids discovered later.
-  const listed = MAKER_LISTED_COSTS[id] ?? OPENROUTER_LISTED_COSTS[id];
+  // Static prices first (openrouter-costs.ts): the makers' own rates, then
+  // OpenRouter's listed prices, then the rates Droid 1.14.0 carries. The
+  // estimates below cover only ids with none of those.
+  const listed = MAKER_LISTED_COSTS[id] ?? OPENROUTER_LISTED_COSTS[id] ?? DROID_REGISTRY_COSTS[id];
   if (listed) return { ...listed };
   // Claude family
   if (id.startsWith("claude-fable-")) {
@@ -309,7 +310,7 @@ export function droidMultiplierFor(modelId: string, now: Date = new Date()): num
 
 function droidModel(config: CuratedModelInput): ProviderModelConfig {
   const droid = DROID_MODELS[config.id];
-  if (!droid) throw new Error(`${config.id} has no Droid 1.3.0 registry row`);
+  if (!droid) throw new Error(`${config.id} has no Droid 1.14.0 registry row`);
   const thinking = droidThinking(droid);
   return factoryModel({
     ...config,
@@ -420,8 +421,36 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
   // GPT and Codex models
   droidModel({
+    id: "gpt-6.2-astra",
+    name: "GPT-6.2 Astra (Factory)",
+  }),
+  droidModel({
+    id: "gpt-6.2-astra-fast",
+    name: "GPT-6.2 Astra Fast (Factory)",
+  }),
+  droidModel({
+    id: "gpt-6.2-astra-ultrafast",
+    name: "GPT-6.2 Astra Ultrafast (Factory)",
+  }),
+  droidModel({
+    id: "gpt-6.2-sol",
+    name: "GPT-6.2 Sol (Factory)",
+  }),
+  droidModel({
+    id: "gpt-6.2-sol-fast",
+    name: "GPT-6.2 Sol Fast (Factory)",
+  }),
+  droidModel({
+    id: "gpt-6.2-sol-ultrafast",
+    name: "GPT-6.2 Sol Ultrafast (Factory)",
+  }),
+  droidModel({
     id: "gpt-6-astra",
     name: "GPT-6 Astra (Factory)",
+  }),
+  droidModel({
+    id: "gpt-6-astra-ultrafast",
+    name: "GPT-6 Astra Ultrafast (Factory)",
   }),
   droidModel({
     id: "gpt-6-sol",
@@ -572,24 +601,12 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     name: "GLM 4.7 [Deprecated] (Factory Core)",
   }),
   droidModel({
-    id: "glm-4.6",
-    name: "GLM 4.6 (Factory Core)",
-  }),
-  droidModel({
     id: "kimi-k3.1-pro",
     name: "Kimi K3.1 Pro (Factory Core)",
   }),
   droidModel({
     id: "kimi-k3",
     name: "Kimi K3 (Factory Core)",
-  }),
-  droidModel({
-    id: "kimi-k2.7-code",
-    name: "Kimi K2.7 Code (Factory Core)",
-  }),
-  droidModel({
-    id: "kimi-k2.6",
-    name: "Kimi K2.6 (Factory Core)",
   }),
   droidModel({
     id: "kimi-k2.5",
@@ -624,10 +641,6 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   droidModel({
     id: "minimax-m2.7",
     name: "MiniMax M2.7 [Deprecated] (Factory Core)",
-  }),
-  droidModel({
-    id: "minimax-m2.5",
-    name: "MiniMax M2.5 [Deprecated] (Factory Core)",
   }),
   droidModel({
     id: "nemotron-3-ultra",
@@ -696,10 +709,6 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
     name: "Gemini 3.1 Pro Preview (Factory)",
   }),
   droidModel({
-    id: "gemini-3-pro-preview",
-    name: "Gemini 3 Pro Preview (Factory)",
-  }),
-  droidModel({
     id: "garnet-07-15",
     name: "Garnet 07/15 Preview (Factory)",
   }),
@@ -748,6 +757,8 @@ export function familyOf(id: string): FactoryModelFamily {
 export type FactoryUpstreamProvider =
   | "anthropic"
   | "vertex_anthropic"
+  | "bedrock_anthropic"
+  | "bedrock_openai"
   | "openai"
   | "fireworks"
   | "baseten"

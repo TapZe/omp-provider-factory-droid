@@ -15,11 +15,12 @@ const READ_TOOL: NonNullable<Context["tools"]>[number] = {
 // The request fields Droid 1.3.0 decides for each API. Any of these that
 // Droid leaves out must be absent from our request too.
 const OWNED: Record<DroidApi, readonly string[]> = {
-  anthropic: ["thinking", "output_config.effort", "speed", "context_management"],
+  anthropic: ["thinking", "output_config.effort", "speed", "context_management", "fallbacks"],
   responses: [
     "reasoning",
     "include",
     "parallel_tool_calls",
+    "prompt_cache_key",
     "prompt_cache_retention",
     "text.verbosity",
     "service_tier",
@@ -63,7 +64,7 @@ function withSession(value: unknown): unknown {
 
 type Captured = { body: Record<string, unknown>; provider: string | null; beta: string | null };
 
-const REGIONS: readonly DroidRegion[] = ["global", "eu", "us"];
+const REGIONS: readonly DroidRegion[] = ["global", "eu", "us", "in"];
 
 async function send(modelId: string, effort: DroidEffort, region: DroidRegion) {
   const model = FACTORY_MODELS.find((entry) => entry.id === modelId)!;
@@ -111,7 +112,7 @@ async function capture(modelId: string, effort: DroidEffort, region: DroidRegion
   return captured;
 }
 
-describe("request fields follow Droid 1.3.0 for every model, effort, and region", () => {
+describe("request fields follow Droid 1.14.0 for every model, effort, and region", () => {
   for (const region of REGIONS) {
     for (const model of FACTORY_MODELS) {
       const droid = DROID_MODELS[model.id];
@@ -318,5 +319,27 @@ describe("models added in Droid 1.10.0", () => {
       expect(captured).toBeUndefined();
       expect(result.errorMessage).toContain(`not available in the ${region} inference region`);
     }
+  });
+});
+
+describe("Droid 1.14.0 request contracts", () => {
+  test("Responses cache and safety identifiers use the same session", async () => {
+    const request = await capture("gpt-6.1-sol", "medium", "global");
+    expect(request.body.prompt_cache_key).toBe(SESSION);
+    expect(request.body.safety_identifier).toBe(SESSION);
+    expect(request.body.prompt_cache_retention).toBe("24h");
+  });
+
+  test("Anthropic refusal fallback follows the native model and provider", async () => {
+    const direct = await capture("claude-opus-5-5", "high", "global");
+    expect(direct.body.fallbacks).toEqual([{ model: "claude-opus-5" }]);
+    expect(direct.beta?.split(",")).toEqual(expect.arrayContaining([
+      "server-side-fallback-2026-06-01",
+      "fallback-credit-2026-06-01",
+      "thinking-binding-controls-2026-08-01",
+    ]));
+    const vertex = await capture("claude-opus-5-5", "high", "eu");
+    expect(vertex.body.fallbacks).toBeUndefined();
+    expect(vertex.beta).not.toContain("server-side-fallback");
   });
 });

@@ -63,10 +63,11 @@ export function readKeychainKey(): Buffer | null {
   }
 
   try {
-    // Factory CLI stores the encryption key in macOS Keychain under service "Factory CLI"
+    // Factory CLI stores the encryption key in macOS Keychain under service
+    // "Factory CLI" and account "auth-encryption-key".
     const stdout = execFileSync(
       "/usr/bin/security",
-      ["find-generic-password", "-s", "Factory CLI", "-w"],
+      ["find-generic-password", "-s", "Factory CLI", "-a", "auth-encryption-key", "-w"],
       { encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"] },
     ).trim();
 

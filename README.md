@@ -1,13 +1,23 @@
 # OMP Provider Factory Droid
 
-`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It lets `omp` use the models that Factory Droid 1.10.0 offers, such as Claude Opus 5, Gemini 3.8 Flash, GPT-6 Astra, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
+`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It routes Factory Droid 1.14.0 models, including Claude Opus 5, GPT-6.2 Sol, Gemini 3.8 Flash, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.6.1`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). Droid 1.10.0 model catalog, native Google Gemini Quad-Gateway routing, bidirectional Droid CLI Keychain sync (`auth.v2.loginkeychain`), session auto-recovery, multi-account quota preflight failover, tool-call stream healing, and 403/400 diagnostics.
+> **Actively Maintained Fork (`v1.7.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). The catalog targets Droid 1.14.0. The extension supports four gateway protocols, Droid credential reuse, quota preflight failover, and tool-call normalization.
 
 ---
 
 ## Release notes
+
+### 1.7.0
+
+- Synchronizes the catalog with Droid 1.14.0: seven new GPT variants and five models no longer offered by its CLI. The static catalog now contains 93 concrete models.
+- Adds `gpt-6.2-astra`, `gpt-6.2-astra-fast`, `gpt-6.2-astra-ultrafast`, `gpt-6.2-sol`, `gpt-6.2-sol-fast`, `gpt-6.2-sol-ultrafast`, and `gpt-6-astra-ultrafast`. These entries remain subject to Factory account access.
+- Removes `glm-4.6`, `kimi-k2.7-code`, `kimi-k2.6`, `minimax-m2.5`, and `gemini-3-pro-preview` from the advertised catalog and blocks stale docs from restoring them.
+- Adds India inference routing without inventing an India API hostname. Hosted requests use the EU endpoint only for the EU API region; other hosted regions use the global endpoint.
+- Uses Droid 1.14.0 client headers, extended identity requests, and an account-specific macOS encryption-key lookup.
+- Updates Responses session cache keys and Anthropic refusal-fallback fields and betas. Existing Factory-only tool aliases and OMP instruction safeguards remain unchanged.
+
 
 ### 1.6.1
 
@@ -19,7 +29,7 @@ See [prompt and tool compatibility](ROBUSTNESS.md#prompt-and-tool-compatibility)
 
 ## Key Features
 
-- **Droid 1.10.0 models.** The 91 models in the Droid 1.10.0 registry, with the same reasoning efforts, defaults, image input, limits, and multipliers.
+- **Droid 1.14.0 models.** The 93 CLI-visible concrete models, with their reasoning efforts, defaults, image input, limits, and multipliers.
 - **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint with W3C `traceparent` telemetry injection:
   - Anthropic Messages (`/api/llm/a`)
   - OpenAI Responses (`/api/llm/o/v1/responses`)
@@ -36,144 +46,153 @@ See [prompt and tool compatibility](ROBUSTNESS.md#prompt-and-tool-compatibility)
 
 ## Supported models
 
-The static catalog holds the 91 models in the Droid CLI 1.10.0 registry. Each
-model sends the request fields that Droid 1.10.0 sends for that model, effort,
-and upstream provider. Feature-gated models need access on the selected
-Factory organization.
+The static catalog holds the 93 CLI-visible concrete models in Droid 1.14.0.
+It excludes entries marked `availableInCLI: false` and native Auto routers.
+Request templates follow the shipped model, effort, and upstream provider.
+Feature-gated models still require access on the selected Factory organization.
 
-`gpt-6.1-sol-ultrafast` needs Factory's high-cost opt-in. Listing it does not
-grant access.
+Ultra Fast variants may require Factory's high-cost opt-in. Listing a model
+does not grant access or enable its account feature flag.
 
-The Global, EU, and US columns name the upstream that the `x-api-provider`
+The Global, EU, US, and India columns name the upstream that the `x-api-provider`
 header asks for in each inference region. The region comes from Factory's
 whoami reply at login, as in Droid. "none" means Droid does not offer the model
 in that region, and the extension returns an error without sending a request.
+
+These contracts were extracted from the published `@factory/cli-linux-x64@1.14.0`
+artifact after verifying its npm SHA-512 integrity. `src/droid-registry.ts` records
+the binary and registry-module SHA-256 digests. This is provider compatibility,
+not native Droid UI, connectors, Auto routing, customer-prem login, or account
+feature-flag evaluation. The extension keeps OMP's tools and session handling.
 
 ### 1. Anthropic Messages
 
 Endpoint `POST /api/llm/a/v1/messages`.
 
-| Model | Global | EU | US | Input | Efforts | Default |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `claude-fable-5.2` | anthropic | none | anthropic | text, image | low, medium, high, xhigh, max | high |
-| `claude-fable-5.1` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-fable-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-opus-5-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max | medium |
-| `claude-opus-5-5-fast` | anthropic | none | anthropic | text, image | low, medium, high, xhigh, max | medium |
-| `claude-opus-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-opus-5-fast` | anthropic | none | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-opus-4-8` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-opus-4-8-fast` | anthropic | none | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-opus-4-7` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-opus-4-7-fast` | anthropic | none | none | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-opus-4-6` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, max, off | high |
-| `claude-opus-4-6-fast` | anthropic | none | anthropic | text, image | low, medium, high, max, off | high |
-| `claude-opus-4-5-20251101` | anthropic | vertex_anthropic | vertex_anthropic | text, image | low, medium, high, off | off |
-| `claude-sonnet-5-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-sonnet-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | high |
-| `claude-sonnet-4-6` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, max, off | high |
-| `claude-sonnet-4-5-20250929` | anthropic | vertex_anthropic | vertex_anthropic | text, image | low, medium, high, off | off |
-| `claude-haiku-5-5` | anthropic | vertex_anthropic | anthropic | text, image | low, medium, high, xhigh, max, off | medium |
-| `claude-haiku-4-5-20251001` | anthropic | vertex_anthropic | vertex_anthropic | text, image | low, medium, high, off | off |
-| `atlas-07-21` | anthropic | none | none | text, image | low, medium, high, xhigh, max, off | high |
-| `aster-07-15` | anthropic | none | none | text, image | low, medium, high, xhigh, max, off | high |
-| `minimax-m2.7` | fireworks | none | none | text | high | high |
-| `minimax-m2.5` | fireworks | none | none | text | low, medium, high | high |
+| Model | Global | EU | US | India | Input | Efforts | Default |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `claude-fable-5.2` | anthropic | none | anthropic | none | text, image | low, medium, high, xhigh, max | high |
+| `claude-fable-5.1` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-fable-5` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-opus-5-5` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, xhigh, max | medium |
+| `claude-opus-5-5-fast` | anthropic | none | anthropic | none | text, image | low, medium, high, xhigh, max | medium |
+| `claude-opus-5` | anthropic | vertex_anthropic | anthropic | bedrock_anthropic | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-opus-5-fast` | anthropic | none | anthropic | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-opus-4-8` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-opus-4-8-fast` | anthropic | none | anthropic | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-opus-4-7` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-opus-4-7-fast` | anthropic | none | none | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-opus-4-6` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, max, off | high |
+| `claude-opus-4-6-fast` | anthropic | none | anthropic | none | text, image | low, medium, high, max, off | high |
+| `claude-opus-4-5-20251101` | anthropic | vertex_anthropic | vertex_anthropic | none | text, image | low, medium, high, off | off |
+| `claude-sonnet-5-5` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-sonnet-5` | anthropic | vertex_anthropic | anthropic | bedrock_anthropic | text, image | low, medium, high, xhigh, max, off | high |
+| `claude-sonnet-4-6` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, max, off | high |
+| `claude-sonnet-4-5-20250929` | anthropic | vertex_anthropic | vertex_anthropic | none | text, image | low, medium, high, off | off |
+| `claude-haiku-5-5` | anthropic | vertex_anthropic | anthropic | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `claude-haiku-4-5-20251001` | anthropic | vertex_anthropic | vertex_anthropic | bedrock_anthropic | text, image | low, medium, high, off | off |
+| `atlas-07-21` | anthropic | none | none | none | text, image | low, medium, high, xhigh, max, off | high |
+| `aster-07-15` | anthropic | none | none | none | text, image | low, medium, high, xhigh, max, off | high |
+| `minimax-m2.7` | fireworks | none | none | none | text | high | high |
 
 ### 2. OpenAI Responses
 
 Endpoint `POST /api/llm/o/v1/responses`.
 
-| Model | Global | EU | US | Input | Efforts | Default |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `gpt-6-astra` | openai | none | openai | text, image | low, medium, high, xhigh, max | medium |
-| `gpt-6-sol` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-6-sol-fast` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-6.1-sol` | openai | openai | openai | text, image | low, medium, high, xhigh, max | medium |
-| `gpt-6.1-sol-ultrafast` | openai | openai | openai | text, image | low, medium, high, xhigh, max | medium |
-| `gpt-6.1-terra` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-6-luna` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-6-luna-fast` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-5.6-sol` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-5.6-sol-fast` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-5.6-terra` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-5.6-luna` | openai | openai | openai | text, image | low, medium, high, xhigh, max, off | medium |
-| `gpt-5.5` | openai | openai | openai | text, image | low, medium, high, xhigh | medium |
-| `gpt-5.5-fast` | openai | openai | openai | text, image | low, medium, high, xhigh | medium |
-| `gpt-5.5-pro` | openai | openai | openai | text, image | medium, high, xhigh | medium |
-| `gpt-5.4` | openai | openai | openai | text, image | low, medium, high, xhigh | medium |
-| `gpt-5.4-fast` | openai | openai | openai | text, image | low, medium, high, xhigh | medium |
-| `gpt-5.4-mini` | openai | openai | openai | text, image | low, medium, high, xhigh | high |
-| `gpt-5.4-mini-fast` | openai | openai | openai | text, image | low, medium, high, xhigh | high |
-| `gpt-5.3-codex` | openai | openai | none | text, image | low, medium, high, xhigh | medium |
-| `gpt-5.3-codex-fast` | openai | openai | none | text, image | low, medium, high, xhigh | medium |
-| `gpt-5.2` | openai | openai | openai | text, image | low, medium, high, xhigh, off | low |
-| `gpt-5.2-codex` | openai | openai | openai | text, image | low, medium, high, xhigh | medium |
-| `gpt-5.1-codex-max` | openai | openai | openai | text, image | low, medium, high, xhigh | medium |
-| `grok-4.7` | xai | none | xai | text, image | low, medium, high, xhigh | high |
-| `grok-4.6` | xai | none | xai | text, image | low, medium, high, xhigh | high |
-| `grok-4.5` | xai | none | none | text, image | low, medium, high | high |
-| `muse-spark-1.3` | google | none | none | text, image | low, medium, high, xhigh | high |
+| Model | Global | EU | US | India | Input | Efforts | Default |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `gpt-6.2-astra` | openai | none | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6.2-sol` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6.2-astra-fast` | openai | none | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6.2-astra-ultrafast` | openai | none | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6.2-sol-fast` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6.2-sol-ultrafast` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6-astra-ultrafast` | openai | none | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6-astra` | openai | none | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6-sol` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-6-sol-fast` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-6.1-sol` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6.1-sol-ultrafast` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max | medium |
+| `gpt-6.1-terra` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-6-luna` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-6-luna-fast` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-5.6-sol` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-5.6-sol-fast` | openai | openai | openai | none | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-5.6-terra` | openai | openai | openai | bedrock_openai | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-5.6-luna` | openai | openai | openai | bedrock_openai | text, image | low, medium, high, xhigh, max, off | medium |
+| `gpt-5.5` | openai | openai | openai | none | text, image | low, medium, high, xhigh | medium |
+| `gpt-5.5-fast` | openai | openai | openai | none | text, image | low, medium, high, xhigh | medium |
+| `gpt-5.5-pro` | openai | openai | openai | none | text, image | medium, high, xhigh | medium |
+| `gpt-5.4` | openai | openai | openai | none | text, image | low, medium, high, xhigh | medium |
+| `gpt-5.4-fast` | openai | openai | openai | none | text, image | low, medium, high, xhigh | medium |
+| `gpt-5.4-mini` | openai | openai | openai | none | text, image | low, medium, high, xhigh | high |
+| `gpt-5.4-mini-fast` | openai | openai | openai | none | text, image | low, medium, high, xhigh | high |
+| `gpt-5.3-codex` | openai | openai | none | none | text, image | low, medium, high, xhigh | medium |
+| `gpt-5.3-codex-fast` | openai | openai | none | none | text, image | low, medium, high, xhigh | medium |
+| `gpt-5.2` | openai | openai | openai | none | text, image | low, medium, high, xhigh, off | low |
+| `gpt-5.2-codex` | openai | openai | openai | none | text, image | low, medium, high, xhigh | medium |
+| `gpt-5.1-codex-max` | openai | openai | openai | none | text, image | low, medium, high, xhigh | medium |
+| `grok-4.7` | xai | none | xai | none | text, image | low, medium, high, xhigh | high |
+| `grok-4.6` | xai | none | xai | none | text, image | low, medium, high, xhigh | high |
+| `grok-4.5` | xai | none | none | none | text, image | low, medium, high | high |
+| `muse-spark-1.3` | google | none | none | none | text, image | low, medium, high, xhigh | high |
 
 ### 3. Chat completions
 
 Endpoint `POST /api/llm/o/v1/chat/completions`.
 
-| Model | Global | EU | US | Input | Efforts | Default |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `inkling` | fireworks | none | none | text, image | minimal, low, medium, high, xhigh, max, off | high |
-| `mistral-large-4` | mistral | mistral | none | text, image | high, off | high |
-| `mistral-medium-3.5` | mistral | mistral | none | text, image | high, off | high |
-| `glm-5.3` | fireworks | mistral | baseten | text | low, high, max | max |
-| `glm-5.3-flash` | fireworks | none | baseten | text, image | low, high, max | high |
-| `glm-5.2` | baseten | mistral | baseten | text | high, max, off | high |
-| `glm-5.2-fast` | baseten | none | baseten | text | high, max, off | high |
-| `glm-5.1` | fireworks | none | baseten | text | high, off | high |
-| `glm-5` | fireworks | none | none | text | off | off |
-| `glm-4.7` | fireworks | none | none | text | off | off |
-| `glm-4.6` | baseten | none | baseten | text | off | off |
-| `kimi-k3.1-pro` | fireworks | none | baseten | text, image | low, high, max | max |
-| `kimi-k3` | fireworks | none | baseten | text, image | low, high, max, off | high |
-| `kimi-k2.7-code` | fireworks | none | baseten | text, image | high, off | high |
-| `kimi-k2.6` | fireworks | none | baseten | text, image | high, off | high |
-| `kimi-k2.5` | fireworks | none | baseten | text, image | high, off | high |
-| `deepseek-v4.1-flash` | fireworks | none | baseten | text, image | low, high, max, off | high |
-| `deepseek-v4.1-flash-1017` | fireworks | none | baseten | text, image | low, high, max, off | high |
-| `deepseek-v4-flash-0731` | fireworks | none | baseten | text | low, high, max, off | high |
-| `deepseek-v4-pro` | fireworks | none | baseten | text | low, high, max, off | high |
-| `minimax-m3` | fireworks | none | none | text, image | high | high |
-| `minimax-m3.1-flash` | fireworks | none | none | text, image | low, medium, high, xhigh, max | max |
-| `nemotron-3-ultra` | baseten | none | baseten | text | high, off | high |
-| `nemotron-3.5-super` | baseten | none | baseten | text, image | high, off | high |
-| `qwen3.8-max` | fireworks | none | none | text | low, medium, xhigh | xhigh |
-| `muse-spark-1.2` | fireworks | none | none | text, image | low, medium, high, xhigh | high |
-| `muse-spark-open` | baseten | none | baseten | text, image | low, medium, high, xhigh, max | high |
-| `beam-1.0` | baseten | none | baseten | text | low, medium, high, xhigh, max | high |
+| Model | Global | EU | US | India | Input | Efforts | Default |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `inkling` | fireworks | none | none | none | text, image | minimal, low, medium, high, xhigh, max, off | high |
+| `mistral-large-4` | mistral | mistral | none | none | text, image | high, off | high |
+| `mistral-medium-3.5` | mistral | mistral | none | none | text, image | high, off | high |
+| `glm-5.3` | fireworks | mistral | baseten | none | text | low, high, max | max |
+| `glm-5.3-flash` | fireworks | none | baseten | none | text, image | low, high, max | high |
+| `glm-5.2` | baseten | mistral | baseten | none | text | high, max, off | high |
+| `glm-5.2-fast` | baseten | none | baseten | none | text | high, max, off | high |
+| `glm-5.1` | fireworks | none | baseten | none | text | high, off | high |
+| `glm-5` | fireworks | none | none | none | text | off | off |
+| `glm-4.7` | fireworks | none | none | none | text | off | off |
+| `kimi-k3.1-pro` | fireworks | none | baseten | none | text, image | low, high, max | max |
+| `kimi-k3` | fireworks | none | baseten | none | text, image | low, high, max, off | high |
+| `kimi-k2.5` | fireworks | none | baseten | none | text, image | high, off | high |
+| `deepseek-v4.1-flash` | fireworks | none | baseten | none | text, image | low, high, max, off | high |
+| `deepseek-v4.1-flash-1017` | fireworks | none | baseten | none | text, image | low, high, max, off | high |
+| `deepseek-v4-flash-0731` | fireworks | none | baseten | none | text | low, high, max, off | high |
+| `deepseek-v4-pro` | fireworks | none | baseten | none | text | low, high, max, off | high |
+| `minimax-m3` | fireworks | none | none | none | text, image | high | high |
+| `minimax-m3.1-flash` | fireworks | none | none | none | text, image | low, medium, high, xhigh, max | max |
+| `nemotron-3-ultra` | baseten | none | baseten | none | text | high, off | high |
+| `nemotron-3.5-super` | baseten | none | baseten | none | text, image | high, off | high |
+| `qwen3.8-max` | fireworks | none | none | none | text | low, medium, xhigh | xhigh |
+| `muse-spark-1.2` | fireworks | none | none | none | text, image | low, medium, high, xhigh | high |
+| `muse-spark-open` | baseten | none | baseten | none | text, image | low, medium, high, xhigh, max | high |
+| `beam-1.0` | baseten | none | baseten | none | text | low, medium, high, xhigh, max | high |
 
 ### 4. Google Generative AI
 
 Endpoint `POST /api/llm/g/v1/generate`.
 
-| Model | Global | EU | US | Input | Efforts | Default |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `gemini-4-hydrogen` | google | google | google | text, image | low, medium, high | high |
-| `gemini-4-carbon` | google | none | none | text, image | low, medium, high | medium |
-| `gemini-4-argon` | google | none | none | text, image | low, medium, high | medium |
-| `gemini-3.8-flash` | google | google | google | text, image | low, medium, high | high |
-| `gemini-3.7-flash` | google | google | google | text, image | low, medium, high | high |
-| `gemini-3.6-flash` | google | google | google | text, image | low, medium, high | high |
-| `gemini-3.5-flash` | google | google | google | text, image | minimal, low, medium, high | high |
-| `gemini-3-flash-preview` | google | none | none | text, image | minimal, low, medium, high | high |
-| `gemini-3.1-pro-preview` | google | none | none | text, image | low, medium, high | high |
-| `gemini-3-pro-preview` | google | none | none | text, image | low, medium, high, off | high |
-| `garnet-07-15` | google | none | none | text, image | medium, high | high |
+| Model | Global | EU | US | India | Input | Efforts | Default |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `gemini-4-hydrogen` | google | google | google | none | text, image | low, medium, high | high |
+| `gemini-4-carbon` | google | none | none | none | text, image | low, medium, high | medium |
+| `gemini-4-argon` | google | none | none | none | text, image | low, medium, high | medium |
+| `gemini-3.8-flash` | google | google | google | none | text, image | low, medium, high | high |
+| `gemini-3.7-flash` | google | google | google | none | text, image | low, medium, high | high |
+| `gemini-3.6-flash` | google | google | google | none | text, image | low, medium, high | high |
+| `gemini-3.5-flash` | google | google | google | none | text, image | minimal, low, medium, high | high |
+| `gemini-3-flash-preview` | google | none | none | none | text, image | minimal, low, medium, high | high |
+| `gemini-3.1-pro-preview` | google | none | none | none | text, image | low, medium, high | high |
+| `garnet-07-15` | google | none | none | none | text, image | medium, high | high |
 
 ### Models from Factory's docs
 
 At session start the extension also reads Factory's model docs
 (`https://docs.factory.ai/models.md`) and OpenRouter prices, at most every 15
 minutes. A model that appears there but not in the Droid registry is listed
-too. It gets low, medium, and high efforts and no Droid request fields.
+too, except the five models Droid 1.14.0 explicitly hides from its CLI. A
+docs-only model gets low, medium, and high efforts and no Droid request fields.
 
 ### Costs
 
@@ -190,6 +209,16 @@ OpenRouter's listings for Kimi K3, GLM 5.2, GLM 5.3 and DeepSeek V4 Pro are far
 off their makers' prices, so those four always use the maker's published API
 price (Moonshot, Z.ai, DeepSeek peak rate), and a live OpenRouter price never
 replaces it.
+
+GPT-6.2 cost estimates use the rates embedded in Droid 1.14.0. Their source
+field reads `pending-official-pricing-docs`; they are not verified billing
+prices. OMP has one cache-write cost field, so these estimates use the shipped
+30-minute rate rather than the 12-hour rate. The shipped GPT-6.2 pricing also
+defines higher rates at a 272,000-input-token threshold. OMP's fixed cost fields
+do not model that tier, so its displayed estimates can understate long-context
+costs. A live OpenRouter price does not replace these estimates. GPT-6 Astra
+Ultra Fast keeps the existing estimate because its shipped entry has no price
+block.
 
 ---
 
@@ -302,7 +331,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-All requests route through Factory's LLM gateway (`https://api.factory.ai` or regional endpoints like `https://api.eu.factory.ai`). Every outbound gateway request includes a valid W3C distributed trace header (`traceparent: 00-${traceId}-${spanId}-01`) alongside `X-Client-Version` matching Droid v1.10.0.
+Hosted requests use `https://api.eu.factory.ai` for the EU API region and `https://api.factory.ai` otherwise. An explicit endpoint override remains separate from inference-provider selection. Every outbound gateway request includes a W3C `traceparent` header and `X-Client-Version: 1.14.0`.
 
 | API | Gateway URL | Upstream header | Other headers |
 | :--- | :--- | :--- | :--- |
@@ -333,9 +362,9 @@ Check remaining usage quotas at any time:
 ```
 
 Displays:
-- **Standard Quota**: 5-hour, weekly, and monthly limits (Claude, GPT, Grok, Gemini, and Muse Spark, which Droid 1.10.0 bills from the Standard pool).
+- **Standard Quota**: 5-hour, weekly, and monthly limits for Claude, GPT, Grok, Gemini, and Muse Spark, following Droid's Standard billing pool.
 - **Droid Core Quota**: 5-hour, weekly, and monthly limits (GLM, Kimi, DeepSeek, MiniMax, Nemotron, Inkling).
-  As in Droid 1.10.0, a window that the billing reply marks `unlimited` is left out of both quotas and of the preflight gate.
+  A window that the billing reply marks `unlimited` is left out of both quotas and the preflight gate.
 - **Extra Usage Balance**: Remaining balance in USD, overage preferences, and billing rate notes.
 
 ### Optional Quota Preflight Gate

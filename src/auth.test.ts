@@ -55,7 +55,8 @@ describe("Factory hosted endpoint validation", () => {
     expect(factoryApiForRegion(undefined)).toBe("https://api.factory.ai");
     expect(factoryApiForRegion("global")).toBe("https://api.factory.ai");
     expect(factoryApiForRegion("eu")).toBe("https://api.eu.factory.ai");
-    expect(factoryApiForRegion("us-east")).toBe("https://api.us-east.factory.ai");
+    expect(factoryApiForRegion("us-east")).toBe("https://api.factory.ai");
+    expect(factoryApiForRegion("in")).toBe("https://api.factory.ai");
   });
 
   test("rejects endpoints that could exfiltrate a selected bearer", () => {
@@ -142,6 +143,53 @@ describe("Factory organization selection", () => {
     await expect(loginWithWhoamiResponse(jsonResponse({ orgId: "org_other", region: "eu" }))).rejects.toThrow(
       /whoami returned a different organization/,
     );
+  });
+
+  test("asks for the extended whoami identity with the selected organization", async () => {
+    const organizationId = "org_india";
+    const scopedToken = unsignedJwt({ org_id: organizationId });
+    let whoamiHeaders: Headers | undefined;
+    const fetchImpl: OAuthFetch = async (input, init) => {
+      const url = String(input);
+      if (url.includes("authorize/device")) {
+        return jsonResponse({
+          device_code: "device-code",
+          user_code: "ABCD-1234",
+          verification_uri: "https://factory.ai/verify",
+          verification_uri_complete: "https://factory.ai/verify?code=ABCD-1234",
+          expires_in: 300,
+          interval: 0.001,
+        });
+      }
+      if (url.includes("authenticate")) {
+        return jsonResponse({ access_token: scopedToken, refresh_token: "refresh-token", expires_in: 3_600 });
+      }
+      if (url.endsWith("/api/cli/whoami")) {
+        whoamiHeaders = new Headers(init?.headers);
+        return jsonResponse({ orgId: organizationId, region: "global", inferenceRegion: "in" });
+      }
+      return new Response("Not Found", { status: 404 });
+    };
+
+    const previousDisableCliAuth = process.env.FACTORY_DROID_DISABLE_CLI_AUTH;
+    process.env.FACTORY_DROID_DISABLE_CLI_AUTH = "1";
+    const credentials = await login({
+      fetch: fetchImpl,
+      onAuth() {},
+      async onPrompt() {
+        return "1";
+      },
+    }).finally(() => {
+      if (previousDisableCliAuth === undefined) delete process.env.FACTORY_DROID_DISABLE_CLI_AUTH;
+      else process.env.FACTORY_DROID_DISABLE_CLI_AUTH = previousDisableCliAuth;
+    });
+
+    expect(credentials.accountId).toBe(organizationId);
+    expect(credentials.inferenceRegion).toBe("in");
+    expect(credentials.apiEndpoint).toBe("https://api.factory.ai");
+    expect(whoamiHeaders?.get("x-factory-whoami-extended")).toBe("true");
+    expect(whoamiHeaders?.get("x-factory-org-id")).toBe(organizationId);
+    expect(whoamiHeaders?.get("authorization")).toBe(`Bearer ${scopedToken}`);
   });
 
   test("refuses to guess during legacy refresh when multiple organizations exist", async () => {

@@ -1,9 +1,9 @@
 // OpenRouter's listed prices ($ per 1M tokens) for the Factory models with a clear
 // OpenRouter equivalent, from https://openrouter.ai/api/v1/models on 2026-11-13.
 // Used when no live OpenRouter price is fetched. Ids OpenRouter spells differently
-// map as in OPENROUTER_IDS (model-refresh.ts). Left out, so they keep the estimates
-// in catalog.ts: models with no OpenRouter equivalent, and the models in
-// MAKER_LISTED_COSTS.
+// map as in OPENROUTER_IDS (model-refresh.ts). Left out: models with no OpenRouter
+// equivalent, and the models in MAKER_LISTED_COSTS or DROID_REGISTRY_COSTS, which
+// carry their own prices.
 export const OPENROUTER_LISTED_COSTS: Readonly<
   Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }>
 > = {
@@ -48,10 +48,7 @@ export const OPENROUTER_LISTED_COSTS: Readonly<
   "glm-5.1": { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
   "glm-5": { input: 1, output: 3.2, cacheRead: 0.2, cacheWrite: 0 },
   "glm-4.7": { input: 0.6, output: 2.2, cacheRead: 0.11, cacheWrite: 0 },
-  "glm-4.6": { input: 0.5, output: 2, cacheRead: 0.1, cacheWrite: 0 },
   "kimi-k3.1-pro": { input: 0.2375, output: 8.4114, cacheRead: 0.2, cacheWrite: 0 },
-  "kimi-k2.7-code": { input: 0.6, output: 3.5, cacheRead: 0.16, cacheWrite: 0 },
-  "kimi-k2.6": { input: 0.65, output: 3.41, cacheRead: 0.15, cacheWrite: 0 },
   "kimi-k2.5": { input: 0.5, output: 2.5, cacheRead: 0.15, cacheWrite: 0 },
   "deepseek-v4.1-flash": { input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 },
   "deepseek-v4.1-flash-1017": { input: 0.3, output: 1.2, cacheRead: 0.006, cacheWrite: 0 },
@@ -59,7 +56,6 @@ export const OPENROUTER_LISTED_COSTS: Readonly<
   "minimax-m3": { input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0 },
   "minimax-m3.1-flash": { input: 0.15, output: 0.6, cacheRead: 0.015, cacheWrite: 0 },
   "minimax-m2.7": { input: 0.21, output: 0.84, cacheRead: 0.042, cacheWrite: 0 },
-  "minimax-m2.5": { input: 0.27, output: 1.08, cacheRead: 0.027, cacheWrite: 0 },
   "nemotron-3-ultra": { input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: 0 },
   "muse-spark-1.2": { input: 1.25, output: 4.25, cacheRead: 0.15, cacheWrite: 0 },
   "muse-spark-1.3": { input: 1.25, output: 4.25, cacheRead: 0.15, cacheWrite: 0 },
@@ -74,6 +70,23 @@ export const OPENROUTER_LISTED_COSTS: Readonly<
   "gemini-3.5-flash": { input: 1.5, output: 9, cacheRead: 0.15, cacheWrite: 0.083333 },
   "gemini-3-flash-preview": { input: 0.5, output: 3, cacheRead: 0.05, cacheWrite: 0.083333 },
   "gemini-3.1-pro-preview": { input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0.375 },
+};
+
+// Rates Droid 1.14.0 carries for its GPT-6.2 family in
+// apiProviderConfig.openai.pricing. Upstream's own pricing.source for these rows
+// reads "pending-official-pricing-docs", so the numbers are provisional. Each
+// row lists two cache-write tiers (30m, 12h); OMP's cost type has a single
+// cacheWrite field, which uses the 30m tier below. The rates are registry
+// values, not OpenRouter prices.
+export const DROID_REGISTRY_COSTS: Readonly<
+  Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }>
+> = {
+  "gpt-6.2-astra": { input: 3.2, output: 16, cacheRead: 0.16, cacheWrite: 4 },
+  "gpt-6.2-astra-fast": { input: 6.4, output: 32, cacheRead: 0.32, cacheWrite: 8 },
+  "gpt-6.2-astra-ultrafast": { input: 9.6, output: 48, cacheRead: 0.48, cacheWrite: 12 },
+  "gpt-6.2-sol": { input: 0.8, output: 4, cacheRead: 0.04, cacheWrite: 1 },
+  "gpt-6.2-sol-fast": { input: 1.6, output: 8, cacheRead: 0.08, cacheWrite: 2 },
+  "gpt-6.2-sol-ultrafast": { input: 2.4, output: 12, cacheRead: 0.12, cacheWrite: 3 },
 };
 
 // Models whose OpenRouter listing is far off the maker's own price (2026-11-13:

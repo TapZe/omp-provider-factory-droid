@@ -73,30 +73,30 @@ export function resolveFactoryApiBase(apiEndpoint?: string | null): string {
 }
 
 export function factoryApiForRegion(region: string | undefined): string {
+  // Droid 1.14.0 checks the customer-deployment base before any region choice,
+  // and an explicit FACTORY_API_BASE is the same kind of override.
+  if (FACTORY_API_BASE_OVERRIDDEN) {
+    return FACTORY_API;
+  }
+
   if (!region || region === "global") {
     return FACTORY_API;
   }
 
   const trimmed = region.trim();
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    if (FACTORY_API_BASE_OVERRIDDEN) {
-      return FACTORY_API;
-    }
     return validateHostedFactoryApiOrigin(trimmed);
-  }
-
-  const lower = trimmed.toLowerCase();
-  if (lower === "eu" || lower === "europe") {
-    return "https://api.eu.factory.ai";
   }
 
   if (!SAFE_REGION_LABEL.test(trimmed)) {
     throw new Error(`Invalid Factory region identifier: ${trimmed}`);
   }
 
-  return `https://api.${lower}.factory.ai`;
+  // Droid 1.14.0 serves the EU from a dedicated host and every other hosted
+  // region, including India and the US inference regions, from the global host.
+  return trimmed.toLowerCase() === "eu" ? "https://api.eu.factory.ai" : FACTORY_API;
 }
-export const FACTORY_CLIENT_VERSION = "1.10.0";
+export const FACTORY_CLIENT_VERSION = "1.14.0";
 export const FACTORY_HEADERS = {
   "X-Factory-Client": factoryUpstreamClientType,
   "X-Client-Version": FACTORY_CLIENT_VERSION,

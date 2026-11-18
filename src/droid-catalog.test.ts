@@ -95,9 +95,9 @@ describe("catalog limits and images follow Droid 1.3.0", () => {
         input: droid.images ? ["text", "image"] : ["text"],
       });
     }
-    // gpt-5.3-codex and kimi-k2.6 carry no images:false in 1.3.0.
+    // gpt-5.3-codex and kimi-k3 carry no images:false in 1.14.0.
     expect(curated("gpt-5.3-codex").input).toEqual(["text", "image"]);
-    expect(curated("kimi-k2.6").input).toEqual(["text", "image"]);
+    expect(curated("kimi-k3").input).toEqual(["text", "image"]);
     expect(curated("glm-5.3").input).toEqual(["text"]);
   });
 });
@@ -117,7 +117,7 @@ describe("catalog multipliers follow Droid 1.3.0", () => {
     expect(droidMultiplierFor("claude-opus-4-7-fast", outsidePromotions)).toBe(12);
     expect(droidMultiplierFor("glm-5", outsidePromotions)).toBe(0.4);
     expect(droidMultiplierFor("glm-4.7", outsidePromotions)).toBe(0.25);
-    expect(droidMultiplierFor("minimax-m2.5", outsidePromotions)).toBe(0.12);
+    expect(droidMultiplierFor("deepseek-v4.1-flash", outsidePromotions)).toBe(0.12);
   });
 
   // fn(e,o): discount set, o >= startsAt, and o < expiresAt. mn: Number((m*(1-d)).toFixed(4)).
@@ -159,14 +159,141 @@ describe("upstream providers follow Droid 1.3.0", () => {
   });
 });
 
-// Droid 1.10.0 bills each model from one pool: "standard" or "core". Muse Spark
-// models are in the Standard pool even though they run on open-model hosts.
-const NOT_IN_DROID_1_10 = ["gemini-3-pro-preview", "glm-4.6", "kimi-k2.6", "kimi-k2.7-code", "minimax-m2.5"];
+// Droid 1.14.0 marks these availableInCLI:false, so its CLI stops offering
+// them. The static catalog drops them, and model-refresh must not re-add them.
+const HIDDEN_IN_DROID_1_14 = [
+  "gemini-3-pro-preview",
+  "glm-4.6",
+  "kimi-k2.6",
+  "kimi-k2.7-code",
+  "minimax-m2.5",
+];
 
-describe("quota tiers follow Droid 1.10.0 billing pools", () => {
-  test("every Droid 1.10.0 row carries its billing pool", () => {
-    const missing = Object.entries(DROID_MODELS).filter(([, droid]) => !droid.billingPool).map(([id]) => id);
-    expect(missing.sort()).toEqual([...NOT_IN_DROID_1_10].sort());
+describe("catalog membership follows Droid 1.14.0", () => {
+  test("advertises exactly the CLI-visible models Droid 1.14.0 ships", () => {
+    expect([...FACTORY_MODELS.map((model) => model.id)].sort()).toEqual(Object.keys(DROID_MODELS).sort());
+  });
+
+  test("drops the models Droid 1.14.0 hides from its CLI", () => {
+    const advertised = new Set(FACTORY_MODELS.map((model) => model.id));
+    expect(HIDDEN_IN_DROID_1_14.filter((id) => advertised.has(id))).toEqual([]);
+    expect(HIDDEN_IN_DROID_1_14.filter((id) => DROID_MODELS[id])).toEqual([]);
+  });
+});
+
+// Droid 1.14.0 ships these feature-flagged. The plugin publishes the metadata
+// Droid carries; whether an account may use one stays an upstream decision.
+const GPT_6_2_MODELS = [
+  {
+    id: "gpt-6.2-astra",
+    multiplier: 3.2,
+    cost: { input: 3.2, output: 16, cacheRead: 0.16, cacheWrite: 4 },
+    eu: undefined,
+  },
+  {
+    id: "gpt-6.2-astra-fast",
+    multiplier: 6.4,
+    cost: { input: 6.4, output: 32, cacheRead: 0.32, cacheWrite: 8 },
+    eu: undefined,
+  },
+  {
+    id: "gpt-6.2-astra-ultrafast",
+    multiplier: 9.6,
+    cost: { input: 9.6, output: 48, cacheRead: 0.48, cacheWrite: 12 },
+    eu: undefined,
+  },
+  {
+    id: "gpt-6.2-sol",
+    multiplier: 0.8,
+    cost: { input: 0.8, output: 4, cacheRead: 0.04, cacheWrite: 1 },
+    eu: "openai",
+  },
+  {
+    id: "gpt-6.2-sol-fast",
+    multiplier: 1.6,
+    cost: { input: 1.6, output: 8, cacheRead: 0.08, cacheWrite: 2 },
+    eu: "openai",
+  },
+  {
+    id: "gpt-6.2-sol-ultrafast",
+    multiplier: 2.4,
+    cost: { input: 2.4, output: 12, cacheRead: 0.12, cacheWrite: 3 },
+    eu: "openai",
+  },
+] as const;
+
+describe("catalog additions from Droid 1.14.0", () => {
+  test("lists the GPT-6.2 family with Droid 1.14.0's ladder, limits, images, multiplier and cost", () => {
+    for (const expected of GPT_6_2_MODELS) {
+      const model = curated(expected.id);
+      expect({
+        id: expected.id,
+        reasoning: model.reasoning,
+        mode: model.thinking?.mode,
+        efforts: effortsOf(expected.id),
+        defaultLevel: defaultOf(expected.id),
+        requiresEffort: model.thinking?.requiresEffort,
+        input: model.input,
+        contextWindow: model.contextWindow,
+        maxTokens: model.maxTokens,
+        premiumMultiplier: model.premiumMultiplier,
+        cost: model.cost,
+      }).toEqual({
+        id: expected.id,
+        reasoning: true,
+        mode: "effort",
+        efforts: ["low", "medium", "high", "xhigh", "max"],
+        defaultLevel: "medium",
+        requiresEffort: true,
+        input: ["text", "image"],
+        contextWindow: 1_050_000,
+        maxTokens: 128_000,
+        premiumMultiplier: expected.multiplier,
+        cost: expected.cost,
+      });
+    }
+  });
+
+  test("sends the GPT-6.2 family to the openai upstream Droid 1.14.0 picks in each region", () => {
+    // Droid 1.14.0 adds an "in" inference region; these rows carry no override
+    // for it, so India is not an offered region for the family.
+    for (const expected of GPT_6_2_MODELS) {
+      expect({
+        id: expected.id,
+        global: upstreamProviderFor(expected.id, "global"),
+        eu: upstreamProviderFor(expected.id, "eu"),
+        us: upstreamProviderFor(expected.id, "us"),
+        in: upstreamProviderFor(expected.id, "in"),
+      }).toEqual({ id: expected.id, global: "openai", eu: expected.eu, us: "openai", in: undefined });
+    }
+  });
+
+  test("keeps the GPT-6 Astra ultrafast estimate, which upstream carries no rates for", () => {
+    const model = curated("gpt-6-astra-ultrafast");
+    expect(model.premiumMultiplier).toBe(24);
+    // Droid's row has only apiProviderConfig.openai.modelId and no pricing block.
+    expect(model.cost).toEqual({ input: 10, output: 50, cacheRead: 1, cacheWrite: 0 });
+    expect(model.reasoning).toBe(true);
+    expect(effortsOf("gpt-6-astra-ultrafast")).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(defaultOf("gpt-6-astra-ultrafast")).toBe("medium");
+    expect(model.input).toEqual(["text", "image"]);
+    expect(upstreamProviderFor("gpt-6-astra-ultrafast", "global")).toBe("openai");
+    expect(upstreamProviderFor("gpt-6-astra-ultrafast", "eu")).toBeUndefined();
+    expect(upstreamProviderFor("gpt-6-astra-ultrafast", "us")).toBe("openai");
+    expect(upstreamProviderFor("gpt-6-astra-ultrafast", "in")).toBeUndefined();
+  });
+});
+
+// Droid 1.14.0 bills each model from one pool: "standard" or "core". Muse Spark
+// models are in the Standard pool even though they run on open-model hosts.
+// Droid's row set is exactly the CLI-visible models; it no longer carries a
+// hidden row without a pool.
+describe("quota tiers follow Droid 1.14.0 billing pools", () => {
+  test("every Droid 1.14.0 row carries its billing pool", () => {
+    const missing = Object.entries(DROID_MODELS)
+      .filter(([, droid]) => !droid.billingPool)
+      .map(([id]) => id);
+    expect(missing).toEqual([]);
   });
 
   test("the quota tier is the model's Droid billing pool", () => {

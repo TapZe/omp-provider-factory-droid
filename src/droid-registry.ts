@@ -1,16 +1,18 @@
-// Generated from the Factory Droid 1.10.0 binary (@factory/cli-linux-x64 1.10.0). Do not edit by hand.
+// Generated from the Factory Droid 1.14.0 binary (@factory/cli-linux-x64 1.14.0). Do not edit by hand.
 //
-// Each row holds what Droid 1.10.0 computes for one model. It lists the
+// Each row holds what Droid 1.14.0 computes for one CLI-visible concrete model. It lists the
 // reasoning efforts and default, the limits at that default, image support,
 // the credit multiplier and promotions, the API provider Droid picks in each
 // inference region, and the request fields Droid's builders send for each
 // effort and provider. "off" stands for the model's off or none effort.
 // billingPool is the quota pool ("standard" or "core") Droid bills the model from.
 // "$session" marks a value Droid fills from the session at request time.
+// Binary SHA-256: cbab82b4830fdf54c05aba725798e0646750f35d361512626cba77d4ddbc829d.
+// Registry module SHA-256: fa8902d24efa8e0c5812fac19d975843e537f013da5ceb35503eda0daca5eaaf.
 
 export const DROID_EFFORTS = ["minimal", "low", "medium", "high", "xhigh", "max", "off"] as const;
 export type DroidEffort = (typeof DROID_EFFORTS)[number];
-export type DroidRegion = "global" | "eu" | "us";
+export type DroidRegion = "global" | "eu" | "us" | "in";
 export type DroidApi = "anthropic" | "responses" | "completions" | "google";
 
 export interface DroidRequest {
@@ -70,12 +72,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        off: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        off: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
       },
       vertex_anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
@@ -99,12 +101,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}} },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}} },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}} },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}} },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}} },
-        off: { body: {} },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        off: { body: {"fallbacks": [{"model": "claude-opus-5"}]}, betas: ["server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
       },
       vertex_anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
@@ -128,11 +130,11 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
     requests: {
       anthropic: {
-        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}}, betas: ["thinking-binding-controls-2026-08-01"] },
-        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}}, betas: ["thinking-binding-controls-2026-08-01"] },
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "low"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "medium"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "high"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "xhigh"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}}, "output_config": {"effort": "max"}, "fallbacks": [{"model": "claude-opus-5"}]}, betas: ["thinking-binding-controls-2026-08-01", "server-side-fallback-2026-06-01", "fallback-credit-2026-06-01"] },
       },
       vertex_anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
@@ -172,7 +174,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 867000,
     maxOutputTokens: 128000,
     tokenMultiplier: 2,
-    providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
+    providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic", in: "bedrock_anthropic" },
     requests: {
       anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}} },
@@ -183,6 +185,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
       vertex_anthropic: {
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}}, betas: ["effort-2025-11-24"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}}, betas: ["effort-2025-11-24"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}}, betas: ["effort-2025-11-24"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}}, betas: ["effort-2025-11-24"] },
+        off: { body: {"thinking": {"type": "disabled"}} },
+      },
+      bedrock_anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
         medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}}, betas: ["effort-2025-11-24"] },
         high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}}, betas: ["effort-2025-11-24"] },
@@ -423,7 +433,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 872000,
     maxOutputTokens: 128000,
     tokenMultiplier: 0.8,
-    providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic" },
+    providers: { global: "anthropic", eu: "vertex_anthropic", us: "anthropic", in: "bedrock_anthropic" },
     requests: {
       anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}} },
@@ -434,6 +444,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {"thinking": {"type": "disabled"}} },
       },
       vertex_anthropic: {
+        low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
+        medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}}, betas: ["effort-2025-11-24"] },
+        high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}}, betas: ["effort-2025-11-24"] },
+        xhigh: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "xhigh"}}, betas: ["effort-2025-11-24"] },
+        max: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "max"}}, betas: ["effort-2025-11-24"] },
+        off: { body: {"thinking": {"type": "disabled"}} },
+      },
+      bedrock_anthropic: {
         low: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "low"}}, betas: ["effort-2025-11-24"] },
         medium: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "medium"}}, betas: ["effort-2025-11-24"] },
         high: { body: {"thinking": {"type": "adaptive", "display": "summarized"}, "output_config": {"effort": "high"}}, betas: ["effort-2025-11-24"] },
@@ -533,7 +551,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 180000,
     maxOutputTokens: 32000,
     tokenMultiplier: 0.4,
-    providers: { global: "anthropic", eu: "vertex_anthropic", us: "vertex_anthropic" },
+    providers: { global: "anthropic", eu: "vertex_anthropic", us: "vertex_anthropic", in: "bedrock_anthropic" },
     requests: {
       anthropic: {
         low: { body: {"thinking": {"type": "enabled", "budget_tokens": 4096}}, betas: ["interleaved-thinking-2025-05-14"] },
@@ -542,6 +560,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         off: { body: {} },
       },
       vertex_anthropic: {
+        low: { body: {"thinking": {"type": "enabled", "budget_tokens": 4096}}, betas: ["interleaved-thinking-2025-05-14"] },
+        medium: { body: {"thinking": {"type": "enabled", "budget_tokens": 12288}}, betas: ["interleaved-thinking-2025-05-14"] },
+        high: { body: {"thinking": {"type": "enabled", "budget_tokens": 24576}}, betas: ["interleaved-thinking-2025-05-14"] },
+        off: { body: {} },
+      },
+      bedrock_anthropic: {
         low: { body: {"thinking": {"type": "enabled", "budget_tokens": 4096}}, betas: ["interleaved-thinking-2025-05-14"] },
         medium: { body: {"thinking": {"type": "enabled", "budget_tokens": 12288}}, betas: ["interleaved-thinking-2025-05-14"] },
         high: { body: {"thinking": {"type": "enabled", "budget_tokens": 24576}}, betas: ["interleaved-thinking-2025-05-14"] },
@@ -600,17 +624,15 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 4,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -626,12 +648,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -647,12 +669,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
     billingPool: "standard",
@@ -668,11 +690,11 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -688,11 +710,11 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
       },
     },
     billingPool: "standard",
@@ -708,12 +730,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -729,12 +751,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -750,12 +772,12 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
     billingPool: "standard",
@@ -768,19 +790,16 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 2,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-      { discount: 0.2, startsAt: "2026-08-22T00:00:00.000Z", expiresAt: "2026-11-22T00:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}, {"discount": 0.2, "startsAt": "2026-08-22T00:00:00.000Z", "expiresAt": "2026-11-22T00:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -793,19 +812,16 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 4,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-      { discount: 0.2, startsAt: "2026-08-22T00:00:00.000Z", expiresAt: "2026-11-22T00:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}, {"discount": 0.2, "startsAt": "2026-08-22T00:00:00.000Z", "expiresAt": "2026-11-22T00:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
     billingPool: "standard",
@@ -818,18 +834,24 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 0.8,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
-    providers: { global: "openai", eu: "openai", us: "openai" },
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
+    providers: { global: "openai", eu: "openai", us: "openai", in: "bedrock_openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+      },
+      bedrock_openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -842,18 +864,24 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 0.08,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
-    providers: { global: "openai", eu: "openai", us: "openai" },
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
+    providers: { global: "openai", eu: "openai", us: "openai", in: "bedrock_openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+      },
+      bedrock_openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -866,16 +894,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 2,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -888,16 +914,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 5,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
     billingPool: "standard",
@@ -910,15 +934,13 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 12,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -931,16 +953,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 1,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -953,16 +973,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 922000,
     maxOutputTokens: 128000,
     tokenMultiplier: 2,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
     billingPool: "standard",
@@ -975,16 +993,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 272000,
     maxOutputTokens: 128000,
     tokenMultiplier: 0.3,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -997,16 +1013,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 272000,
     maxOutputTokens: 128000,
     tokenMultiplier: 0.6,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
     billingPool: "standard",
@@ -1019,16 +1033,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 272000,
     maxOutputTokens: 128000,
     tokenMultiplier: 0.7,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -1041,16 +1053,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 272000,
     maxOutputTokens: 128000,
     tokenMultiplier: 1.4,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
       },
     },
     billingPool: "standard",
@@ -1063,17 +1073,15 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 272000,
     maxOutputTokens: 128000,
     tokenMultiplier: 0.7,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "text": {"verbosity": "low"}} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "text": {"verbosity": "low"}} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "text": {"verbosity": "low"}} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "text": {"verbosity": "low"}} },
-        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "text": {"verbosity": "low"}} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}} },
+        off: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "reasoning": {"effort": "none"}, "prompt_cache_key": "$session", "text": {"verbosity": "low"}} },
       },
     },
     billingPool: "standard",
@@ -1089,10 +1097,10 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "safety_identifier": "$session"} },
       },
     },
     billingPool: "standard",
@@ -1108,10 +1116,10 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "openai", eu: "openai", us: "openai" },
     requests: {
       openai: {
-        low: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_retention": "24h"} },
-        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_retention": "24h"} },
-        high: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_retention": "24h"} },
-        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_retention": "24h"} },
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": false, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h"} },
       },
     },
     billingPool: "standard",
@@ -1127,10 +1135,10 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "xai", us: "xai" },
     requests: {
       xai: {
-        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low"}} },
-        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium"}} },
-        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high"}} },
-        xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh"}} },
+        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low"}, "prompt_cache_key": "$session"} },
+        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium"}, "prompt_cache_key": "$session"} },
+        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high"}, "prompt_cache_key": "$session"} },
+        xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh"}, "prompt_cache_key": "$session"} },
       },
     },
     billingPool: "standard",
@@ -1143,16 +1151,14 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 200000,
     maxOutputTokens: 63356,
     tokenMultiplier: 0.8,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "xai", us: "xai" },
     requests: {
       xai: {
-        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low"}} },
-        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium"}} },
-        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high"}} },
-        xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh"}} },
+        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low"}, "prompt_cache_key": "$session"} },
+        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium"}, "prompt_cache_key": "$session"} },
+        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high"}, "prompt_cache_key": "$session"} },
+        xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh"}, "prompt_cache_key": "$session"} },
       },
     },
     billingPool: "standard",
@@ -1165,15 +1171,13 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 200000,
     maxOutputTokens: 63356,
     tokenMultiplier: 0.8,
-    promotions: [
-      { discount: 0.6, startsAt: "2026-08-29T04:00:00.000Z", expiresAt: "2026-09-05T02:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.6, "startsAt": "2026-08-29T04:00:00.000Z", "expiresAt": "2026-09-05T02:00:00.000Z"}],
     providers: { global: "xai" },
     requests: {
       xai: {
-        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low"}} },
-        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium"}} },
-        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high"}} },
+        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low"}, "prompt_cache_key": "$session"} },
+        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium"}, "prompt_cache_key": "$session"} },
+        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 63356, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high"}, "prompt_cache_key": "$session"} },
       },
     },
     billingPool: "standard",
@@ -1208,9 +1212,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 524288,
     maxOutputTokens: 64000,
     tokenMultiplier: 0.544,
-    promotions: [
-      { discount: 0.5, startsAt: "2026-10-06T00:00:00.000Z", expiresAt: "2026-10-20T00:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.5, "startsAt": "2026-10-06T00:00:00.000Z", "expiresAt": "2026-10-20T00:00:00.000Z"}],
     providers: { global: "mistral", eu: "mistral" },
     requests: {
       mistral: {
@@ -1382,21 +1384,6 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     },
     billingPool: "core",
   },
-  "glm-4.6": {
-    api: "completions",
-    efforts: ["off"],
-    defaultEffort: "off",
-    images: false,
-    maxInputTokens: 200000,
-    maxOutputTokens: 128000,
-    tokenMultiplier: 0.25,
-    providers: { global: "baseten", us: "baseten" },
-    requests: {
-      baseten: {
-        off: { body: {"temperature": 1} },
-      },
-    },
-  },
   "kimi-k3.1-pro": {
     api: "completions",
     efforts: ["low", "high", "max"],
@@ -1444,46 +1431,6 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       },
     },
     billingPool: "core",
-  },
-  "kimi-k2.7-code": {
-    api: "completions",
-    efforts: ["high", "off"],
-    defaultEffort: "high",
-    images: true,
-    maxInputTokens: 196608,
-    maxOutputTokens: 65536,
-    tokenMultiplier: 0.38,
-    providers: { global: "fireworks", us: "baseten" },
-    requests: {
-      fireworks: {
-        high: { body: {"temperature": 1, "reasoning_effort": "high", "reasoning_history": "preserved"} },
-        off: { body: {"temperature": 1, "reasoning_effort": "none"} },
-      },
-      baseten: {
-        high: { body: {"temperature": 1, "chat_template_args": {"enable_thinking": true}} },
-        off: { body: {"temperature": 1, "chat_template_args": {"enable_thinking": false}} },
-      },
-    },
-  },
-  "kimi-k2.6": {
-    api: "completions",
-    efforts: ["high", "off"],
-    defaultEffort: "high",
-    images: true,
-    maxInputTokens: 196608,
-    maxOutputTokens: 65536,
-    tokenMultiplier: 0.4,
-    providers: { global: "fireworks", us: "baseten" },
-    requests: {
-      fireworks: {
-        high: { body: {"temperature": 1, "reasoning_effort": "high", "reasoning_history": "preserved"} },
-        off: { body: {"temperature": 1, "reasoning_effort": "none"} },
-      },
-      baseten: {
-        high: { body: {"temperature": 1, "chat_template_args": {"enable_thinking": true}} },
-        off: { body: {"temperature": 1, "chat_template_args": {"enable_thinking": false}} },
-      },
-    },
   },
   "kimi-k2.5": {
     api: "completions",
@@ -1658,23 +1605,6 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     },
     billingPool: "core",
   },
-  "minimax-m2.5": {
-    api: "anthropic",
-    efforts: ["low", "medium", "high"],
-    defaultEffort: "high",
-    images: false,
-    maxInputTokens: 204800,
-    maxOutputTokens: 64000,
-    tokenMultiplier: 0.12,
-    providers: { global: "fireworks" },
-    requests: {
-      fireworks: {
-        low: { body: {"thinking": {"type": "enabled", "budget_tokens": 4096}, "output_config": {"effort": "low"}} },
-        medium: { body: {"thinking": {"type": "enabled", "budget_tokens": 12288}, "output_config": {"effort": "medium"}} },
-        high: { body: {"thinking": {"type": "enabled", "budget_tokens": 24576}, "output_config": {"effort": "high"}} },
-      },
-    },
-  },
   "nemotron-3-ultra": {
     api: "completions",
     efforts: ["high", "off"],
@@ -1757,10 +1687,10 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     providers: { global: "google" },
     requests: {
       google: {
-        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}} },
-        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}} },
-        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}} },
-        xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}} },
+        low: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session"} },
+        medium: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session"} },
+        high: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session"} },
+        xhigh: { body: {"parallel_tool_calls": true, "max_output_tokens": 131072, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session"} },
       },
     },
     billingPool: "standard",
@@ -1831,9 +1761,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 934464,
     maxOutputTokens: 65536,
     tokenMultiplier: 1.6,
-    promotions: [
-      { discount: 0.5, startsAt: "2026-11-10T16:00:00.000Z", expiresAt: "2026-12-01T08:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.5, "startsAt": "2026-11-10T16:00:00.000Z", "expiresAt": "2026-12-01T08:00:00.000Z"}],
     providers: { global: "google" },
     requests: {
       google: {
@@ -1852,9 +1780,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 934464,
     maxOutputTokens: 65536,
     tokenMultiplier: 1.6,
-    promotions: [
-      { discount: 0.5, startsAt: "2026-10-13T16:00:00.000Z", expiresAt: "2026-12-01T08:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.5, "startsAt": "2026-10-13T16:00:00.000Z", "expiresAt": "2026-12-01T08:00:00.000Z"}],
     providers: { global: "google" },
     requests: {
       google: {
@@ -1873,9 +1799,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 1000000,
     maxOutputTokens: 65536,
     tokenMultiplier: 0.6,
-    promotions: [
-      { discount: 0.5, startsAt: "2026-08-17T21:10:19.000Z", expiresAt: "2027-01-01T08:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.5, "startsAt": "2026-08-17T21:10:19.000Z", "expiresAt": "2027-01-01T08:00:00.000Z"}],
     providers: { global: "google", eu: "google", us: "google" },
     requests: {
       google: {
@@ -1894,9 +1818,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     maxInputTokens: 1000000,
     maxOutputTokens: 65536,
     tokenMultiplier: 0.6,
-    promotions: [
-      { discount: 0.5, startsAt: "2026-08-17T21:10:19.000Z", expiresAt: "2027-01-01T08:00:00.000Z" },
-    ],
+    promotions: [{"discount": 0.5, "startsAt": "2026-08-17T21:10:19.000Z", "expiresAt": "2027-01-01T08:00:00.000Z"}],
     providers: { global: "google", eu: "google", us: "google" },
     requests: {
       google: {
@@ -1981,24 +1903,6 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     },
     billingPool: "standard",
   },
-  "gemini-3-pro-preview": {
-    api: "google",
-    efforts: ["low", "medium", "high", "off"],
-    defaultEffort: "high",
-    images: true,
-    maxInputTokens: 1000000,
-    maxOutputTokens: 65536,
-    tokenMultiplier: 0.8,
-    providers: { global: "google" },
-    requests: {
-      google: {
-        low: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "LOW"}}} },
-        medium: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
-        high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
-        off: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": false}}} },
-      },
-    },
-  },
   "garnet-07-15": {
     api: "google",
     efforts: ["medium", "high"],
@@ -2012,6 +1916,146 @@ export const DROID_MODELS: Record<string, DroidModel> = {
       google: {
         medium: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
+      },
+    },
+    billingPool: "standard",
+  },
+  "gpt-6.2-astra": {
+    api: "responses",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 922000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 3.2,
+    providers: { global: "openai", us: "openai" },
+    requests: {
+      openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+      },
+    },
+    billingPool: "standard",
+  },
+  "gpt-6.2-sol": {
+    api: "responses",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 922000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 0.8,
+    providers: { global: "openai", eu: "openai", us: "openai" },
+    requests: {
+      openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session"} },
+      },
+    },
+    billingPool: "standard",
+  },
+  "gpt-6.2-astra-fast": {
+    api: "responses",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 922000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 6.4,
+    providers: { global: "openai", us: "openai" },
+    requests: {
+      openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+      },
+    },
+    billingPool: "standard",
+  },
+  "gpt-6.2-astra-ultrafast": {
+    api: "responses",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 922000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 9.6,
+    providers: { global: "openai", us: "openai" },
+    requests: {
+      openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+      },
+    },
+    billingPool: "standard",
+  },
+  "gpt-6.2-sol-fast": {
+    api: "responses",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 922000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 1.6,
+    providers: { global: "openai", eu: "openai", us: "openai" },
+    requests: {
+      openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "priority"} },
+      },
+    },
+    billingPool: "standard",
+  },
+  "gpt-6.2-sol-ultrafast": {
+    api: "responses",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 922000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 2.4,
+    providers: { global: "openai", eu: "openai", us: "openai" },
+    requests: {
+      openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+      },
+    },
+    billingPool: "standard",
+  },
+  "gpt-6-astra-ultrafast": {
+    api: "responses",
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    defaultEffort: "medium",
+    images: true,
+    maxInputTokens: 922000,
+    maxOutputTokens: 128000,
+    tokenMultiplier: 24,
+    providers: { global: "openai", us: "openai" },
+    requests: {
+      openai: {
+        low: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "low", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        medium: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "medium", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        high: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "high", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        xhigh: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "xhigh", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
+        max: { body: {"tool_choice": "auto", "parallel_tool_calls": true, "include": ["reasoning.encrypted_content"], "reasoning": {"effort": "max", "summary": "auto"}, "prompt_cache_key": "$session", "prompt_cache_retention": "24h", "text": {"verbosity": "low"}, "safety_identifier": "$session", "service_tier": "ultrafast"} },
       },
     },
     billingPool: "standard",

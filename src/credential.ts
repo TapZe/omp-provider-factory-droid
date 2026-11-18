@@ -19,13 +19,13 @@ export interface ParsedFactoryCredential {
   inferenceRegion: DroidRegion;
 }
 
-const INFERENCE_REGIONS: readonly string[] = ["global", "eu", "us"] satisfies DroidRegion[];
+const INFERENCE_REGIONS: readonly string[] = ["global", "eu", "us", "in"] satisfies DroidRegion[];
 const EU_API_HOST = "api.eu.factory.ai";
 
-// Droid 1.3.0 picks the region that serves model inference as
-//   e?.inferenceRegion ?? cd(e?.region ?? "global", void 0)
-// An unknown inferenceRegion reads as absent, and cd sends an eu org to eu
-// and every other org to global.
+// Droid 1.14.0 picks the region that serves model inference as
+//   e?.inferenceRegion ?? lsH(e?.region ?? "global")
+// An explicit inferenceRegion wins; otherwise only an eu organization infers
+// in the EU, and every other organization infers globally.
 export function inferenceRegionOf(inferenceRegion: unknown, region: string | undefined): DroidRegion {
   if (typeof inferenceRegion === "string" && INFERENCE_REGIONS.includes(inferenceRegion)) {
     return inferenceRegion as DroidRegion;
