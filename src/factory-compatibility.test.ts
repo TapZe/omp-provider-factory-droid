@@ -119,13 +119,14 @@ describe("Factory compatibility across all wire protocols", () => {
   for (const [protocol, modelId] of protocols) {
     it(`${protocol}: aliases declarations, restores calls, and replays a continuation without mutating history`, async () => {
       const args = { path: "read/write/edit/bash/inspect_file" };
+      const subagent = "⁂ Role\nKeep the assigned scope.\n\n⁂ Coop\nYou are operating on a piece of work assigned to you by the main agent.\n\n⁂ Completion\nReturn the result.\n";
       const bodies: Record<string, unknown>[] = [];
       const fetchImpl: FetchImpl = async (_input, init) => {
         bodies.push(record(JSON.parse(String(init?.body))));
         return toolResponse(protocol, "inspect_file", args);
       };
       const context: Context = {
-        systemPrompt: ["You are omp's trusted coding assistant.\n\n# Rules\nPreserve read/write/edit/bash here."],
+        systemPrompt: ["You are omp's trusted coding assistant.\n\n# Rules\nPreserve read/write/edit/bash here.", subagent],
         messages: [{ role: "user", content: "Read the file", timestamp: 0 }],
         tools,
       };
@@ -137,6 +138,9 @@ describe("Factory compatibility across all wire protocols", () => {
       expect(declarationNames(bodies[0], protocol)).toEqual(pairs.map(([, alias]) => alias));
       expect(context.tools?.map((tool) => tool.name)).toEqual(pairs.map(([name]) => name));
       expect(context.systemPrompt?.[0]).toStartWith("You are omp's trusted coding assistant.");
+      expect(context.systemPrompt?.[1]).toBe(subagent);
+      expect(JSON.stringify(bodies[0])).toContain("You are working on a piece of work assigned to you by the main agent.");
+      expect(JSON.stringify(bodies[0])).not.toContain("You are operating on a piece of work assigned to you by the main agent.");
       if (!call) throw new Error("Missing call");
       const before = { ...first, content: first.content.map((part) => ({ ...part })) };
       const second = await request(modelId, {

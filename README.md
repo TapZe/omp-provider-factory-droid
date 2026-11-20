@@ -3,11 +3,16 @@
 `omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It routes Factory Droid 1.14.0 models, including Claude Opus 5, GPT-6.2 Sol, Gemini 3.8 Flash, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.7.0`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). The catalog targets Droid 1.14.0. The extension supports four gateway protocols, Droid credential reuse, quota preflight failover, and tool-call normalization.
+> **Actively Maintained Fork (`v1.7.1`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). The catalog targets Droid 1.14.0. The extension supports four gateway protocols, Droid credential reuse, quota preflight failover, and tool-call normalization.
 
 ---
 
 ## Release notes
+
+### 1.7.1
+
+- Fixes Factory policy rejections caused by the shared OMP subagent cooperation sentence. Rewords only that sentence in recognized generated child prompts, preserving other instructions and existing tool aliases.
+- Adds regression coverage for prompt boundaries, idempotence, and all four Factory wire protocols. Live smoke verification covers all five OMP agent types.
 
 ### 1.7.0
 

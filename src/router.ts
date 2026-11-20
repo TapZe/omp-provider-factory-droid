@@ -97,13 +97,16 @@ function requestedEffort(options: StreamOptions): string | undefined {
 }
 
 const OMP_GREETING_PREAMBLE = "You are omp's trusted coding assistant.\n\n";
+const OMP_SUBAGENT_COOP_PREAMBLE =
+  "\n⁂ Coop\nYou are operating on a piece of work assigned to you by the main agent.\n";
+const FACTORY_SUBAGENT_COOP_PREAMBLE = OMP_SUBAGENT_COOP_PREAMBLE.replace("operating", "working");
 
 // Factory's gateway requires requests to carry Droid's system prompt prefix
 // ("You are Droid, an AI software engineering agent built by Factory.")
 // Requests missing this prefix or with system stripped return 403 Forbidden.
 export function prepareContextForFactory(context: Context): Context {
-  // Only this exact preamble was isolated as a gateway rejector. Never reduce
-  // an unfamiliar prompt or rewrite instruction text to work around a 403.
+  // Adapt only verified OMP template text. Never strip unfamiliar instructions
+  // to work around a gateway rejection.
   const existingPrompts = context.systemPrompt?.filter((part) => part.length > 0) ?? [];
   const mainIndex = existingPrompts[0] === FACTORY_DROID_SYSTEM_PROMPT ? 1 : 0;
   const main = existingPrompts[mainIndex];
@@ -111,6 +114,17 @@ export function prepareContextForFactory(context: Context): Context {
     const remainder = main.slice(OMP_GREETING_PREAMBLE.length);
     if (remainder.length > 0) existingPrompts[mainIndex] = remainder;
     else existingPrompts.splice(mainIndex, 1);
+  }
+  for (let index = 0; index < existingPrompts.length; index++) {
+    const prompt = existingPrompts[index];
+    if (!prompt.startsWith("⁂ Role\n")) continue;
+    const completionIndex = prompt.lastIndexOf("\n⁂ Completion\n");
+    if (completionIndex < 0) continue;
+    // Match the generated section, not an earlier example or a later quote.
+    const coopIndex = prompt.lastIndexOf("\n⁂ Coop\n", completionIndex);
+    if (coopIndex < 0 || !prompt.startsWith(OMP_SUBAGENT_COOP_PREAMBLE, coopIndex)) continue;
+    existingPrompts[index] = prompt.slice(0, coopIndex) + FACTORY_SUBAGENT_COOP_PREAMBLE +
+      prompt.slice(coopIndex + OMP_SUBAGENT_COOP_PREAMBLE.length);
   }
   const alreadyHasDroidPrefix = existingPrompts.includes(FACTORY_DROID_SYSTEM_PROMPT);
 

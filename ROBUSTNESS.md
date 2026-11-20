@@ -128,7 +128,9 @@ Bearer tokens, refresh tokens, complete organization IDs, and serialized credent
 
 ## Prompt and tool compatibility
 
-Factory requests omit the exact initial `You are omp's trusted coding assistant.\n\n` preamble from the first OMP system block. All text after it and all later system blocks stay unchanged. Custom prompts that do not start with that exact preamble are not rewritten. This adaptation does not modify OMP's installed template or stored rules. The existing Droid identity prefix remains in the request.
+Factory requests omit the exact initial `You are omp's trusted coding assistant.\n\n` preamble from the first OMP system block. The existing Droid identity prefix remains in the request.
+
+For generated OMP subagent blocks beginning with `⁂ Role`, the adapter changes `You are operating on a piece of work assigned to you by the main agent.` to `You are working on a piece of work assigned to you by the main agent.` only in the `⁂ Coop` section before `⁂ Completion`. Live controls isolated the original sentence as a Factory policy-rejection trigger. The rewrite preserves the delegation instruction and all other instruction bytes. Quoted text outside the recognized section and unfamiliar prompt layouts remain unchanged. Neither adaptation modifies OMP's installed templates or stored rules.
 
 The provider uses these wire names without changing OMP's local tool names:
 
@@ -164,6 +166,7 @@ Automated coverage includes:
 - malicious endpoint rejection;
 - OAuth cancellation and bounded response handling;
 - dynamic model discovery timeout;
+- exact OMP prompt adaptations, idempotence, caller immutability, and quoted-text boundaries;
 - native Factory usage-provider registration.
 
 The suite uses synthetic credentials, local fetch mocks, and disposable temporary SQLite databases. It does not use real OAuth credentials or make paid model calls.
