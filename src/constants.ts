@@ -96,7 +96,7 @@ export function factoryApiForRegion(region: string | undefined): string {
   // region, including India and the US inference regions, from the global host.
   return trimmed.toLowerCase() === "eu" ? "https://api.eu.factory.ai" : FACTORY_API;
 }
-export const FACTORY_CLIENT_VERSION = "1.14.0";
+export const FACTORY_CLIENT_VERSION = "1.18.0";
 export const FACTORY_HEADERS = {
   "X-Factory-Client": factoryUpstreamClientType,
   "X-Client-Version": FACTORY_CLIENT_VERSION,

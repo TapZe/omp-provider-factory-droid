@@ -268,7 +268,7 @@ async function captureFactoryAnthropicRequest(
 
 describe("Factory Router & Tool Execution Configuration", () => {
   it("uses the latest Droid CLI client version", () => {
-    expect(FACTORY_CLIENT_VERSION).toBe("1.14.0");
+    expect(FACTORY_CLIENT_VERSION).toBe("1.18.0");
   });
 
   it("sends the Anthropic betas Droid sends for each model", async () => {
@@ -588,8 +588,8 @@ describe("Factory Router & Tool Execution Configuration", () => {
     expect(capturedHeaders?.get("openai-platform")).toBe("org-bHuLtG1fGmYk5YaOihAAXFBw");
     expect(capturedHeaders?.get("x-factory-org-id")).toBe("test-org");
     expect(capturedHeaders?.get("x-provider-routing-source")).toBe("registry_default");
-    expect(capturedHeaders?.get("x-client-version")).toBe("1.14.0");
-    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.14.0");
+    expect(capturedHeaders?.get("x-client-version")).toBe("1.18.0");
+    expect(capturedHeaders?.get("user-agent")).toBe("factory-cli/1.18.0");
     expect(capturedHeaders?.get("traceparent")).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
   });
 

@@ -72,12 +72,9 @@ export const OPENROUTER_LISTED_COSTS: Readonly<
   "gemini-3.1-pro-preview": { input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0.375 },
 };
 
-// Rates Droid 1.14.0 carries for its GPT-6.2 family in
-// apiProviderConfig.openai.pricing. Upstream's own pricing.source for these rows
-// reads "pending-official-pricing-docs", so the numbers are provisional. Each
-// row lists two cache-write tiers (30m, 12h); OMP's cost type has a single
-// cacheWrite field, which uses the 30m tier below. The rates are registry
-// values, not OpenRouter prices.
+// Droid labels these token rates "pending-official-pricing-docs". For GPT-6.2,
+// use the 30-minute cache-write rate because OMP has one cache-write field.
+// The Neon row has no cache-write rate.
 export const DROID_REGISTRY_COSTS: Readonly<
   Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }>
 > = {
@@ -87,6 +84,7 @@ export const DROID_REGISTRY_COSTS: Readonly<
   "gpt-6.2-sol": { input: 0.8, output: 4, cacheRead: 0.04, cacheWrite: 1 },
   "gpt-6.2-sol-fast": { input: 1.6, output: 8, cacheRead: 0.08, cacheWrite: 2 },
   "gpt-6.2-sol-ultrafast": { input: 2.4, output: 12, cacheRead: 0.12, cacheWrite: 3 },
+  "gemini-4-neon": { input: 1.2, output: 6, cacheRead: 0.06, cacheWrite: 0 },
 };
 
 // Models whose OpenRouter listing is far off the maker's own price (2026-11-13:

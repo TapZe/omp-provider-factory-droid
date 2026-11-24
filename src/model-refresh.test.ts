@@ -141,6 +141,7 @@ const EXPECTED_LIMIT_GROUPS = [
   ],
   // Droid 1.10.0 gemini-4-carbon contextLimits c(1e6, 65536), the same as argon.
   [1_000_000, 65_536, ["gemini-4-argon", "gemini-4-carbon"]],
+  [1_048_576, 65_536, ["gemini-4-neon"]],
 ] as const;
 
 describe("Factory model token limits", () => {
@@ -633,20 +634,24 @@ describe("models priced from their makers' published prices", () => {
   });
 });
 
-// Droid 1.14.0 ships provisional token rates for the GPT-6.2 family, so the
-// refresh keeps them instead of a live OpenRouter price.
+// GPT-6.2 and Gemini 4 Neon use provisional rates from the Droid binary.
 describe("models priced from Droid's own rates", () => {
   const { matchLivePrice } = require("./model-refresh");
   const { defaultCostFor } = require("./catalog");
-  const liveMap = new Map([["openai/gpt-6.2-astra", { input: 40, output: 200, cacheRead: 4, cacheWrite: 50 }]]);
+  const liveMap = new Map([
+    ["openai/gpt-6.2-astra", { input: 40, output: 200, cacheRead: 4, cacheWrite: 50 }],
+    ["google/gemini-4-neon", { input: 12, output: 60, cacheRead: 0.6, cacheWrite: 1 }],
+  ]);
 
   test("ignore OpenRouter's live listing", () => {
     expect(matchLivePrice("gpt-6.2-astra", liveMap)).toBeUndefined();
+    expect(matchLivePrice("gemini-4-neon", liveMap)).toBeUndefined();
   });
 
-  test("use the rate Droid 1.14.0 carries", () => {
+  test("use the rates shipped in the Droid registry", () => {
     expect(defaultCostFor("gpt-6.2-astra")).toEqual({ input: 3.2, output: 16, cacheRead: 0.16, cacheWrite: 4 });
     expect(defaultCostFor("gpt-6.2-sol-ultrafast")).toEqual({ input: 2.4, output: 12, cacheRead: 0.12, cacheWrite: 3 });
+    expect(defaultCostFor("gemini-4-neon")).toEqual({ input: 1.2, output: 6, cacheRead: 0.06, cacheWrite: 0 });
   });
 });
 

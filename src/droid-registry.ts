@@ -1,14 +1,15 @@
-// Generated from the Factory Droid 1.14.0 binary (@factory/cli-linux-x64 1.14.0). Do not edit by hand.
+// Projected from the Factory Droid 1.18.0 binary (@factory/cli-linux-x64 1.18.0).
 //
-// Each row holds what Droid 1.14.0 computes for one CLI-visible concrete model. It lists the
+// Each row holds the baked-in defaults for one CLI-visible concrete model. It lists the
 // reasoning efforts and default, the limits at that default, image support,
 // the credit multiplier and promotions, the API provider Droid picks in each
 // inference region, and the request fields Droid's builders send for each
 // effort and provider. "off" stands for the model's off or none effort.
 // billingPool is the quota pool ("standard" or "core") Droid bills the model from.
 // "$session" marks a value Droid fills from the session at request time.
-// Binary SHA-256: cbab82b4830fdf54c05aba725798e0646750f35d361512626cba77d4ddbc829d.
-// Registry module SHA-256: fa8902d24efa8e0c5812fac19d975843e537f013da5ceb35503eda0daca5eaaf.
+// Binary SHA-256: bfcf76a27e634e17a096f67f5cc96ba5568d8a64264b73aa27df27f2791388eb.
+// Registry chunk-qfh62xzv.js (220796536 + 194049 bytes) SHA-256:
+// 0745dc6fdc7d62f56221cdd97de95446973beac3f9c8d36926893f596830837b.
 
 export const DROID_EFFORTS = ["minimal", "low", "medium", "high", "xhigh", "max", "off"] as const;
 export type DroidEffort = (typeof DROID_EFFORTS)[number];
@@ -1735,9 +1736,28 @@ export const DROID_MODELS: Record<string, DroidModel> = {
     },
     billingPool: "core",
   },
+  "gemini-4-neon": {
+    api: "google",
+    efforts: ["low", "medium", "high", "xhigh"],
+    defaultEffort: "high",
+    images: true,
+    maxInputTokens: 983040,
+    maxOutputTokens: 65536,
+    tokenMultiplier: 1.2,
+    providers: { global: "google" },
+    requests: {
+      google: {
+        low: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "LOW"}}} },
+        medium: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "MEDIUM"}}} },
+        high: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
+        xhigh: { body: {"generationConfig": {"maxOutputTokens": 65536, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "XHIGH"}}} },
+      },
+    },
+    billingPool: "standard",
+  },
   "gemini-4-hydrogen": {
     api: "google",
-    efforts: ["low", "medium", "high"],
+    efforts: ["low", "medium", "high", "xhigh"],
     defaultEffort: "high",
     images: true,
     maxInputTokens: 1000000,
@@ -1749,6 +1769,7 @@ export const DROID_MODELS: Record<string, DroidModel> = {
         low: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "LOW"}}} },
         medium: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "MEDIUM"}}} },
         high: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "HIGH"}}} },
+        xhigh: { body: {"generationConfig": {"temperature": 1, "topP": 0.95, "topK": 64, "thinkingConfig": {"includeThoughts": true, "thinkingLevel": "XHIGH"}}} },
       },
     },
     billingPool: "standard",

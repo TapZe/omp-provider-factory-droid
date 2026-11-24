@@ -42,7 +42,7 @@ type CuratedModelInput = Pick<FactoryModelInput, "id" | "name" | "cost"> & {
 
 export function defaultCostFor(id: string): ProviderModelConfig["cost"] {
   // Static prices first (openrouter-costs.ts): the makers' own rates, then
-  // OpenRouter's listed prices, then the rates Droid 1.14.0 carries. The
+  // OpenRouter's listed prices, then selected rates from Droid's registry. The
   // estimates below cover only ids with none of those.
   const listed = MAKER_LISTED_COSTS[id] ?? OPENROUTER_LISTED_COSTS[id] ?? DROID_REGISTRY_COSTS[id];
   if (listed) return { ...listed };
@@ -310,7 +310,7 @@ export function droidMultiplierFor(modelId: string, now: Date = new Date()): num
 
 function droidModel(config: CuratedModelInput): ProviderModelConfig {
   const droid = DROID_MODELS[config.id];
-  if (!droid) throw new Error(`${config.id} has no Droid 1.14.0 registry row`);
+  if (!droid) throw new Error(`${config.id} has no Droid registry row`);
   const thinking = droidThinking(droid);
   return factoryModel({
     ...config,
@@ -672,6 +672,10 @@ export const FACTORY_MODELS: ProviderModelConfig[] = [
   }),
 
   // Google Gemini family
+  droidModel({
+    id: "gemini-4-neon",
+    name: "Gemini 4 Neon (Factory)",
+  }),
   droidModel({
     id: "gemini-4-hydrogen",
     name: "Gemini 4 Hydrogen (Factory)",

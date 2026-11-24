@@ -112,7 +112,7 @@ async function capture(modelId: string, effort: DroidEffort, region: DroidRegion
   return captured;
 }
 
-describe("request fields follow Droid 1.14.0 for every model, effort, and region", () => {
+describe("request fields follow Droid 1.18.0 for every model, effort, and region", () => {
   for (const region of REGIONS) {
     for (const model of FACTORY_MODELS) {
       const droid = DROID_MODELS[model.id];
@@ -259,7 +259,7 @@ describe("models added in Droid 1.10.0", () => {
       maxTokens: 65_536,
       premiumMultiplier: 0.6,
     });
-    expect(byId("gemini-4-hydrogen")?.thinking?.efforts as readonly string[] | undefined).toEqual(["low", "medium", "high"]);
+    expect(byId("gemini-4-hydrogen")?.thinking?.efforts as readonly string[] | undefined).toEqual(["low", "medium", "high", "xhigh"]);
     expect(byId("gemini-4-hydrogen")?.thinking?.defaultLevel as string | undefined).toBe("high");
 
     expect(byId("gemini-4-carbon")).toMatchObject({
@@ -318,6 +318,30 @@ describe("models added in Droid 1.10.0", () => {
       const { captured, result } = await send("gemini-4-carbon", "high", region);
       expect(captured).toBeUndefined();
       expect(result.errorMessage).toContain(`not available in the ${region} inference region`);
+    }
+  });
+});
+
+describe("Droid 1.18.0 Gemini request changes", () => {
+  test("Neon sends XHIGH with an output cap and no sampling defaults", async () => {
+    const request = await capture("gemini-4-neon", "xhigh", "global");
+    expect(request.provider).toBe("google");
+    expect(request.body.model).toBe("gemini-4-neon");
+    expect(request.body.generationConfig).toEqual({
+      maxOutputTokens: 65_536,
+      thinkingConfig: { includeThoughts: true, thinkingLevel: "XHIGH" },
+    });
+  });
+
+  test("Hydrogen sends XHIGH and keeps its sampling defaults in all supported regions", async () => {
+    for (const region of ["global", "eu", "us"] as const) {
+      const request = await capture("gemini-4-hydrogen", "xhigh", region);
+      expect(request.body.generationConfig).toEqual({
+        temperature: 1,
+        topP: 0.95,
+        topK: 64,
+        thinkingConfig: { includeThoughts: true, thinkingLevel: "XHIGH" },
+      });
     }
   });
 });
