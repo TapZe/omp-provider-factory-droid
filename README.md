@@ -9,6 +9,10 @@
 
 ## Release notes
 
+### 1.8.1
+
+- Uses the same `tool_` wire aliases as 9router for `bash`, `glob`, `grep`, `task`, and `web_search`. Local tool names are unchanged.
+
 ### 1.8.0
 
 - Syncs the shipped model catalog and client headers with Droid 1.18.0. The static catalog now has 94 models, including Gemini 4 Neon. No models were removed.
