@@ -9,7 +9,7 @@
 
 ## Release notes
 
-### Unreleased
+### 1.8.0
 
 - Syncs the shipped model catalog and client headers with Droid 1.18.0. The static catalog now has 94 models, including Gemini 4 Neon. No models were removed.
 - Adds `xhigh` for Gemini 4 Neon and Hydrogen. Neon is global-only and requires Factory account access. It caps output at 65,536 tokens and omits the default sampling fields that Hydrogen sends.
