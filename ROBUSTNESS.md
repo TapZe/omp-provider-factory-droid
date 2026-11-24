@@ -143,11 +143,11 @@ The provider uses these wire names without changing OMP's local tool names:
 | `read` | `inspect_file` |
 | `write` | `write_file` |
 | `edit` | `edit_file` |
-| `bash` | `omp_bash` |
-| `glob` | `omp_glob` |
-| `grep` | `omp_grep` |
-| `task` | `omp_task` |
-| `web_search` | `omp_web_search` |
+| `bash` | `tool_bash` |
+| `glob` | `tool_glob` |
+| `grep` | `tool_grep` |
+| `task` | `tool_task` |
+| `web_search` | `tool_web_search` |
 
 The adapter translates declarations, explicit named tool choices, assistant calls, tool-result history, and supported native replay payloads. Returned calls use their original local names. Arguments, schemas, permissions, call IDs, and unrelated metadata are not rewritten. A request fails before model generation if an original name and its alias would identify different local tools. Other providers are unaffected.
 

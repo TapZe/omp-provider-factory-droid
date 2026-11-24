@@ -4,11 +4,11 @@ const TOOL_ALIASES: Readonly<Record<string, string>> = {
   read: "inspect_file",
   write: "write_file",
   edit: "edit_file",
-  bash: "omp_bash",
-  glob: "omp_glob",
-  grep: "omp_grep",
-  task: "omp_task",
-  web_search: "omp_web_search",
+  bash: "tool_bash",
+  glob: "tool_glob",
+  grep: "tool_grep",
+  task: "tool_task",
+  web_search: "tool_web_search",
 };
 
 type NameMapper = (name: string) => string;

@@ -10,11 +10,11 @@ const pairs = [
   ["read", "inspect_file"],
   ["write", "write_file"],
   ["edit", "edit_file"],
-  ["bash", "omp_bash"],
-  ["glob", "omp_glob"],
-  ["grep", "omp_grep"],
-  ["task", "omp_task"],
-  ["web_search", "omp_web_search"],
+  ["bash", "tool_bash"],
+  ["glob", "tool_glob"],
+  ["grep", "tool_grep"],
+  ["task", "tool_task"],
+  ["web_search", "tool_web_search"],
 ] as const;
 const tools: NonNullable<Context["tools"]> = pairs.map(([name]) => ({
   name,
@@ -156,7 +156,7 @@ describe("Factory compatibility across all wire protocols", () => {
   }
 
   it.each(pairs)("completions restores %s from %s without modifying arguments", async (name, alias) => {
-    const args = { path: "literal inspect_file write_file edit_file omp_bash" };
+    const args = { path: "literal inspect_file write_file edit_file tool_bash" };
     const result = await request("deepseek-v4.1-flash-1017", { messages: [], tools }, async () => toolResponse("completions", alias, args));
     expect(result.stopReason).toBe("toolUse");
     expect(result.content).toContainEqual(expect.objectContaining({ type: "toolCall", name, arguments: args }));
