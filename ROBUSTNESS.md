@@ -1,6 +1,6 @@
 # Factory Provider Robustness
 
-This document describes the reliability and multi-account protections implemented by `pi-provider-factory`. All behavior lives in the plugin; no Oh My Pi source changes are required.
+The `omp-provider-factory-droid` extension handles these protections without changes to Oh My Pi.
 
 ## Multi-account routing
 
@@ -78,8 +78,10 @@ Factory quotas are evaluated independently:
 
 | Quota pool | Model families |
 | --- | --- |
-| Standard | Claude, GPT, Codex, Grok |
+| Standard | Claude, GPT, Grok, Gemini, Muse Spark |
 | Droid Core | GLM, Kimi, DeepSeek, MiniMax, Nemotron, Inkling |
+
+These are examples. For models in the shipped registry, the quota gate uses each model's `billingPool` entry. For other models, it infers the pool from the model ID.
 
 Only an explicitly exhausted relevant pool blocks a request. For example, an exhausted Standard pool does not block Kimi or GLM, and an exhausted Core pool does not block Claude or GPT.
 
@@ -103,6 +105,8 @@ The plugin registers a native Factory usage provider with OMP 17.4.1 or newer. `
 - Standard 5-hour, weekly, and monthly windows;
 - Droid Core 5-hour, weekly, and monthly windows;
 - Extra Usage balance and eligibility metadata.
+
+The reporter and quota gate omit windows the billing reply marks `unlimited`.
 
 Usage reports and quota preflight share the same parser and account-scoped snapshot cache, preventing the two paths from interpreting Factory's response differently.
 
@@ -149,6 +153,20 @@ The adapter translates declarations, explicit named tool choices, assistant call
 
 The adapter does not retry policy rejections with fewer instructions. Acceptance was diagnosed on `factory/deepseek-v4.1-flash-1017`; other account and model entitlements remain gateway-controlled.
 
+## Droid 1.18.0 compatibility
+
+The update compares the verified Linux x64 npm binaries for Droid 1.14.0 and 1.18.0. The registry and request-builder evidence comes from JavaScript embedded in those binaries. This comparison did not launch either binary or contact the Factory gateway.
+
+| Area | What the comparison found |
+| --- | --- |
+| Model registry | One new concrete model, `gemini-4-neon`, and no removals. Neon uses Google in the global inference region only. It supports text and images, defaults to `high`, has a 1,048,576-token context window with 65,536 reserved for output, and uses a 1.2× Standard multiplier. |
+| Request builders | Gemini adds `XHIGH` for Neon and Hydrogen. Neon omits sampling defaults; Hydrogen retains them. The audited hosted Anthropic Messages, OpenAI Responses, and chat-completions defaults did not require a 1.18.0 change. |
+| Hosted identity and billing | The audited `/api/cli/whoami`, `/api/cli/org`, and `/api/billing/limits` paths and fields still match. The plugin updates its shared client version headers without changing credential import, endpoint selection, or quota logic. |
+
+Registry evidence: `ev_beb63cb86e04dd2b39ca890f65444f8e2cc51f3ba165159c8b05d57e6937f6e1` (1.18.0) and `ev_43e594d39bfeb1adfb0e1f0af89d83bed2e9554b5409858fd8a5106f80babf18` (1.14.0). The model comparison pairs rows by exact model ID. [`src/droid-registry.ts`](src/droid-registry.ts) records the 1.18.0 binary digest and byte range of the registry chunk.
+
+The extension uses the shipped defaults and its existing public-doc refresh. It does not reproduce native Droid Auto routing, customer-prem login, connectors, or per-account catalog and feature-flag decisions. The static comparison cannot establish which models the gateway will allow for a particular account.
+
 ## Verification
 
 Automated coverage includes:
@@ -166,6 +184,7 @@ Automated coverage includes:
 - malicious endpoint rejection;
 - OAuth cancellation and bounded response handling;
 - dynamic model discovery timeout;
+- Gemini 4 Neon and Hydrogen `XHIGH` request payloads and offline Neon pricing;
 - exact OMP prompt adaptations, idempotence, caller immutability, and quoted-text boundaries;
 - native Factory usage-provider registration.
 

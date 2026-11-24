@@ -1,13 +1,18 @@
 # OMP Provider Factory Droid
 
-`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It routes Factory Droid 1.14.0 models, including Claude Opus 5, GPT-6.2 Sol, Gemini 3.8 Flash, Grok 4.7, GLM 5.3, Kimi K3, and DeepSeek V4, through Factory's LLM gateway.
+`omp-provider-factory-droid` is a provider extension for [Oh My Pi (`omp`)](https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent). It routes Factory Droid 1.18.0 models through Factory's LLM gateway, including Gemini 4 Neon, Claude Opus 5, and GPT-6.2 Sol.
 
 > [!NOTE]
-> **Actively Maintained Fork (`v1.7.1`)**: Maintained continuation of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe). The catalog targets Droid 1.14.0. The extension supports four gateway protocols, Droid credential reuse, quota preflight failover, and tool-call normalization.
+> Maintained fork of [`tjboudreaux/pi-provider-factory`](https://github.com/tjboudreaux/pi-provider-factory) by [Muhammad Nabil Muyassar Rahman (@TapZe)](https://github.com/TapZe).
 
 ---
 
 ## Release notes
+
+### Unreleased
+
+- Syncs the shipped model catalog and client headers with Droid 1.18.0. The static catalog now has 94 models, including Gemini 4 Neon. No models were removed.
+- Adds `xhigh` for Gemini 4 Neon and Hydrogen. Neon is global-only and requires Factory account access. It caps output at 65,536 tokens and omits the default sampling fields that Hydrogen sends.
 
 ### 1.7.1
 
@@ -34,7 +39,7 @@ See [prompt and tool compatibility](ROBUSTNESS.md#prompt-and-tool-compatibility)
 
 ## Key Features
 
-- **Droid 1.14.0 models.** The 93 CLI-visible concrete models, with their reasoning efforts, defaults, image input, limits, and multipliers.
+- **Droid 1.18.0 catalog.** 94 concrete models with per-model reasoning efforts, image support, token limits, and credit multipliers.
 - **Quad-Gateway Wire Routing**: Routes each model family to its dedicated Factory gateway endpoint with W3C `traceparent` telemetry injection:
   - Anthropic Messages (`/api/llm/a`)
   - OpenAI Responses (`/api/llm/o/v1/responses`)
@@ -51,10 +56,7 @@ See [prompt and tool compatibility](ROBUSTNESS.md#prompt-and-tool-compatibility)
 
 ## Supported models
 
-The static catalog holds the 93 CLI-visible concrete models in Droid 1.14.0.
-It excludes entries marked `availableInCLI: false` and native Auto routers.
-Request templates follow the shipped model, effort, and upstream provider.
-Feature-gated models still require access on the selected Factory organization.
+The static catalog covers the 94 concrete models in the shipped Droid 1.18.0 CLI registry. It excludes entries marked `availableInCLI: false` and native Auto routers. The plugin does not evaluate Factory's account feature flags. A listed model may still require access on the selected organization.
 
 Ultra Fast variants may require Factory's high-cost opt-in. Listing a model
 does not grant access or enable its account feature flag.
@@ -64,11 +66,7 @@ header asks for in each inference region. The region comes from Factory's
 whoami reply at login, as in Droid. "none" means Droid does not offer the model
 in that region, and the extension returns an error without sending a request.
 
-These contracts were extracted from the published `@factory/cli-linux-x64@1.14.0`
-artifact after verifying its npm SHA-512 integrity. `src/droid-registry.ts` records
-the binary and registry-module SHA-256 digests. This is provider compatibility,
-not native Droid UI, connectors, Auto routing, customer-prem login, or account
-feature-flag evaluation. The extension keeps OMP's tools and session handling.
+The catalog comes from the published [`@factory/cli-linux-x64@1.18.0`](https://www.npmjs.com/package/@factory/cli-linux-x64/v/1.18.0) artifact. We verified its npm SHA-512 integrity. [`src/droid-registry.ts`](src/droid-registry.ts) records the binary and embedded registry SHA-256 digests. See [what the comparison covers](ROBUSTNESS.md#droid-1180-compatibility).
 
 ### 1. Anthropic Messages
 
@@ -180,7 +178,8 @@ Endpoint `POST /api/llm/g/v1/generate`.
 
 | Model | Global | EU | US | India | Input | Efforts | Default |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `gemini-4-hydrogen` | google | google | google | none | text, image | low, medium, high | high |
+| `gemini-4-neon` | google | none | none | none | text, image | low, medium, high, xhigh | high |
+| `gemini-4-hydrogen` | google | google | google | none | text, image | low, medium, high, xhigh | high |
 | `gemini-4-carbon` | google | none | none | none | text, image | low, medium, high | medium |
 | `gemini-4-argon` | google | none | none | none | text, image | low, medium, high | medium |
 | `gemini-3.8-flash` | google | google | google | none | text, image | low, medium, high | high |
@@ -196,8 +195,7 @@ Endpoint `POST /api/llm/g/v1/generate`.
 At session start the extension also reads Factory's model docs
 (`https://docs.factory.ai/models.md`) and OpenRouter prices, at most every 15
 minutes. A model that appears there but not in the Droid registry is listed
-too, except the five models Droid 1.14.0 explicitly hides from its CLI. A
-docs-only model gets low, medium, and high efforts and no Droid request fields.
+too, except for five previously offered models that Droid still marks hidden: `gemini-3-pro-preview`, `glm-4.6`, `kimi-k2.6`, `kimi-k2.7-code`, and `minimax-m2.5`. A docs-only model gets low, medium, and high efforts and no Droid request fields.
 
 ### Costs
 
@@ -215,15 +213,11 @@ off their makers' prices, so those four always use the maker's published API
 price (Moonshot, Z.ai, DeepSeek peak rate), and a live OpenRouter price never
 replaces it.
 
-GPT-6.2 cost estimates use the rates embedded in Droid 1.14.0. Their source
-field reads `pending-official-pricing-docs`; they are not verified billing
-prices. OMP has one cache-write cost field, so these estimates use the shipped
-30-minute rate rather than the 12-hour rate. The shipped GPT-6.2 pricing also
-defines higher rates at a 272,000-input-token threshold. OMP's fixed cost fields
-do not model that tier, so its displayed estimates can understate long-context
-costs. A live OpenRouter price does not replace these estimates. GPT-6 Astra
-Ultra Fast keeps the existing estimate because its shipped entry has no price
-block.
+GPT-6.2 and Gemini 4 Neon use provisional estimates from Droid's embedded registry. The source field says `pending-official-pricing-docs`; these are not verified billing prices. The plugin keeps those estimates even when OpenRouter returns a live price.
+
+Neon's estimates per million tokens are $1.20 for input, $6.00 for output, and $0.06 for cache reads. The registry does not specify a cache-write rate for Neon.
+
+OMP has one cache-write field, so GPT-6.2 estimates use the shipped 30-minute rate rather than the 12-hour rate. The registry defines higher rates at 272,000 input tokens, which OMP's fixed cost fields cannot represent. GPT-6 Astra Ultra Fast keeps its previous estimate because its registry entry has no price block.
 
 ---
 
@@ -235,7 +229,7 @@ Pick a Factory model in the `/model` picker or type its id:
 
 ```text
 /model factory/claude-opus-5
-/model factory/gemini-3.8-flash
+/model factory/gemini-4-neon
 /model factory/gpt-6-astra
 /model factory/glm-5.3-flash
 ```
@@ -267,7 +261,7 @@ Droid sends:
 - Chat completion models get `reasoning_effort`. On Fireworks, DeepSeek also
   gets `reasoning_history: "interleaved"`, and Kimi, Qwen, Inkling, Muse Spark
   1.2, GLM 5.1, and GLM 5.3 get `reasoning_history: "preserved"`.
-- Gemini models get `thinkingConfig.thinkingLevel`.
+- Gemini models get `generationConfig.thinkingConfig.thinkingLevel`. Neon and Hydrogen send `XHIGH` at `xhigh` effort. Neon also sends `maxOutputTokens: 65536` and omits `temperature`, `topP`, and `topK`.
 
 ## Installation
 
@@ -320,7 +314,7 @@ Inside Oh My Pi, run:
    ```
 3. Confirm the code in your browser and authorize the application.
 4. If your account belongs to multiple Factory organizations, the CLI prompts you to select which organization to bind to this profile.
-5. **Zero Re-Login Token Refresh**: Tokens are automatically refreshed in the background before expiry via WorkOS OAuth token refresh. Parameter filtering guarantees that internal WorkOS organizational scoping does not trigger `organization_not_found` errors, ensuring persistent session validity without requiring repeated manual logins.
+5. The extension refreshes the OAuth session as needed. If refresh or recovery fails, run `/login factory` again.
 6. To add another organization or account, simply run `/login factory` again. OMP manages multiple accounts and enables automatic failover.
 
 ### 2. Factory API Key (Headless / CI Environments)
@@ -336,7 +330,7 @@ export FACTORY_API_KEY="fk-..."
 
 ## Request Routing & Quad-Gateway Protocols
 
-Hosted requests use `https://api.eu.factory.ai` for the EU API region and `https://api.factory.ai` otherwise. An explicit endpoint override remains separate from inference-provider selection. Every outbound gateway request includes a W3C `traceparent` header and `X-Client-Version: 1.14.0`.
+Hosted requests use `https://api.eu.factory.ai` for the EU API region and `https://api.factory.ai` otherwise. An explicit endpoint override remains separate from inference-provider selection. Gateway requests include a W3C `traceparent` header, `X-Client-Version: 1.18.0`, and `User-Agent: factory-cli/1.18.0`.
 
 | API | Gateway URL | Upstream header | Other headers |
 | :--- | :--- | :--- | :--- |
@@ -351,7 +345,7 @@ Hosted requests use `https://api.eu.factory.ai` for the EU API region and `https
 
 All tool declarations, parameter schemas, and tool execution routines are provided directly by the Oh My Pi harness (`read`, `write`, `edit`, `bash`, etc.). The plugin ensures frictionless execution between OMP and Factory:
 
-1. **System Prompt Attestation**: Factory's gateway requires Droid system instructions to validate client legitimacy and enforce active tool usage for reasoning models. The extension automatically prepends `FACTORY_DROID_SYSTEM_PROMPT` while preserving your custom instructions.
+1. The extension prepends its Droid identity prompt and applies the two targeted [OMP prompt adaptations](ROBUSTNESS.md#prompt-and-tool-compatibility).
 2. **Stream Markup Healing**: Open-weight models (GLM, Kimi, DeepSeek) that occasionally output tool calls as in-band XML (`<tool_call>...`) are repaired on the fly into structured tool events via Hermes healing.
 3. **Embedded JSON Unwrapping**: If an open model mistakenly outputs a JSON payload inside the tool name field (e.g. `name: '{"name": "read", "arguments": ...}'`), the normalizer extracts the real tool name and arguments so OMP executes the tool call directly.
 
@@ -394,7 +388,7 @@ export FACTORY_QUOTA_PREFLIGHT=1
 | :--- | :--- |
 | `FACTORY_API_KEY` | Optional Factory `fk-...` API key. Bypasses OAuth when set. |
 | `FACTORY_API_BASE` | Overrides the Factory API base origin (e.g. `https://custom-proxy.internal`). |
-| `FACTORY_ORG_ID` | Explicitly overrides `X-Factory-Org-Id` header (or alias `FACTORY_ORGANIZATION_ID`). |
+| `FACTORY_ORG_ID` | Organization fallback for raw API-key credentials. OAuth keeps its own organization. Alias: `FACTORY_ORGANIZATION_ID`. |
 | `FACTORY_QUOTA_PREFLIGHT` | Set `1` or `true` to enable automatic account failover on exhausted quotas. Default: disabled (`0`). |
 | `FACTORY_UPSTREAM_CLIENT_TYPE` | Overrides `X-Factory-Client` header. Default: `cli`. |
 
