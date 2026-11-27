@@ -7,40 +7,6 @@
 
 ---
 
-## Release notes
-
-### 1.8.1
-
-- Uses the same `tool_` wire aliases as 9router for `bash`, `glob`, `grep`, `task`, and `web_search`. Local tool names are unchanged.
-
-### 1.8.0
-
-- Syncs the shipped model catalog and client headers with Droid 1.18.0. The static catalog now has 94 models, including Gemini 4 Neon. No models were removed.
-- Adds `xhigh` for Gemini 4 Neon and Hydrogen. Neon is global-only and requires Factory account access. It caps output at 65,536 tokens and omits the default sampling fields that Hydrogen sends.
-
-### 1.7.1
-
-- Fixes Factory policy rejections caused by the shared OMP subagent cooperation sentence. Rewords only that sentence in recognized generated child prompts, preserving other instructions and existing tool aliases.
-- Adds regression coverage for prompt boundaries, idempotence, and all four Factory wire protocols. Live smoke verification covers all five OMP agent types.
-
-### 1.7.0
-
-- Synchronizes the catalog with Droid 1.14.0: seven new GPT variants and five models no longer offered by its CLI. The static catalog now contains 93 concrete models.
-- Adds `gpt-6.2-astra`, `gpt-6.2-astra-fast`, `gpt-6.2-astra-ultrafast`, `gpt-6.2-sol`, `gpt-6.2-sol-fast`, `gpt-6.2-sol-ultrafast`, and `gpt-6-astra-ultrafast`. These entries remain subject to Factory account access.
-- Removes `glm-4.6`, `kimi-k2.7-code`, `kimi-k2.6`, `minimax-m2.5`, and `gemini-3-pro-preview` from the advertised catalog and blocks stale docs from restoring them.
-- Adds India inference routing without inventing an India API hostname. Hosted requests use the EU endpoint only for the EU API region; other hosted regions use the global endpoint.
-- Uses Droid 1.14.0 client headers, extended identity requests, and an account-specific macOS encryption-key lookup.
-- Updates Responses session cache keys and Anthropic refusal-fallback fields and betas. Existing Factory-only tool aliases and OMP instruction safeguards remain unchanged.
-
-
-### 1.6.1
-
-- Adds eight Factory-only tool aliases with collision checks and bidirectional translation of declarations, calls, and history.
-- Removes only the exact initial OMP greeting preamble while preserving subsequent instructions and later system blocks.
-- Preserves explicit tool choices, custom-tool dispatch, and opaque history formats from newer supported OMP peers.
-
-See [prompt and tool compatibility](ROBUSTNESS.md#prompt-and-tool-compatibility) for the mappings and scope.
-
 ## Key Features
 
 - **Droid 1.18.0 catalog.** 94 concrete models with per-model reasoning efforts, image support, token limits, and credit multipliers.
